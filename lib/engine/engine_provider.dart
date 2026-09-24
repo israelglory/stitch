@@ -8,11 +8,13 @@ import 'package:stitch/engine/native_editor_engine.dart';
 
 part 'engine_provider.g.dart';
 
-/// The media engine: native on iOS; the fake elsewhere until the Android
-/// engine lands (M6). Tests override it with their own fake.
+/// The media engine: native on iOS and Android; the fake elsewhere. Tests
+/// override it with their own fake.
 @Riverpod(keepAlive: true)
 EditorEngine editorEngine(Ref ref) {
-  if (!kIsWeb && Platform.isIOS) return NativeEditorEngine();
+  if (!kIsWeb && (Platform.isIOS || Platform.isAndroid)) {
+    return NativeEditorEngine();
+  }
   final engine = FakeEditorEngine();
   ref.onDispose(engine.dispose);
   return engine;

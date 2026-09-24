@@ -29,6 +29,8 @@ String engineDocumentJson(
         asset.id: {
           'path': resolve(asset.path),
           'kind': asset.kind.name,
+          // Full source length; Media3 needs it before clipping.
+          'durationUs': ?asset.durationUs,
           if (asset.proxyPath case final proxy?) 'proxyPath': resolve(proxy),
         },
     },

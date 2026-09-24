@@ -35,6 +35,15 @@ xcodebuild test -workspace ios/Runner.xcworkspace -scheme Runner \
 
 # End to end on a simulator: import, preview, play, export
 flutter test integration_test -d <simulator id> --dart-define=STITCH_TEST_MEDIA=$PWD/test_media
+
+# Kotlin engine tests (probe, composition, preview, export) on an emulator or device
+cd android && ./gradlew :app:connectedDebugAndroidTest
+
+# End to end on Android: the emulator cannot read host files, so push the media first
+adb shell mkdir -p /data/local/tmp/stitch_media
+adb push test_media/{large_1440p,rotated_portrait,vfr}.mp4 /data/local/tmp/stitch_media
+adb shell chmod -R a+rX /data/local/tmp/stitch_media
+flutter test integration_test -d emulator-5554 --dart-define=STITCH_TEST_MEDIA=/data/local/tmp/stitch_media
 ```
 
 `test_media/` holds the media corpus; `tool/make_test_media.sh` regenerates it.

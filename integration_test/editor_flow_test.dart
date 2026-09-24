@@ -6,6 +6,17 @@
 //
 //   flutter test integration_test -d <simulator id> \
 //     --dart-define=STITCH_TEST_MEDIA=$PWD/test_media
+//
+// Android emulators cannot read host files, and cannot decode the 10-bit
+// HDR sample, so push a few files to a device folder the debug app can read
+// (the app's own folders are wiped on every reinstall):
+//
+//   D=/data/local/tmp/stitch_media
+//   adb shell mkdir -p $D
+//   adb push test_media/{large_1440p,rotated_portrait,vfr}.mp4 $D
+//   adb shell chmod -R a+rX $D
+//   flutter test integration_test -d emulator-5554 \
+//     --dart-define=STITCH_TEST_MEDIA=$D
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -131,9 +142,14 @@ void main() {
     );
     expect((engineDuration - durationUs).abs(), lessThan(50000));
 
-    // Play for a moment; the playhead moves.
+    // Play; the playhead moves. Emulators can take ten seconds to start
+    // their decoders, so allow time.
     await tester.tap(find.byType(PlayButton).last);
-    await wait(tester, const Duration(milliseconds: 1500));
+    final end = DateTime.now().add(const Duration(seconds: 30));
+    while (container.read(playbackControllerProvider).positionUs < 1200000 &&
+        DateTime.now().isBefore(end)) {
+      await wait(tester, const Duration(milliseconds: 100));
+    }
     final position = container.read(playbackControllerProvider).positionUs;
     expect(position, greaterThan(500000));
     await tester.tap(find.byType(PlayButton).last);

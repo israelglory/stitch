@@ -73,10 +73,37 @@ During transitions it mixes the two clips.
 
 **Probe, thumbnails, and proxies:** in `MediaTools.swift`. Filmstrip file names use a hash that stays stable across launches, so frames are cached on disk.
 
+## Android (`android/app/src/main/kotlin/xyz/gloryolaifa/stitch/engine/`)
+
+Built on Media3 1.11 (`Transformer`, `CompositionPlayer`, and effects). Much of this API is marked unstable, so the version is pinned in `android/app/build.gradle.kts` and should only be upgraded with the engine tests passing.
+
+**Composition (`CompositionBuilder`):** a Media3 `Composition`.
+- For export, clips alternate between two video sequences (A and B). Gaps pad each sequence to the full length, so the clips on either side of a transition overlap.
+- Each clip is fitted or filled to the output size (`Presentation`), then framed (`FramingTransformation`). `BackgroundFill` then paints the canvas color into any transparent area, so every clip frame is opaque.
+- The compositor settings show a sequence only while it has a clip. During a transition they mix the two: a crossfade, or a dip to black. Media3 draws sequence A on top.
+- Speed uses `EditedMediaItem.setSpeed`, which keeps pitch. Photos are image items with a duration. A missing file becomes a gap and plays as black.
+- Audio items get one sequence each. A loop is inserted repeatedly. `GainProcessor` applies volume and fades per item, and Media3 mixes the sequences.
+- HDR is tone mapped to SDR in OpenGL. That needs the `GL_EXT_YUV_target` extension, which phones that play HDR have and emulators lack. Without it, HDR sources are read as SDR, and on emulators 10-bit sources fail as `unsupported_media`.
+
+**Preview (`PreviewPlayer`):** a `CompositionPlayer` drawing into a Flutter `SurfaceProducer`.
+- Rendering is capped at 1280 px on the long side.
+- `CompositionPlayer` stops drawing within a second when it composites two video sequences. This happens with plain Media3 as well, on the API 35 emulator. So the preview uses one video sequence, and each transition shows as a cut at its midpoint. Export still renders transitions fully. M7 revisits this with the transition shaders.
+- Scrubbing seeks use the player's scrubbing mode. Audio focus is handled, so calls pause the preview.
+
+**Export (`Exporter`):** a `Transformer`.
+- Video is H.264 or HEVC at the requested bitrate. The frame rate is capped at the requested rate: frames are dropped above it and never duplicated below it.
+- Audio is AAC at 192 kbps, resampled to 48 kHz.
+- The file is written to `*.part.mp4`, then renamed. A cancelled or failed export leaves no file behind.
+
+**Probe, thumbnails, and proxies:** in `MediaTools.kt`.
+- `MediaExtractor` reads durations, rotation, frame rate, and HDR transfer. `ExifInterface` reads photo orientation.
+- Filmstrip frames use `MediaMetadataRetriever` and the same stable file names as iOS.
+- Proxies are 720p (short side) H.264, made by `Transformer`.
+
 ## Dart
 
 - `NativeEditorEngine` implements `EditorEngine` over the bridge.
-- `FakeEditorEngine` backs tests and platforms without a native engine (Android until M6).
+- `FakeEditorEngine` backs tests and platforms without a native engine.
 - `Filmstrip` batches frame requests per file and caches them in memory and on disk. The disk cache is capped at 150 MB and pruned at startup.
 
 ## Tests
@@ -96,6 +123,7 @@ During transitions it mixes the two clips.
   xcodebuild test -workspace ios/Runner.xcworkspace -scheme Runner \
     -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:RunnerTests/EngineTests
   ```
+- **Kotlin:** `android/app/src/androidTest/.../engine/EngineTests.kt` mirrors the Swift tests. It adds checks that each clip appears in its time range, in both export and preview, and that letterbox bars take the background color. The corpus is packaged as test assets. Run the tests with `cd android && ./gradlew :app:connectedDebugAndroidTest`.
 - **End to end:** `integration_test/editor_flow_test.dart` covers the whole path. It picks from Photos, creates a project, previews, plays, exports, and then probes the export.
 
 ## Xcode project
@@ -105,5 +133,5 @@ During transitions it mixes the two clips.
 ## Deferred
 
 - The audio limiter moves to M8: `AVAudioMix` has no limiter stage.
-- Transitions other than crossfade and fade to black come with the shader milestone, M7.
+- Transitions other than crossfade and fade to black come with the shader milestone, M7. So does transition preview on Android, and the blurred background on Android, which is black until then.
 - Text and captions are drawn from M8 and M9.

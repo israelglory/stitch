@@ -1,0 +1,4 @@
+tags:
+  # Pixel comparisons. Text rasterizes differently per OS, so these run on
+  # macOS only (locally and in CI), where the goldens were generated.
+  golden:

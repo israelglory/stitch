@@ -1,0 +1,596 @@
+{
+  "@@locale": "en",
+  "appName": "Stitch",
+  "@appName": {
+    "description": "Product name. Not translated."
+  },
+  "projectsTitle": "Projects",
+  "@projectsTitle": {
+    "description": "Title of the home screen listing the user's projects."
+  },
+  "editorTitle": "Editor",
+  "@editorTitle": {
+    "description": "Fallback title of the editor before a project name is loaded."
+  },
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Title of the settings screen."
+  },
+  "onboardingTitle": "Welcome",
+  "@onboardingTitle": {
+    "description": "Temporary title of the onboarding route until M4."
+  },
+  "designGalleryTitle": "Design gallery",
+  "@designGalleryTitle": {
+    "description": "Title of the hidden developer screen listing all design components."
+  },
+  "pageNotFoundTitle": "Page not found",
+  "@pageNotFoundTitle": {
+    "description": "Title shown when navigating to a route that does not exist."
+  },
+  "pageNotFound": "This page could not be found.",
+  "@pageNotFound": {
+    "description": "Shown when navigating to a route that does not exist."
+  },
+  "backToProjects": "Back to projects",
+  "@backToProjects": {
+    "description": "Button that returns to the home screen."
+  },
+  "back": "Back",
+  "@back": {
+    "description": "Accessibility label for a control that returns to the previous tool set or screen."
+  },
+  "done": "Done",
+  "@done": {
+    "description": "Accessibility label for the check button that confirms a sheet."
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Button that dismisses a dialog without acting."
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Button that tries a failed action again."
+  },
+  "projectCardSemantics": "{name}, {duration}",
+  "@projectCardSemantics": {
+    "description": "Accessibility label for a project thumbnail: project name and total duration.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "projectOptions": "Options for {name}",
+  "@projectOptions": {
+    "description": "Accessibility label for the overflow menu button on a project.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "close": "Close",
+  "@close": {
+    "description": "Accessibility label for a control that closes a screen."
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Button that confirms a new name."
+  },
+  "create": "Create",
+  "@create": {
+    "description": "Button that creates the new project."
+  },
+  "skip": "Skip",
+  "@skip": {
+    "description": "Button that skips onboarding."
+  },
+  "continueAction": "Continue",
+  "@continueAction": {
+    "description": "Button that goes to the next onboarding page."
+  },
+  "getStarted": "Get started",
+  "@getStarted": {
+    "description": "Button on the last onboarding page."
+  },
+  "rename": "Rename",
+  "@rename": {
+    "description": "Action that renames a project."
+  },
+  "duplicate": "Duplicate",
+  "@duplicate": {
+    "description": "Action that copies a project or clip."
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Action that deletes something."
+  },
+  "onboardingEditTitle": "Edit videos on your phone",
+  "@onboardingEditTitle": {
+    "description": "First onboarding page."
+  },
+  "onboardingPrivateTitle": "Everything stays on your device",
+  "@onboardingPrivateTitle": {
+    "description": "Second onboarding page."
+  },
+  "onboardingCaptionsTitle": "Captions without the internet",
+  "@onboardingCaptionsTitle": {
+    "description": "Third onboarding page."
+  },
+  "mockProjectOne": "Beach day",
+  "@mockProjectOne": {
+    "description": "Sample project name in an onboarding illustration."
+  },
+  "mockProjectTwo": "Birthday",
+  "@mockProjectTwo": {
+    "description": "Sample project name in an onboarding illustration."
+  },
+  "mockEdited": "Edited today",
+  "@mockEdited": {
+    "description": "Sample edited time in an onboarding illustration."
+  },
+  "mockStorageTitle": "Saved on this device",
+  "@mockStorageTitle": {
+    "description": "Sample storage row in an onboarding illustration."
+  },
+  "mockCaption": "We finally made it",
+  "@mockCaption": {
+    "description": "Sample caption in an onboarding illustration."
+  },
+  "mockCaptionPartOne": "We finally",
+  "@mockCaptionPartOne": {
+    "description": "First half of the sample caption on the timeline."
+  },
+  "mockCaptionPartTwo": "made it",
+  "@mockCaptionPartTwo": {
+    "description": "Second half of the sample caption on the timeline."
+  },
+  "mockModelTitle": "Speech model",
+  "@mockModelTitle": {
+    "description": "Sample caption model row in an onboarding illustration."
+  },
+  "mockModelValue": "Downloaded",
+  "@mockModelValue": {
+    "description": "Sample caption model status in an onboarding illustration."
+  },
+  "newProject": "New project",
+  "@newProject": {
+    "description": "Button that starts a new project."
+  },
+  "projectsEmptyTitle": "No projects yet",
+  "@projectsEmptyTitle": {
+    "description": "Home screen title when there are no projects."
+  },
+  "projectsEmptyMessage": "Projects you create appear here.",
+  "@projectsEmptyMessage": {
+    "description": "Home screen message when there are no projects."
+  },
+  "projectsLoadError": "Could not load your projects.",
+  "@projectsLoadError": {
+    "description": "Shown when the project list fails to load."
+  },
+  "renameProjectTitle": "Rename project",
+  "@renameProjectTitle": {
+    "description": "Title of the rename dialog."
+  },
+  "deleteProjectTitle": "Delete {name}?",
+  "@deleteProjectTitle": {
+    "description": "Title of the delete confirmation.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteProjectMessage": "This removes the project and its imported media from this device. Your gallery is not affected.",
+  "@deleteProjectMessage": {
+    "description": "Body of the delete confirmation."
+  },
+  "copyName": "{name} copy",
+  "@copyName": {
+    "description": "Name of a duplicated project.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "editedJustNow": "Edited just now",
+  "@editedJustNow": {
+    "description": "When a project was last edited, under a minute ago."
+  },
+  "editedMinutesAgo": "{count, plural, =1{Edited 1 minute ago} other{Edited {count} minutes ago}}",
+  "@editedMinutesAgo": {
+    "description": "When a project was last edited, in minutes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "editedHoursAgo": "{count, plural, =1{Edited 1 hour ago} other{Edited {count} hours ago}}",
+  "@editedHoursAgo": {
+    "description": "When a project was last edited, in hours.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "editedYesterday": "Edited yesterday",
+  "@editedYesterday": {
+    "description": "When a project was last edited, yesterday."
+  },
+  "editedOn": "Edited {date}",
+  "@editedOn": {
+    "description": "When a project was last edited, as a date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "photosAccessTitle": "Allow access to your photos",
+  "@photosAccessTitle": {
+    "description": "Title when the app needs photo library access."
+  },
+  "photosAccessMessage": "Stitch shows your photos and videos here so you can add them to a project. Nothing is uploaded.",
+  "@photosAccessMessage": {
+    "description": "Explains why photo access is needed."
+  },
+  "photosDeniedMessage": "Photo access is off. Turn it on in Settings to add media.",
+  "@photosDeniedMessage": {
+    "description": "Shown when photo access was refused."
+  },
+  "allowAccess": "Allow access",
+  "@allowAccess": {
+    "description": "Button that shows the system permission prompt."
+  },
+  "openSettings": "Open settings",
+  "@openSettings": {
+    "description": "Button that opens the system settings for this app."
+  },
+  "limitedAccessNote": "Showing only the items you allowed.",
+  "@limitedAccessNote": {
+    "description": "Shown when the user gave access to some photos only."
+  },
+  "manage": "Manage",
+  "@manage": {
+    "description": "Button that changes which photos the app can see."
+  },
+  "addMediaTitle": "Add media",
+  "@addMediaTitle": {
+    "description": "Title of the media picker."
+  },
+  "replaceMediaTitle": "Replace clip",
+  "@replaceMediaTitle": {
+    "description": "Title of the media picker when replacing a clip."
+  },
+  "filterVideos": "Videos",
+  "@filterVideos": {
+    "description": "Media picker filter."
+  },
+  "filterPhotos": "Photos",
+  "@filterPhotos": {
+    "description": "Media picker filter."
+  },
+  "filterAll": "All",
+  "@filterAll": {
+    "description": "Media picker filter."
+  },
+  "addCount": "{count, plural, =0{Add} other{Add ({count})}}",
+  "@addCount": {
+    "description": "Button that adds the selected media.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryEmptyVideos": "No videos",
+  "@libraryEmptyVideos": {
+    "description": "Media picker empty state title, videos filter."
+  },
+  "libraryEmptyPhotos": "No photos",
+  "@libraryEmptyPhotos": {
+    "description": "Media picker empty state title, photos filter."
+  },
+  "libraryEmptyAll": "No photos or videos",
+  "@libraryEmptyAll": {
+    "description": "Media picker empty state title, all filter."
+  },
+  "libraryEmptyMessage": "Photos and videos in your gallery appear here.",
+  "@libraryEmptyMessage": {
+    "description": "Media picker empty state message."
+  },
+  "libraryLoadError": "Could not load your gallery.",
+  "@libraryLoadError": {
+    "description": "Shown when the gallery fails to load."
+  },
+  "videoItemSemantics": "Video, {duration}",
+  "@videoItemSemantics": {
+    "description": "Accessibility label for a video in the picker.",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "photoItemSemantics": "Photo",
+  "@photoItemSemantics": {
+    "description": "Accessibility label for a photo in the picker."
+  },
+  "formatTitle": "Choose a format",
+  "@formatTitle": {
+    "description": "Title of the aspect ratio screen."
+  },
+  "ratioOriginal": "Original",
+  "@ratioOriginal": {
+    "description": "Aspect ratio that keeps the first clip's shape."
+  },
+  "importingProgress": "Importing {done} of {total}",
+  "@importingProgress": {
+    "description": "Import progress.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "failureMissingSource": "This item is no longer available.",
+  "@failureMissingSource": {
+    "description": "Error when a file cannot be found."
+  },
+  "failureStorage": "There is not enough free space.",
+  "@failureStorage": {
+    "description": "Error when storage is full."
+  },
+  "failureUnsupported": "This file type is not supported.",
+  "@failureUnsupported": {
+    "description": "Error for unsupported media."
+  },
+  "failureProject": "This project could not be opened.",
+  "@failureProject": {
+    "description": "Error when a project file is unreadable."
+  },
+  "failurePermission": "Access was not allowed.",
+  "@failurePermission": {
+    "description": "Error when a permission is missing."
+  },
+  "failureDownload": "The download did not finish.",
+  "@failureDownload": {
+    "description": "Error when a model download fails."
+  },
+  "failureGeneric": "Something went wrong.",
+  "@failureGeneric": {
+    "description": "Fallback error message."
+  },
+  "undo": "Undo",
+  "@undo": {
+    "description": "Undo button."
+  },
+  "redo": "Redo",
+  "@redo": {
+    "description": "Redo button."
+  },
+  "export": "Export",
+  "@export": {
+    "description": "Export button."
+  },
+  "play": "Play",
+  "@play": {
+    "description": "Play button."
+  },
+  "pause": "Pause",
+  "@pause": {
+    "description": "Pause button."
+  },
+  "fullScreen": "Full screen",
+  "@fullScreen": {
+    "description": "Full screen preview button."
+  },
+  "exitFullScreen": "Exit full screen",
+  "@exitFullScreen": {
+    "description": "Button that leaves the full screen preview."
+  },
+  "addClip": "Add clip",
+  "@addClip": {
+    "description": "Button at the end of the video track."
+  },
+  "laneSound": "Sound",
+  "@laneSound": {
+    "description": "Original sound toggle, on."
+  },
+  "laneMuted": "Muted",
+  "@laneMuted": {
+    "description": "Original sound toggle, off."
+  },
+  "laneText": "Text",
+  "@laneText": {
+    "description": "Text lane label."
+  },
+  "laneCaptions": "Captions",
+  "@laneCaptions": {
+    "description": "Captions lane label."
+  },
+  "laneAudio": "Audio",
+  "@laneAudio": {
+    "description": "Audio lane label."
+  },
+  "clipSemantics": "Clip {index}, {duration}",
+  "@clipSemantics": {
+    "description": "Accessibility label for a clip.",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "transitionSemantics": "Transition after clip {index}",
+  "@transitionSemantics": {
+    "description": "Accessibility label for a transition button.",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "playheadSemantics": "{position} of {duration}",
+  "@playheadSemantics": {
+    "description": "Accessibility value for the playhead.",
+    "placeholders": {
+      "position": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "missingMediaNote": "Some media files are missing.",
+  "@missingMediaNote": {
+    "description": "Shown in the editor when imported files were deleted."
+  },
+  "toolEdit": "Edit",
+  "@toolEdit": {
+    "description": "Tool."
+  },
+  "toolSplit": "Split",
+  "@toolSplit": {
+    "description": "Tool."
+  },
+  "toolSpeed": "Speed",
+  "@toolSpeed": {
+    "description": "Tool."
+  },
+  "toolVolume": "Volume",
+  "@toolVolume": {
+    "description": "Tool."
+  },
+  "toolReplace": "Replace",
+  "@toolReplace": {
+    "description": "Tool."
+  },
+  "toolExtractAudio": "Extract audio",
+  "@toolExtractAudio": {
+    "description": "Tool."
+  },
+  "toolRatio": "Ratio",
+  "@toolRatio": {
+    "description": "Tool that changes the aspect ratio."
+  },
+  "toolBackground": "Background",
+  "@toolBackground": {
+    "description": "Tool."
+  },
+  "toolFade": "Fade",
+  "@toolFade": {
+    "description": "Tool."
+  },
+  "toolLoop": "Loop",
+  "@toolLoop": {
+    "description": "Tool that repeats audio to the end of the video."
+  },
+  "fadeIn": "Fade in",
+  "@fadeIn": {
+    "description": "Slider label."
+  },
+  "fadeOut": "Fade out",
+  "@fadeOut": {
+    "description": "Slider label."
+  },
+  "transitionTitle": "Transition",
+  "@transitionTitle": {
+    "description": "Title of the transitions sheet."
+  },
+  "durationLabel": "Duration",
+  "@durationLabel": {
+    "description": "Slider label."
+  },
+  "applyToAll": "Apply to all",
+  "@applyToAll": {
+    "description": "Applies the transition to every cut."
+  },
+  "transitionNone": "None",
+  "@transitionNone": {
+    "description": "Transition type."
+  },
+  "transitionCrossfade": "Crossfade",
+  "@transitionCrossfade": {
+    "description": "Transition type."
+  },
+  "transitionFadeToBlack": "Fade to black",
+  "@transitionFadeToBlack": {
+    "description": "Transition type."
+  },
+  "transitionSlideLeft": "Slide left",
+  "@transitionSlideLeft": {
+    "description": "Transition type."
+  },
+  "transitionSlideRight": "Slide right",
+  "@transitionSlideRight": {
+    "description": "Transition type."
+  },
+  "transitionWipeLeft": "Wipe left",
+  "@transitionWipeLeft": {
+    "description": "Transition type."
+  },
+  "transitionWipeRight": "Wipe right",
+  "@transitionWipeRight": {
+    "description": "Transition type."
+  },
+  "transitionZoomIn": "Zoom in",
+  "@transitionZoomIn": {
+    "description": "Transition type."
+  },
+  "aspectRatioTitle": "Aspect ratio",
+  "@aspectRatioTitle": {
+    "description": "Title of the aspect ratio sheet."
+  },
+  "backgroundTitle": "Background",
+  "@backgroundTitle": {
+    "description": "Title of the background sheet."
+  },
+  "backgroundBlur": "Blur",
+  "@backgroundBlur": {
+    "description": "Background option: blurred copy of the clip."
+  },
+  "colorBlack": "Black",
+  "@colorBlack": {
+    "description": "Background color."
+  },
+  "colorCharcoal": "Charcoal",
+  "@colorCharcoal": {
+    "description": "Background color."
+  },
+  "colorGray": "Gray",
+  "@colorGray": {
+    "description": "Background color."
+  },
+  "colorLightGray": "Light gray",
+  "@colorLightGray": {
+    "description": "Background color."
+  },
+  "colorWhite": "White",
+  "@colorWhite": {
+    "description": "Background color."
+  },
+  "editorLoadError": "Go back and try opening it again.",
+  "@editorLoadError": {
+    "description": "Shown under the error when a project cannot be opened."
+  },
+  "extractedAudioName": "Extracted audio",
+  "@extractedAudioName": {
+    "description": "Name of an audio item made from a clip's sound."
+  }
+}

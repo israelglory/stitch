@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Stitch",
+      "request": "launch",
+      "type": "dart"
+    },
+    {
+      "name": "Design gallery",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--dart-define=START_ROUTE=/settings/design-gallery"]
+    }
+  ]
+}

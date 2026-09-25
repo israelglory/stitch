@@ -95,7 +95,7 @@ keyAlias=stitch
 keyPassword=...
 ```
 
-Without that file the release build falls back to the debug key and prints a warning. The app icon is drawn from code; `tool/make_icons.sh` regenerates every iOS and Android size.
+Without that file the release build falls back to the debug key and prints a warning. The app icon comes from `assets/light.png` and `assets/dark.png`. After changing either, run `tool/make_icons.sh`: it writes the iOS icon (light, plus dark and tinted variants for iOS 18) and the Android adaptive icon (light by default, dark in night mode, and a monochrome layer for themed icons).
 
 ## F-Droid
 

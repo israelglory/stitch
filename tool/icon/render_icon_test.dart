@@ -1,79 +1,90 @@
-// Draws the app icon masters. Run with tool/make_icons.sh, which resizes
-// them for iOS and Android.
-//
-// The mark: two clips side by side, sewn together by three stitches in
-// the accent color, on the app's background.
+// Builds the app icon masters from assets/light.png and assets/dark.png.
+// Run with tool/make_icons.sh, which puts them in place for iOS and
+// Android.
 import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-const _background = Color(0xFF0B0B0C);
-const _clip = Color(0xFFF2F2F3);
-const _accent = Color(0xFF4C8DFF);
+/// Android's adaptive icon is 108 dp, of which a launcher shows about the
+/// middle 72 dp. The artwork fills those 72 dp, so it looks the same size
+/// as on iOS and stays inside the 66 dp safe zone.
+const double _adaptiveVisible = 72 / 108;
 
-/// Paints the mark on a [side] x [side] canvas, scaled by [markScale]
-/// (Android's adaptive icon keeps the mark inside a smaller safe zone).
-void _paintMark(
-  Canvas canvas,
-  double side,
-  double markScale, {
-  bool fill = true,
-}) {
-  if (fill) {
-    canvas.drawRect(
-      Offset.zero & Size.square(side),
-      Paint()..color = _background,
-    );
-  }
-  canvas
-    ..save()
-    ..translate(side / 2, side / 2)
-    ..scale(side / 1024 * markScale)
-    ..translate(-512, -512);
-  final clip = Paint()..color = _clip;
-  const r = Radius.circular(44);
-  canvas
-    ..drawRRect(RRect.fromLTRBR(212, 302, 492, 722, r), clip)
-    ..drawRRect(RRect.fromLTRBR(532, 302, 812, 722, r), clip);
-  final stitch = Paint()..color = _accent;
-  for (final y in [392.0, 512.0, 632.0]) {
-    canvas.drawRRect(
-      RRect.fromLTRBR(442, y - 16, 582, y + 16, const Radius.circular(8)),
-      stitch,
-    );
-  }
-  canvas.restore();
+Future<ui.Image> _load(String path) async {
+  final codec = await ui.instantiateImageCodec(File(path).readAsBytesSync());
+  return (await codec.getNextFrame()).image;
+}
+
+/// The top left pixel, as #RRGGBB.
+Future<String> _corner(ui.Image image) async {
+  final data = (await image.toByteData())!;
+  final rgb = [
+    for (var i = 0; i < 3; i++)
+      data.getUint8(i).toRadixString(16).padLeft(2, '0'),
+  ];
+  return '#${rgb.join().toUpperCase()}';
 }
 
 Future<void> _save(
   String path,
-  double side,
-  void Function(Canvas) paint,
+  int side,
+  void Function(Canvas canvas, Rect bounds) paint,
 ) async {
   final recorder = ui.PictureRecorder();
-  paint(Canvas(recorder));
-  final image = await recorder.endRecording().toImage(
-    side.toInt(),
-    side.toInt(),
-  );
+  paint(Canvas(recorder), Offset.zero & Size.square(side.toDouble()));
+  final image = await recorder.endRecording().toImage(side, side);
   final png = await image.toByteData(format: ui.ImageByteFormat.png);
   File(path)
     ..createSync(recursive: true)
     ..writeAsBytesSync(png!.buffer.asUint8List());
 }
 
+void _draw(Canvas canvas, ui.Image image, Rect to, [Paint? paint]) {
+  canvas.drawImageRect(
+    image,
+    Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+    to,
+    (paint ?? Paint())..filterQuality = FilterQuality.high,
+  );
+}
+
+/// Draws the white-on-black artwork as just its letters in [color], on
+/// transparent: brightness becomes coverage.
+Paint _letters(Color color) => Paint()
+  ..colorFilter = ColorFilter.matrix([
+    0, 0, 0, 0, color.r * 255, //
+    0, 0, 0, 0, color.g * 255,
+    0, 0, 0, 0, color.b * 255,
+    0.2126, 0.7152, 0.0722, 0, 0,
+  ]);
+
 void main() {
   test('render icon masters', () async {
     const out = String.fromEnvironment('ICON_OUT', defaultValue: 'build/icon');
-    await _save('$out/icon_1024.png', 1024, (c) => _paintMark(c, 1024, 1));
-    // Android adaptive foreground: 108 dp with the mark inside the 66 dp
-    // safe zone, on transparent.
-    await _save(
-      '$out/foreground_432.png',
-      432,
-      (c) => _paintMark(c, 432, 66 / 108 * 1.1, fill: false),
+    final light = await _load('assets/light.png');
+    final dark = await _load('assets/dark.png');
+
+    // iOS: full squares; the system rounds the corners.
+    await _save('$out/ios_light.png', 1024, (c, b) => _draw(c, light, b));
+    await _save('$out/ios_dark.png', 1024, (c, b) => _draw(c, dark, b));
+
+    // Android adaptive foregrounds: the letters alone, on transparent,
+    // over a background color.
+    Rect artwork(Rect b) => Rect.fromCenter(
+      center: b.center,
+      width: b.width * _adaptiveVisible,
+      height: b.height * _adaptiveVisible,
     );
+    await _save('$out/android_foreground_light.png', 432, (c, b) {
+      _draw(c, dark, artwork(b), _letters(const Color(0xFF000000)));
+    });
+    await _save('$out/android_foreground_dark.png', 432, (c, b) {
+      _draw(c, dark, artwork(b), _letters(const Color(0xFFFFFFFF)));
+    });
+
+    File('$out/backgrounds.txt')
+        .writeAsStringSync('${await _corner(light)} ${await _corner(dark)}\n');
   });
 }

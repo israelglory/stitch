@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' show Locale;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -14,6 +15,7 @@ import 'package:stitch/features/projects/domain/project.dart';
 import 'package:stitch/features/settings/data/settings_repository.dart';
 import 'package:stitch/features/settings/domain/app_settings.dart';
 import 'package:stitch/features/timeline/domain/caption_ops.dart';
+import 'package:stitch/l10n/generated/app_localizations.dart';
 
 import '../../helpers/app_scope.dart';
 import '../../helpers/prefs.dart';
@@ -36,6 +38,7 @@ Future<(TestEnv, String)> _project() async {
 }
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
   group('options', () {
     test('size keeps the canvas shape, in even pixels', () {
       expect(exportSize(1080, 1920, ExportResolution.hd), (
@@ -77,7 +80,7 @@ void main() {
     test('a minute at 1080p is about 78 MB', () {
       final bytes = estimatedExportBytes(const ExportOptions(), 60000000);
       expect(bytes, closeTo(78.0e6, 0.5e6));
-      expect(formatBytes(bytes), '78 MB');
+      expect(formatBytes(l10n, bytes), '78 MB');
       expect(exportSpaceNeeded(bytes), bytes * 2 + 100000000);
     });
 
@@ -90,11 +93,11 @@ void main() {
     });
 
     test('bytes read like a phone shows them', () {
-      expect(formatBytes(0), '0 KB');
-      expect(formatBytes(820000), '820 KB');
-      expect(formatBytes(43537433), '44 MB');
-      expect(formatBytes(1234000000), '1.2 GB');
-      expect(formatBytes(12400000000), '12 GB');
+      expect(formatBytes(l10n, 0), '0 KB');
+      expect(formatBytes(l10n, 820000), '820 KB');
+      expect(formatBytes(l10n, 43537433), '44 MB');
+      expect(formatBytes(l10n, 1234000000), '1.2 GB');
+      expect(formatBytes(l10n, 12400000000), '12 GB');
     });
   });
 

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:stitch/core/logging/logger.dart';
 import 'package:stitch/design/design.dart';
 import 'package:stitch/features/text/application/text_rendering.dart';
 import 'package:stitch/features/timeline/domain/composition.dart';
@@ -122,30 +123,50 @@ Future<List<CaptionImage>> renderCaptions(
     canvasWidth: canvasWidth,
     canvasHeight: canvasHeight,
   );
-  final drawn = await Future.wait([
+  final jobs = [
     for (final c in composition.captions)
       for (final (i, piece) in captionPieces(
         c,
         composition.captionPreset,
       ).indexed)
-        rasterizer
-            .render(
-              text: c.text,
-              style: style,
-              typewriter: false,
-              canvasWidth: canvasWidth,
-              canvasHeight: canvasHeight,
-              wrapFraction: captionWrapFraction,
-              highlight: piece.highlight,
-            )
-            .then(
-              (raster) => (
-                id: '${c.id}#$i',
-                startUs: piece.startUs,
-                endUs: piece.endUs,
-                raster: raster,
-              ),
-            ),
-  ]);
-  return drawn;
+        (caption: c, index: i, piece: piece),
+  ];
+  // A few at a time: a long video in the highlight style has a piece per
+  // word, and drawing them all at once holds every image in memory.
+  final drawn = List<CaptionImage?>.filled(jobs.length, null);
+  var next = 0;
+  Future<void> worker() async {
+    while (next < jobs.length) {
+      final at = next++;
+      final job = jobs[at];
+      try {
+        final raster = await rasterizer.render(
+          text: job.caption.text,
+          style: style,
+          typewriter: false,
+          canvasWidth: canvasWidth,
+          canvasHeight: canvasHeight,
+          wrapFraction: captionWrapFraction,
+          highlight: job.piece.highlight,
+        );
+        drawn[at] = (
+          id: '${job.caption.id}#${job.index}',
+          startUs: job.piece.startUs,
+          endUs: job.piece.endUs,
+          raster: raster,
+        );
+      } on Object catch (e, st) {
+        // One piece that cannot be drawn is left out, not every caption.
+        _log.warning('Could not draw caption ${job.caption.id}', e, st);
+      }
+    }
+  }
+
+  await Future.wait([for (var w = 0; w < _drawAtOnce; w++) worker()]);
+  return drawn.nonNulls.toList();
 }
+
+/// Caption pieces drawn at the same time.
+const _drawAtOnce = 4;
+
+const _log = Logger('captions');

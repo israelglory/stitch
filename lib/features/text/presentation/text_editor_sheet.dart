@@ -287,7 +287,7 @@ class _StyleTab extends StatelessWidget {
           value: style.size.clamp(_minSize, _maxSize),
           min: _minSize,
           max: _maxSize,
-          formatValue: (v) => '${(v / 0.05 * 100).round()}%',
+          formatValue: (v) => l10n.valuePercent((v / 0.05 * 100).round()),
           onChanged: (v) => onChanged(style.copyWith(size: v)),
         ),
         const SizedBox(height: AppSpacing.md),

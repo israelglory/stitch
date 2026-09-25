@@ -73,6 +73,9 @@ Future<void> bootstrap({
   ]) {
     unawaited(pruneDirectory(Directory(p.join(cache.path, dir)), bytes));
   }
+  // Left by work the app was stopped in the middle of: nothing is running
+  // yet, so none of it is in use.
+  unawaited(removeLeftovers(cache));
 
   runApp(
     ProviderScope(
@@ -102,6 +105,7 @@ Stream<LicenseEntry> _bundledAssetLicenses() async* {
     'Bundled sound effects': 'assets/licenses/kenney.txt',
     'whisper.cpp': 'assets/licenses/whisper_cpp.txt',
     'Whisper models': 'assets/licenses/whisper_models.txt',
+    'Android libraries': 'assets/licenses/android_libraries.txt',
   };
   for (final MapEntry(key: name, value: path) in licenses.entries) {
     yield LicenseEntryWithLineBreaks([name], await rootBundle.loadString(path));

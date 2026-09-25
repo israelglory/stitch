@@ -34,13 +34,31 @@ class Filmstrip {
   /// made (the caller shows the poster instead).
   Future<String?> frame(String mediaPath, int timeUs) {
     final t = (timeUs / _gridUs).round() * _gridUs;
-    return _frames.putIfAbsent('$mediaPath@$t', () {
-      final completer = Completer<String?>();
-      (_pending[mediaPath] ??= {})[t] = completer;
-      _flush ??= Timer(Duration.zero, _send);
-      return completer.future;
-    });
+    final key = '$mediaPath@$t';
+    final known = _frames.remove(key);
+    if (known != null) return _frames[key] = known;
+    final completer = Completer<String?>();
+    (_pending[mediaPath] ??= {})[t] = completer;
+    _flush ??= Timer(Duration.zero, _send);
+    final future = _frames[key] = completer.future;
+    // A frame that could not be made (the engine busy exporting, say) is
+    // asked for again next time, not remembered as missing.
+    unawaited(
+      future.then((path) {
+        if (path == null && identical(_frames[key], future)) {
+          unawaited(_frames.remove(key));
+        }
+      }),
+    );
+    // Most recent last; the oldest go past the limit.
+    while (_frames.length > _memoryLimit) {
+      unawaited(_frames.remove(_frames.keys.first));
+    }
+    return future;
   }
+
+  /// Frames remembered in memory (their files stay on disk).
+  static const _memoryLimit = 4000;
 
   /// Forgets frames made earlier (their files were deleted).
   void forget() => _frames.clear();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stitch/core/storage/bytes.dart';
 import 'package:stitch/design/design.dart';
 import 'package:stitch/design/mocks/editor_mocks.dart';
 import 'package:stitch/features/onboarding/application/onboarding_controller.dart';
@@ -58,7 +59,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           secondProject: l10n.mockProjectTwo,
           editedLabel: l10n.mockEdited,
           storageTitle: l10n.mockStorageTitle,
-          storageValue: '1.2 GB',
+          storageValue: formatBytes(l10n, 1200000000),
         ),
       ),
       (

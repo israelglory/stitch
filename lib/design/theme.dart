@@ -108,9 +108,41 @@ abstract final class AppTheme {
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
-          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.android: AppPageTransitionsBuilder(),
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
         },
+      ),
+    );
+  }
+}
+
+/// Screens fade in with a short rise: 250 ms, eased out, and none at all
+/// when the system asks for reduced motion. (iOS keeps its own transition
+/// and the back swipe that goes with it.)
+class AppPageTransitionsBuilder extends PageTransitionsBuilder {
+  const new();
+
+  @override
+  Duration get transitionDuration => AppMotion.slow;
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) return child;
+    final curved = CurvedAnimation(parent: animation, curve: AppMotion.curve);
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween(
+          begin: const Offset(0, 0.02),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
       ),
     );
   }

@@ -2,6 +2,7 @@ package xyz.gloryolaifa.stitch.engine
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.ImageFormat
 import android.graphics.Matrix
 import android.media.Image
 import android.media.MediaCodec
@@ -57,6 +58,10 @@ interface OutgoingFrames {
     } catch (e: Exception) {
       Log.w(TAG, "Cannot read outgoing clip $path", e)
       null
+    } catch (e: OutOfMemoryError) {
+      // A photo too large to hold: the transition shows without it.
+      Log.w(TAG, "Outgoing clip $path is too large", e)
+      null
     }
 
     const val TAG = "StitchOutgoing"
@@ -76,7 +81,7 @@ private class OutgoingPhoto(path: String) : OutgoingFrames {
     BitmapFactory.decodeFile(path, bounds)
     // Large photos are sampled down to about the largest export size.
     var sample = 1
-    while (max(bounds.outWidth, bounds.outHeight) / (sample * 2) >= MAX_SIDE) sample *= 2
+    while (max(bounds.outWidth, bounds.outHeight) / sample > MAX_SIDE) sample *= 2
     var bitmap = BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = sample })
       ?: error("Cannot decode $path")
     val rotation = MediaProbe.exifRotation(path)
@@ -111,14 +116,13 @@ private class OutgoingPhoto(path: String) : OutgoingFrames {
 @OptIn(UnstableApi::class)
 private class OutgoingVideo(path: String, private val timeoutMs: Long) : OutgoingFrames {
   private val extractor = MediaExtractor()
-  private val codec: MediaCodec
   private val planes = IntArray(3) { GlUtil.generateTexture() }
   private val planeSizes = arrayOfNulls<IntArray>(3)
 
-  private val rotation: Int
-  private val halfFrameUs: Long
-  private val yuvToRgb: FloatArray
-  private val yuvOffset: FloatArray
+  private var rotation: Int = 0
+  private var halfFrameUs: Long = 0L
+  private var yuvToRgb: FloatArray = FloatArray(0)
+  private var yuvOffset: FloatArray = FloatArray(0)
 
   private var width = 0
   private var height = 0
@@ -130,6 +134,20 @@ private class OutgoingVideo(path: String, private val timeoutMs: Long) : Outgoin
   private var scratch = ByteArray(0)
 
   init {
+    try {
+      open(path)
+    } catch (e: Throwable) {
+      // Nothing half opened stays behind: decoders are few, and a leaked
+      // one makes the next clips fail too.
+      runCatching { extractor.release() }
+      planes.forEach { runCatching { GlUtil.deleteTexture(it) } }
+      throw e
+    }
+  }
+
+  private lateinit var codec: MediaCodec
+
+  private fun open(path: String) {
     extractor.setDataSource(path)
     val track = (0 until extractor.trackCount).first {
       extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)!!.startsWith("video/")
@@ -151,9 +169,15 @@ private class OutgoingVideo(path: String, private val timeoutMs: Long) : Outgoin
       MediaFormat.KEY_COLOR_FORMAT,
       MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible,
     )
-    codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
-    codec.configure(format, null, null, 0)
-    codec.start()
+    val decoder = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
+    try {
+      decoder.configure(format, null, null, 0)
+      decoder.start()
+    } catch (e: Exception) {
+      decoder.release()
+      throw e
+    }
+    codec = decoder
   }
 
   override fun frameAt(sourceUs: Long): SourceFrame? {
@@ -227,6 +251,7 @@ private class OutgoingVideo(path: String, private val timeoutMs: Long) : Outgoin
 
   /** Uploads a YUV 4:2:0 image as three single-channel textures. */
   private fun upload(image: Image): Boolean {
+    val tenBit = image.format == ImageFormat.YCBCR_P010
     val crop = image.cropRect
     width = crop.width()
     height = crop.height()
@@ -239,7 +264,12 @@ private class OutgoingVideo(path: String, private val timeoutMs: Long) : Outgoin
       val h = if (i == 0) height else chromaHeight
       val left = if (i == 0) crop.left else crop.left / 2
       val top = if (i == 0) crop.top else crop.top / 2
-      val bytes = tightPlane(plane.buffer, plane.rowStride, plane.pixelStride, left, top, w, h)
+      val bytes = tightPlane(
+        plane.buffer, plane.rowStride, plane.pixelStride, left, top, w, h,
+        // 10-bit frames (HDR) come as 16-bit samples: the high byte is the
+        // 8-bit value.
+        byteOffset = if (tenBit) 1 else 0,
+      )
       GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, planes[i])
       val size = planeSizes[i]
       if (size == null || size[0] != w || size[1] != h) {
@@ -274,10 +304,11 @@ private class OutgoingVideo(path: String, private val timeoutMs: Long) : Outgoin
     top: Int,
     w: Int,
     h: Int,
+    byteOffset: Int = 0,
   ): ByteBuffer {
     if (scratch.size < w * h) scratch = ByteArray(w * h)
     val base = buffer.position()
-    if (pixelStride == 1) {
+    if (pixelStride == 1 && byteOffset == 0) {
       for (row in 0 until h) {
         buffer.position(base + (top + row) * rowStride + left)
         buffer.get(scratch, row * w, w)
@@ -285,7 +316,7 @@ private class OutgoingVideo(path: String, private val timeoutMs: Long) : Outgoin
     } else {
       var o = 0
       for (row in 0 until h) {
-        var p = base + (top + row) * rowStride + left * pixelStride
+        var p = base + (top + row) * rowStride + left * pixelStride + byteOffset
         for (col in 0 until w) {
           scratch[o++] = buffer.get(p)
           p += pixelStride

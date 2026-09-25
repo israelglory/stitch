@@ -242,15 +242,20 @@ class OverlayTextLayout {
   }
 
   /// The overlay as an image at [pixelRatio] times its size.
-  Future<ui.Image> toImage({double pixelRatio = 1, int? revealed}) {
+  Future<ui.Image> toImage({double pixelRatio = 1, int? revealed}) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder)..scale(pixelRatio);
     paint(canvas, Offset.zero, revealed: revealed);
     final picture = recorder.endRecording();
-    return picture.toImage(
-      math.max(1, (size.width * pixelRatio).ceil()),
-      math.max(1, (size.height * pixelRatio).ceil()),
-    );
+    try {
+      return await picture.toImage(
+        math.max(1, (size.width * pixelRatio).ceil()),
+        math.max(1, (size.height * pixelRatio).ceil()),
+      );
+    } finally {
+      // Its native memory goes now, not whenever the collector runs.
+      picture.dispose();
+    }
   }
 
   void dispose() {

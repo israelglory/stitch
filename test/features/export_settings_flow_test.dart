@@ -295,7 +295,7 @@ void main() {
     final state = ProviderScope.containerOf(
       tester.element(find.byType(EditorScreen)),
     ).read(editorControllerProvider(id)).requireValue;
-    expect(state.missingMedia, isEmpty);
+    expect(state.missingInUse, isEmpty);
     expect(replacement.id, isNotEmpty);
     await finish(tester);
   });

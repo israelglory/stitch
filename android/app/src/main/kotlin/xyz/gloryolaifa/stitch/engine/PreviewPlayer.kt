@@ -118,16 +118,15 @@ class PreviewPlayer(
     })
   }
 
+  private val audioAttributes = AudioAttributes.Builder()
+    .setUsage(C.USAGE_MEDIA)
+    .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+    .build()
+
   private fun ensurePlayer(): CompositionPlayer = player ?: CompositionPlayer.Builder(context)
     .setAudioMixerFactory(LimitingAudioMixer.Factory())
-    .setAudioAttributes(
-      AudioAttributes.Builder()
-        .setUsage(C.USAGE_MEDIA)
-        .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
-        .build(),
-      // Calls and other apps taking audio pause the preview.
-      handleAudioFocus,
-    )
+    // Calls and other apps taking audio pause the preview.
+    .setAudioAttributes(audioAttributes, handleAudioFocus)
     .build()
     .also {
       it.addListener(listener)
@@ -141,6 +140,17 @@ class PreviewPlayer(
       CompositionBuilder.build(doc, forExport = false, outputSize = previewSize)
     } catch (e: Exception) {
       Log.e(TAG, "Preview build failed", e)
+      // Nothing left to play (the last clip went): stop showing the old
+      // composition, and count this document as shown.
+      player?.let {
+        it.pause()
+        it.clearVideoSurface()
+      }
+      surfaceAttached = false
+      durationUs = 0
+      shownVersion = doc.version.toLong()
+      pendingVersion = shownVersion
+      publish()
       return
     }
     val p = ensurePlayer()
@@ -170,8 +180,15 @@ class PreviewPlayer(
   }
 
   /** 0 to 1; muted while a voiceover records. */
+  /**
+   * Muted (while a voiceover records), the preview gives up audio focus:
+   * taking it would end the recording, which holds focus itself.
+   */
   fun setVolume(volume: Double) {
-    player?.volume = volume.toFloat().coerceIn(0f, 1f)
+    val p = player ?: return
+    val level = volume.toFloat().coerceIn(0f, 1f)
+    p.volume = level
+    p.setAudioAttributes(audioAttributes, handleAudioFocus && level > 0f)
   }
 
   fun pause() {

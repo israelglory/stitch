@@ -32,11 +32,14 @@ Future<void> showToolSheet(
   ),
 );
 
-String _speedText(double v) => '${v.toStringAsFixed(2)}x';
+String _speedText(AppLocalizations l10n, double v) =>
+    l10n.valueSpeed(v.toStringAsFixed(2));
 
-String _percentText(double v) => '${(v * 100).round()}%';
+String _percentText(AppLocalizations l10n, double v) =>
+    l10n.valuePercent((v * 100).round());
 
-String _secondsText(double us) => '${(us / usPerSecond).toStringAsFixed(1)}s';
+String _secondsText(AppLocalizations l10n, double us) =>
+    l10n.valueSeconds((us / usPerSecond).toStringAsFixed(1));
 
 /// A slider whose drag is one undoable edit. [value] is read from editor
 /// state on every build, so undo and redo move it too.
@@ -94,7 +97,7 @@ class SpeedSheet extends StatelessWidget {
       label: l10n.toolSpeed,
       min: TimelineLimits.minSpeed,
       max: TimelineLimits.maxSpeed,
-      format: _speedText,
+      format: (v) => _speedText(l10n, v),
       value: (s) => isClip
           ? s.timeline.clipById(id)?.speed ?? 1
           : s.timeline.audioById(id)?.speed ?? 1,
@@ -120,7 +123,7 @@ class VolumeSheet extends StatelessWidget {
       label: l10n.toolVolume,
       min: TimelineLimits.minVolume,
       max: TimelineLimits.maxVolume,
-      format: _percentText,
+      format: (v) => _percentText(l10n, v),
       value: (s) => isClip
           ? s.timeline.clipById(id)?.volume ?? 1
           : s.timeline.audioById(id)?.volume ?? 1,
@@ -157,7 +160,7 @@ class FadeSheet extends ConsumerWidget {
           label: l10n.fadeIn,
           min: 0,
           max: max,
-          format: _secondsText,
+          format: (v) => _secondsText(l10n, v),
           value: (s) =>
               (s.timeline.audioById(audioId)?.fadeInUs ?? 0).toDouble(),
           apply: (b, v) => b.setAudioFades(audioId, fadeInUs: v.round()),
@@ -168,7 +171,7 @@ class FadeSheet extends ConsumerWidget {
           label: l10n.fadeOut,
           min: 0,
           max: max,
-          format: _secondsText,
+          format: (v) => _secondsText(l10n, v),
           value: (s) =>
               (s.timeline.audioById(audioId)?.fadeOutUs ?? 0).toDouble(),
           apply: (b, v) => b.setAudioFades(audioId, fadeOutUs: v.round()),
@@ -241,6 +244,18 @@ class TransitionSheet extends ConsumerWidget {
     final maxUs = timeline.maxTransitionUs(clipId);
     final minUs = math.min(TimelineLimits.minTransitionUs, maxUs);
 
+    if (maxUs <= 0 && current == null) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+        child: Text(
+          l10n.transitionTooShort,
+          style: AppTypography.body.copyWith(
+            color: context.colors.textSecondary,
+          ),
+        ),
+      );
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -280,7 +295,7 @@ class TransitionSheet extends ConsumerWidget {
             label: l10n.durationLabel,
             min: minUs.toDouble(),
             max: maxUs.toDouble(),
-            format: _secondsText,
+            format: (v) => _secondsText(l10n, v),
             value: (s) =>
                 (s.timeline.transitionAfter(clipId)?.durationUs ?? minUs)
                     .toDouble(),
@@ -291,12 +306,15 @@ class TransitionSheet extends ConsumerWidget {
           alignment: AlignmentDirectional.centerEnd,
           child: AppTextButton(
             label: l10n.applyToAll,
-            onPressed: () => controller.apply(
-              (t) => t.applyTransitionToAll(
-                current?.type,
-                durationUs: current?.durationUs,
-              ),
-            ),
+            // With None chosen it would quietly remove every transition.
+            onPressed: current == null
+                ? null
+                : () => controller.apply(
+                    (t) => t.applyTransitionToAll(
+                      current.type,
+                      durationUs: current.durationUs,
+                    ),
+                  ),
           ),
         ),
       ],
@@ -393,7 +411,7 @@ class BalanceSheet extends StatelessWidget {
           label: l10n.originalSoundLevel,
           min: 0,
           max: TimelineLimits.maxVolume,
-          format: _percentText,
+          format: (v) => _percentText(l10n, v),
           value: (s) => s.timeline.audioMix.originalLevel,
           apply: (b, v) => b.setAudioMix(originalLevel: v),
         ),
@@ -403,7 +421,7 @@ class BalanceSheet extends StatelessWidget {
           label: l10n.addedAudioLevel,
           min: 0,
           max: TimelineLimits.maxVolume,
-          format: _percentText,
+          format: (v) => _percentText(l10n, v),
           value: (s) => s.timeline.audioMix.addedLevel,
           apply: (b, v) => b.setAudioMix(addedLevel: v),
         ),

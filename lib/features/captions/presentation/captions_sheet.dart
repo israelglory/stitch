@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stitch/app/failure_messages.dart';
+import 'package:stitch/core/storage/bytes.dart';
 import 'package:stitch/design/design.dart';
 import 'package:stitch/features/captions/application/caption_generation.dart';
 import 'package:stitch/features/captions/application/caption_providers.dart';
@@ -87,9 +88,6 @@ class _CaptionsPanelState extends ConsumerState<CaptionsPanel> {
     if (picked != null && mounted) setState(() => _language = picked.$1);
   }
 
-  static String _megabytes(int bytes) =>
-      '${(bytes / (1000 * 1000)).round()} MB';
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -166,7 +164,7 @@ class _CaptionsPanelState extends ConsumerState<CaptionsPanel> {
           const SizedBox(height: AppSpacing.sm),
           _ModelRow(
             status: status,
-            size: _megabytes(_model.bytes),
+            size: formatBytes(l10n, _model.bytes),
             onCancel: () {
               setState(() => _waitingForModel = false);
               unawaited(

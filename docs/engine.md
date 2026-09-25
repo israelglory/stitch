@@ -75,7 +75,9 @@ Text is drawn once, in Dart, and placed by the engines as images, so it looks th
 ## Sound
 
 - Everything is mixed at 48 kHz stereo; speed changes keep pitch.
+  - Android turns every item into stereo before the mix (`ChannelMixingAudioProcessor`: mono is copied to both sides, 5.1 is folded down), so files with different layouts mix together.
 - **Limiter:** a look-ahead peak limiter (`Limiter.swift`, `Limiter.kt`) keeps the mix under -1 dBFS instead of clipping. It looks 5 ms ahead and recovers over about 100 ms.
+  - The look-ahead delays the sound by 5 ms. Both exports shift the limited sound back by that much, drop the first 5 ms, and flush the tail at the end, so sound stays in sync with the picture and nothing is cut off.
   - **Android:** `LimitingAudioMixer` wraps Media3's mixer. It mixes in float, where the default mixes to 16 bits and would clip the sum first, then limits. It covers preview and export.
   - **Android items above full volume:** an item that can go above 100 percent also passes through the limiter at full scale in its `GainProcessor`, because Media3 hands each item to the mix as 16-bit audio.
   - **iOS:** the export reads the mix as float and limits it before encoding. AVFoundation's preview mix has no place for one, so iOS preview is not limited. Volumes above 100 percent work in both (tested).
@@ -137,6 +139,7 @@ The shaders are `TransitionShader.kt` (GLSL) on Android and the Metal source in 
 
 **Composition (`CompositionBuilder`):** an `AVMutableComposition`.
 - Clips alternate between two video tracks and two audio tracks (A and B), so the clips on either side of a transition overlap.
+- A file's audio track can be shorter than its video, or start late. It is placed at its own offset and speed, never stretched to the clip, so it stays in sync; the rest of the clip is silent.
 - Speed uses `scaleTimeRange`. Pitch is kept with the spectral time-pitch algorithm.
 - Photos and missing files sit on a bundled one-second black clip stretched over their range. The compositor draws the photo, or black, on top.
 - Audio items are packed onto as few tracks as possible. A loop is inserted repeatedly until the video ends.

@@ -65,6 +65,10 @@ class _VoiceoverPanelState extends ConsumerState<VoiceoverPanel>
   /// Where the recording starts on the timeline: the playhead on opening.
   late final int _startUs;
 
+  /// Where the narration really began: the video plays on while the
+  /// microphone starts, so a little after [_startUs].
+  int? _takeStartUs;
+
   _Phase _phase = _Phase.checking;
   int _count = _countdownFrom;
   Timer? _timer;
@@ -110,6 +114,10 @@ class _VoiceoverPanelState extends ConsumerState<VoiceoverPanel>
     if (state == AppLifecycleState.resumed && _phase == _Phase.settings) {
       unawaited(_checkAccess());
     }
+    // Leaving the app ends the take, and keeps what was recorded.
+    if (state == AppLifecycleState.hidden && _phase == _Phase.recording) {
+      unawaited(_stop());
+    }
   }
 
   Future<void> _checkAccess() async => _show(await _device.micAccess());
@@ -151,9 +159,19 @@ class _VoiceoverPanelState extends ConsumerState<VoiceoverPanel>
       'voiceover',
       '${DateTime.now().microsecondsSinceEpoch}.m4a',
     );
+    // Narrate over the video: it plays from the start point, silently,
+    // before the microphone starts, so the take can line up with it.
+    await _engine.setPreviewVolume(0);
+    await _playback.seek(_startUs);
+    await _playback.play();
+    if (!mounted) {
+      await _restorePreview();
+      return;
+    }
     try {
       await _device.startRecording(path);
     } on Object catch (e) {
+      await _restorePreview();
       if (mounted) {
         setState(() {
           _phase = _Phase.ready;
@@ -164,9 +182,16 @@ class _VoiceoverPanelState extends ConsumerState<VoiceoverPanel>
     }
     if (!mounted) {
       await _device.cancelRecording();
+      await _restorePreview();
       return;
     }
+    // Recording from here on: closing the sheet now cancels it.
+    _takeStartUs = ref.read(playbackControllerProvider).positionUs;
     _levels.clear();
+    _stopwatch
+      ..reset()
+      ..start();
+    setState(() => _phase = _Phase.recording);
     _levelSub = _device.levels.listen((level) {
       if (!mounted) return;
       setState(() {
@@ -174,20 +199,13 @@ class _VoiceoverPanelState extends ConsumerState<VoiceoverPanel>
         if (_levels.length > _levelHistory) _levels.removeAt(0);
       });
     });
-    // Narrate over the video: it plays from the start point, silently.
-    await _engine.setPreviewVolume(0);
-    await _playback.seek(_startUs);
-    await _playback.play();
-    _stopwatch
-      ..reset()
-      ..start();
     _timer = Timer.periodic(const Duration(milliseconds: 100), (_) {
       if (mounted) setState(() {});
     });
-    setState(() => _phase = _Phase.recording);
   }
 
   Future<void> _stop() async {
+    if (_phase != _Phase.recording) return;
     _timer?.cancel();
     _stopwatch.stop();
     await _levelSub?.cancel();
@@ -244,6 +262,9 @@ class _VoiceoverPanelState extends ConsumerState<VoiceoverPanel>
   Future<void> _add() async {
     final take = _take;
     if (take == null) return;
+    // No longer the sheet's to discard: closing it now must not delete
+    // the file while it is being added.
+    _take = null;
     setState(() => _adding = true);
     try {
       await ref
@@ -252,17 +273,19 @@ class _VoiceoverPanelState extends ConsumerState<VoiceoverPanel>
             File(take.path),
             name: AppLocalizations.of(context).voiceoverName,
             kind: m.AudioKind.voiceover,
-            atUs: _startUs,
+            atUs: _takeStartUs ?? _startUs,
             move: true,
           );
-      _take = null;
       if (mounted) Navigator.of(context).pop();
     } on Object catch (e) {
       if (mounted) {
         setState(() {
+          _take = take;
           _adding = false;
           _error = e;
         });
+      } else {
+        _discard(take);
       }
     }
   }

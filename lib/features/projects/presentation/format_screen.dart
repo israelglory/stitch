@@ -71,19 +71,37 @@ class _FormatScreenState extends ConsumerState<FormatScreen> {
   late AspectPreset _preset = ref.read(settingsControllerProvider).aspect;
   bool _creating = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // A failure left from an earlier import is not about this project.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (ref.read(importControllerProvider) is ImportFailed) {
+        ref.read(importControllerProvider.notifier).reset();
+      }
+    });
+  }
+
   Future<void> _create() async {
     final locale = Localizations.localeOf(context).toLanguageTag();
     final items = ref.read(mediaSelectionProvider);
     final name = DateFormat.MMMd(locale).format(ref.read(clockProvider)());
     setState(() => _creating = true);
-    final id = await runWithImportProgress(
-      context,
-      () => ref
-          .read(importControllerProvider.notifier)
-          .createProject(name: name, preset: _preset, items: items),
-    );
+    final String? id;
+    try {
+      // A failure shows in the banner here, with Retry.
+      id = await runWithImportProgress(
+        context,
+        () => ref
+            .read(importControllerProvider.notifier)
+            .createProject(name: name, preset: _preset, items: items),
+        reportFailure: false,
+      );
+    } finally {
+      if (mounted) setState(() => _creating = false);
+    }
     if (!mounted) return;
-    setState(() => _creating = false);
     // On failure the banner below shows the error; on cancel nothing does.
     if (id != null) context.go(AppRoutes.editor(id));
   }

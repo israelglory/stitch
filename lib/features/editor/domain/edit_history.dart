@@ -37,10 +37,20 @@ final class EditHistory<T> {
   }
 
   /// Replaces the present without adding a step, for updates during a
-  /// gesture that already pushed.
-  EditHistory<T> replace(T next) => identical(next, present)
-      ? this
-      : EditHistory._(_past, next, _future, limit);
+  /// gesture that already pushed. A gesture that comes back to where it
+  /// began (a letter typed and deleted) leaves no step behind.
+  EditHistory<T> replace(T next) {
+    if (identical(next, present)) return this;
+    if (_past.isNotEmpty && next == _past.last) {
+      return EditHistory._(
+        _past.sublist(0, _past.length - 1),
+        _past.last,
+        _future,
+        limit,
+      );
+    }
+    return EditHistory._(_past, next, _future, limit);
+  }
 
   /// Applies [transform] to every snapshot, keeping the undo position.
   /// For changes that must not be undone, such as a rename.

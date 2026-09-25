@@ -30,48 +30,62 @@ class LicensesScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final licenses = ref.watch(_licensesProvider);
     return Scaffold(
-      appBar: AppBar(
-        leading: AppIconButton(
-          icon: AppIcons.back,
-          semanticLabel: l10n.back,
-          onPressed: () => context.pop(),
-        ),
-        title: Text(l10n.openSourceLicenses),
-      ),
-      body: switch (licenses) {
-        AsyncData(:final value) => ListView(
-          children: [
-            for (final MapEntry(key: package, value: entries) in value.entries)
-              ListRow(
-                title: package,
-                value: l10n.licenseCount(entries.length),
-                showChevron: true,
-                onTap: () => context.go(AppRoutes.license(package)),
-              ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-        ),
-        AsyncError() => Padding(
-          padding: const EdgeInsets.all(AppSpacing.screen),
-          child: ErrorBanner(
-            message: l10n.failureGeneric,
-            onRetry: () => ref.invalidate(_licensesProvider),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppHeader(
+            title: l10n.openSourceLicenses,
+            leading: AppIconButton(
+              icon: AppIcons.back,
+              semanticLabel: l10n.back,
+              onPressed: () => context.pop(),
+            ),
           ),
-        ),
-        _ => ListView(
-          children: [
-            for (var i = 0; i < 10; i++)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screen,
-                  vertical: AppSpacing.md,
-                ),
-                child: Skeleton.text(AppTypography.bodyLarge),
-              ),
-          ],
-        ),
-      },
+          Expanded(child: _list(context, ref, licenses)),
+        ],
+      ),
     );
+  }
+
+  Widget _list(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<Map<String, List<LicenseEntry>>> licenses,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    return switch (licenses) {
+      AsyncData(:final value) => ListView(
+        children: [
+          for (final MapEntry(key: package, value: entries) in value.entries)
+            ListRow(
+              title: package,
+              value: l10n.licenseCount(entries.length),
+              showChevron: true,
+              onTap: () => context.go(AppRoutes.license(package)),
+            ),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+      ),
+      AsyncError() => Padding(
+        padding: const EdgeInsets.all(AppSpacing.screen),
+        child: ErrorBanner(
+          message: l10n.failureGeneric,
+          onRetry: () => ref.invalidate(_licensesProvider),
+        ),
+      ),
+      _ => ListView(
+        children: [
+          for (var i = 0; i < 10; i++)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screen,
+                vertical: AppSpacing.md,
+              ),
+              child: Skeleton.text(AppTypography.bodyLarge),
+            ),
+        ],
+      ),
+    };
   }
 }
 
@@ -85,17 +99,31 @@ class LicenseScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final colors = context.colors;
-    final entries = ref.watch(_licensesProvider).value?[package] ?? const [];
-    return Scaffold(
-      appBar: AppBar(
-        leading: AppIconButton(
-          icon: AppIcons.back,
-          semanticLabel: l10n.back,
-          onPressed: () => context.pop(),
+    final licenses = ref.watch(_licensesProvider);
+    final entries = licenses.value?[package];
+    final Widget body;
+    if (licenses.isLoading) {
+      body = ListView(
+        padding: const EdgeInsets.all(AppSpacing.screen),
+        children: [
+          for (var i = 0; i < 12; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Skeleton.text(AppTypography.body),
+            ),
+        ],
+      );
+    } else if (entries == null || entries.isEmpty) {
+      body = Center(
+        child: EmptyState(
+          title: l10n.licenseNotFound,
+          message: l10n.licenseNotFoundMessage,
+          actionLabel: l10n.back,
+          onAction: () => context.pop(),
         ),
-        title: Text(package),
-      ),
-      body: ListView(
+      );
+    } else {
+      body = ListView(
         padding: const EdgeInsets.all(AppSpacing.screen),
         children: [
           for (final (i, entry) in entries.indexed) ...[
@@ -123,6 +151,22 @@ class LicenseScreen extends ConsumerWidget {
                 ),
               ),
           ],
+        ],
+      );
+    }
+    return Scaffold(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppHeader(
+            title: package,
+            leading: AppIconButton(
+              icon: AppIcons.back,
+              semanticLabel: l10n.back,
+              onPressed: () => context.pop(),
+            ),
+          ),
+          Expanded(child: body),
         ],
       ),
     );

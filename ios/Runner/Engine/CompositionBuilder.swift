@@ -187,7 +187,9 @@ enum CompositionBuilder {
         let source = try await a.loadTracks(withMediaType: .audio).first
       else { continue }
       let slot: Int
-      if let free = itemTracks.firstIndex(where: { $0.endUs <= item.startUs }) {
+      // Strictly after: items end to end on one track would put one's
+      // "silent from here" and the next one's volume at the same instant.
+      if let free = itemTracks.firstIndex(where: { $0.endUs < item.startUs }) {
         slot = free
       } else {
         itemTracks.append(
@@ -248,11 +250,19 @@ enum CompositionBuilder {
   ) async throws {
     let available = try await source.load(.timeRange)
     let clamped = sourceRange.intersection(available)
-    guard clamped.duration > .zero else { return }
-    try track.insertTimeRange(clamped, of: source, at: timelineRange.start)
-    let inserted = CMTimeRange(start: timelineRange.start, duration: clamped.duration)
-    if inserted.duration != timelineRange.duration {
-      track.scaleTimeRange(inserted, toDuration: timelineRange.duration)
+    guard clamped.duration > .zero, sourceRange.duration > .zero else { return }
+    // A track shorter than the range asked for (sound that starts late or
+    // ends early) keeps its own place: only the speed scales it, never the
+    // shortfall.
+    let factor = timelineRange.duration.seconds / sourceRange.duration.seconds
+    let at =
+      timelineRange.start
+      + CMTimeMultiplyByFloat64(clamped.start - sourceRange.start, multiplier: factor)
+    try track.insertTimeRange(clamped, of: source, at: at)
+    let inserted = CMTimeRange(start: at, duration: clamped.duration)
+    let target = CMTimeMultiplyByFloat64(clamped.duration, multiplier: factor)
+    if inserted.duration != target {
+      track.scaleTimeRange(inserted, toDuration: target)
     }
   }
 

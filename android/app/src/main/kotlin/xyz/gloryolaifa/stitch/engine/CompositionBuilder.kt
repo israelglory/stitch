@@ -4,6 +4,8 @@ import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.audio.ChannelMixingAudioProcessor
+import androidx.media3.common.audio.ChannelMixingMatrix
 import androidx.media3.common.util.GlUtil
 import androidx.media3.common.util.Size
 import androidx.media3.common.util.UnstableApi
@@ -311,7 +313,7 @@ object CompositionBuilder {
     return EditedMediaItem.Builder(item)
       .setDurationUs(media.durationUs ?: clip.sourceOutUs)
       .apply { if (clip.speed != 1.0) setSpeed(ConstantSpeed(clip.speed.toFloat())) }
-      .setEffects(Effects(listOf(GainProcessor(gain)), effects))
+      .setEffects(Effects(listOf(GainProcessor(gain), stereo()), effects))
       .build()
   }
 
@@ -335,8 +337,34 @@ object CompositionBuilder {
     return EditedMediaItem.Builder(item)
       .setDurationUs(mediaDurationUs ?: sourceOutUs)
       .apply { if (speed != 1.0) setSpeed(ConstantSpeed(speed.toFloat())) }
-      .setEffects(Effects(listOf(GainProcessor(gain)), listOf()))
+      .setEffects(Effects(listOf(GainProcessor(gain), stereo()), listOf()))
       .build()
+  }
+
+  /**
+   * Every item's sound as stereo. Media3 mixes in the format of whichever
+   * item arrives first, so one mono item (a voiceover, a mono clip) could
+   * otherwise make the whole export mono. 5.1 folds down to stereo.
+   */
+  private fun stereo() = ChannelMixingAudioProcessor().apply {
+    putChannelMixingMatrix(ChannelMixingMatrix.createForConstantGain(1, 2))
+    putChannelMixingMatrix(ChannelMixingMatrix.createForConstantGain(2, 2))
+    val c = 0.7071f
+    // Front left, front right, center, LFE, surround left, surround right.
+    putChannelMixingMatrix(
+      ChannelMixingMatrix(
+        6,
+        2,
+        floatArrayOf(
+          1f, 0f,
+          0f, 1f,
+          c, c,
+          0f, 0f,
+          c, 0f,
+          0f, c,
+        ),
+      ),
+    )
   }
 
   /**

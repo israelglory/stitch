@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stitch/app/providers.dart';
 import 'package:stitch/core/time/time.dart';
@@ -22,6 +23,7 @@ import 'package:stitch/features/timeline/domain/models.dart' as m;
 import 'package:stitch/features/timeline/domain/normalize.dart';
 import 'package:stitch/features/timeline/domain/snapping.dart';
 import 'package:stitch/features/timeline/domain/text_ops.dart';
+import 'package:stitch/features/timeline/domain/transition_ops.dart';
 import 'package:stitch/features/timeline/domain/video_ops.dart';
 import 'package:stitch/l10n/generated/app_localizations.dart';
 
@@ -99,12 +101,23 @@ class _TimelineViewState extends ConsumerState<TimelineView>
   @override
   void initState() {
     super.initState();
-    ref.listenManual(playbackControllerProvider.select((p) => p.positionUs), (
-      _,
-      position,
-    ) {
-      if (!_scrubbing) _position.value = position;
-    }, fireImmediately: true);
+    ref
+      ..listenManual(playbackControllerProvider.select((p) => p.positionUs), (
+        _,
+        position,
+      ) {
+        if (!_scrubbing) _position.value = position;
+      }, fireImmediately: true)
+      // Playing takes the playhead back from a glide still settling.
+      ..listenManual(playbackControllerProvider.select((p) => p.isPlaying), (
+        _,
+        playing,
+      ) {
+        if (playing && _scrubbing && _pointers == 0) {
+          _fling.stop(canceled: false);
+          _endScrub();
+        }
+      });
   }
 
   @override
@@ -177,7 +190,9 @@ class _TimelineViewState extends ConsumerState<TimelineView>
     if (!_scrubbing || !mounted) return;
     _setPosition(_flingStartUs + _scale.pxToUs(_fling.value));
     final atEdge = _position.value == 0 || _position.value == _durationUs;
-    if (atEdge) _fling.stop();
+    // Not cancelled: a cancelled glide never completes, and the scrub
+    // would never end (the playhead would ignore playback).
+    if (atEdge) _fling.stop(canceled: false);
   }
 
   void _endScrub() {
@@ -384,21 +399,28 @@ final class _TimelineActions {
 
   String? movingId;
 
-  void beginMove(String id) {
+  /// Where the moved item started when the drag began. The layout moves
+  /// with the item, so its current start cannot be used.
+  int _moveStartUs = 0;
+  bool _moved = false;
+
+  void beginMove(String id, {required int startUs}) {
     unawaited(AppHaptics.selection());
     movingId = id;
+    _moveStartUs = startUs;
+    _moved = false;
     _begin();
   }
 
   void updateMove({
     required String id,
-    required int originalStartUs,
     required int durationUs,
     required double dx,
     required m.Timeline Function(m.Timeline base, int startUs) move,
   }) {
     if (_base == null) return;
-    final raw = originalStartUs + scale.pxToUs(dx);
+    if (dx != 0) _moved = true;
+    final raw = _moveStartUs + scale.pxToUs(dx);
     // Snap whichever edge is closer to a target.
     final snappedStart = _snap(raw, id);
     final start = snappedStart != raw
@@ -407,9 +429,11 @@ final class _TimelineActions {
     _editor.updateGesture((b) => move(b, start));
   }
 
-  void endMove() {
+  /// Ends a move; a press let go in place selects [selection] instead.
+  void endMove(Selection selection) {
     movingId = null;
     _end();
+    if (!_moved) select(selection);
   }
 }
 
@@ -550,8 +574,9 @@ class _ContentState extends ConsumerState<_Content> {
         0,
         visualEnd(i) - visualStart(i) - _clipGap,
       );
-      final durationLabel =
-          '${(clip.durationUs / usPerSecond).toStringAsFixed(1)}s';
+      final durationLabel = l10n.valueSeconds(
+        (clip.durationUs / usPerSecond).toStringAsFixed(1),
+      );
       widgets.add(
         Positioned(
           left: left,
@@ -579,7 +604,24 @@ class _ContentState extends ConsumerState<_Content> {
               child: VideoClipTile(
                 width: width,
                 durationLabel: durationLabel,
-                speedLabel: clip.speed == 1 ? null : _speedLabel(clip.speed),
+                semanticLabel: state.missingMedia.contains(clip.mediaId)
+                    ? l10n.clipMissingSemantics(i + 1, spans.length)
+                    : l10n.clipSemantics(i + 1, spans.length, durationLabel),
+                semanticActions: {
+                  if (i > 0)
+                    CustomSemanticsAction(label: l10n.moveEarlier): () => widget
+                        .actions
+                        ._editor
+                        .apply((t) => t.moveClip(clip.id, i - 1)),
+                  if (i + 1 < spans.length)
+                    CustomSemanticsAction(label: l10n.moveLater): () => widget
+                        .actions
+                        ._editor
+                        .apply((t) => t.moveClip(clip.id, i + 1)),
+                },
+                speedLabel: clip.speed == 1
+                    ? null
+                    : _speedLabel(l10n, clip.speed),
                 isMissing: state.missingMedia.contains(clip.mediaId),
                 selected: selected,
                 onTap: () => actions.select(ClipSelected(clip.id)),
@@ -641,6 +683,11 @@ class _ContentState extends ConsumerState<_Content> {
       if (i == selectedIndex || i + 1 == selectedIndex) continue;
       final x = visualEnd(i);
       final clipId = spans[i].clip.id;
+      // Clips too short for any transition get no button.
+      if (state.timeline.maxTransitionUs(clipId) <= 0 &&
+          state.timeline.transitionAfter(clipId) == null) {
+        continue;
+      }
       widgets.add(
         Positioned(
           left: x - AppSizes.minTouchTarget / 2,
@@ -720,6 +767,11 @@ class _ContentState extends ConsumerState<_Content> {
       _reorderTarget = null;
     });
     if (target == null) return;
+    // A press held a little long, then let go in place: a selection.
+    if (target == widget.state.timeline.indexOfClip(clipId)) {
+      widget.actions.select(ClipSelected(clipId));
+      return;
+    }
     widget.actions._editor.apply((t) => t.moveClip(clipId, target));
   }
 
@@ -882,15 +934,14 @@ class _ContentState extends ConsumerState<_Content> {
       left: _px(start) + _clipGap / 2,
       top: top,
       child: GestureDetector(
-        onLongPressStart: (_) => actions.beginMove(id),
+        onLongPressStart: (_) => actions.beginMove(id, startUs: start),
         onLongPressMoveUpdate: (d) => actions.updateMove(
           id: id,
-          originalStartUs: start,
           durationUs: duration,
           dx: d.offsetFromOrigin.dx,
           move: move,
         ),
-        onLongPressEnd: (_) => actions.endMove(),
+        onLongPressEnd: (_) => actions.endMove(selection),
         child: build(
           width: width,
           selected: selected,
@@ -903,7 +954,6 @@ class _ContentState extends ConsumerState<_Content> {
   }
 }
 
-String _speedLabel(double speed) {
-  final text = speed.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
-  return '${text}x';
-}
+String _speedLabel(AppLocalizations l10n, double speed) => l10n.valueSpeed(
+  speed.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), ''),
+);

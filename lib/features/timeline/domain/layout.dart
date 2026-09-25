@@ -80,6 +80,21 @@ final class TimelineLayout {
     return spans.first;
   }
 
+  /// Where [anchor] would be without the timeline start bounding it:
+  /// negative for a moment trimmed off the front of the first clip.
+  int unboundedStartOf(Anchor anchor) => switch (anchor) {
+    TimeAnchor(:final startUs) => startUs,
+    ClipAnchor(:final clipId, :final sourceUs) => switch (_byId[clipId]) {
+      null => 0,
+      final span =>
+        span.startUs +
+            sourceToTimelineUs(
+              sourceUs - span.clip.sourceInUs,
+              span.clip.speed,
+            ),
+    },
+  };
+
   /// Timeline position of [anchor].
   AnchorPosition resolve(Anchor anchor) {
     switch (anchor) {

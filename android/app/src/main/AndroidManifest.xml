@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The one network use: downloading caption models, when asked. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- Gallery access for importing media, requested when the picker opens. -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <!-- Voiceover recording; asked for when first recording. -->
@@ -17,7 +19,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- No backup: projects and settings stay on this device only. -->
     <application
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:label="Stitch"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

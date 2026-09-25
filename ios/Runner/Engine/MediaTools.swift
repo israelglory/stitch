@@ -150,6 +150,7 @@ enum ProxyMaker {
       session.exportAsynchronously { done.resume() }
     }
     guard session.status == .completed else {
+      try? FileManager.default.removeItem(at: temp)
       throw EngineError.exportFailed(session.error?.localizedDescription ?? "Proxy failed")
     }
     try? FileManager.default.removeItem(atPath: outPath)
@@ -185,7 +186,18 @@ enum Waveform {
       ])
     reader.add(output)
     guard reader.startReading() else { throw EngineError.unsupportedMedia(path) }
+    // Decoding blocks for seconds; on its own queue it cannot hold up the
+    // threads Swift's async work shares.
+    let peaks = await withCheckedContinuation { (done: CheckedContinuation<[Double], Never>) in
+      decodeQueue.async { done.resume(returning: decode(output, peaksPerSecond: peaksPerSecond)) }
+    }
+    if reader.status == .failed { throw EngineError.unsupportedMedia(path) }
+    return peaks
+  }
 
+  private static let decodeQueue = DispatchQueue(label: "stitch.waveform", qos: .utility)
+
+  private static func decode(_ output: AVAssetReaderOutput, peaksPerSecond: Int) -> [Double] {
     let bucket = max(1, sampleRate / peaksPerSecond)
     var peaks: [Double] = []
     var current: Int16 = 0
@@ -222,7 +234,6 @@ enum Waveform {
       }
     }
     if filled > 0 { peaks.append(Double(current) / Double(Int16.max)) }
-    if reader.status == .failed { throw EngineError.unsupportedMedia(path) }
     return peaks
   }
 }

@@ -93,7 +93,9 @@ class PngTextRasterizer implements TextRasterizer {
   /// Images drawn or found this session, most recent last. The disk cache
   /// is only pruned at startup, so these stay valid.
   final _done = <String, TextRaster>{};
-  static const _doneLimit = 1000;
+
+  /// Enough for a long video in the highlight style (a piece per word).
+  static const _doneLimit = 5000;
 
   @override
   void forget() => _done.clear();

@@ -129,17 +129,17 @@ class _AudioLibraryState extends ConsumerState<AudioLibraryScreen> {
     final error = _error;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: AppIconButton(
-          icon: AppIcons.back,
-          semanticLabel: l10n.back,
-          onPressed: () => context.pop(),
-        ),
-        title: Text(_music ? l10n.musicTitle : l10n.soundEffectsTitle),
-      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          AppHeader(
+            title: _music ? l10n.musicTitle : l10n.soundEffectsTitle,
+            leading: AppIconButton(
+              icon: AppIcons.back,
+              semanticLabel: l10n.back,
+              onPressed: () => context.pop(),
+            ),
+          ),
           if (_music)
             Padding(
               padding: const EdgeInsets.fromLTRB(

@@ -191,7 +191,14 @@ class _CaptionRowState extends ConsumerState<_CaptionRow> {
 
   @override
   void dispose() {
-    if (_editing) _editor.endGesture();
+    if (_editing) {
+      _editor.endGesture();
+      // Emptied and closed before the field lost focus: gone, as always.
+      if (_text.text.trim().isEmpty) {
+        final id = _id;
+        _editor.apply((t) => t.deleteCaption(id));
+      }
+    }
     _focus.dispose();
     _text.dispose();
     super.dispose();
@@ -232,16 +239,21 @@ class _CaptionRowState extends ConsumerState<_CaptionRow> {
   int _wordsBeforeCursor() {
     final text = _text.text;
     final at = _text.selection.baseOffset.clamp(0, text.length);
-    final before = text.substring(0, at);
-    final words = before.trim().isEmpty
-        ? 0
-        : before.trim().split(RegExp(r'\s+')).length;
-    final insideWord =
-        at > 0 &&
-        at < text.length &&
-        !RegExp(r'\s').hasMatch(text[at - 1]) &&
-        !RegExp(r'\s').hasMatch(text[at]);
-    return insideWord ? words - 1 : words;
+    // The caption's own words, found in order in its text: this works with
+    // and without spaces between words. A word the cursor is inside goes
+    // after the split.
+    final words = widget.segment.words;
+    var cursor = 0;
+    for (final (i, w) in words.indexed) {
+      final start = text.indexOf(w.text, cursor);
+      if (start < 0) break;
+      if (at <= start) return i;
+      if (at < start + w.text.length) return i;
+      cursor = start + w.text.length;
+    }
+    // Text edited out of step with its words: count words by spaces.
+    final before = text.substring(0, at).trim();
+    return before.isEmpty ? 0 : before.split(RegExp(r'\s+')).length;
   }
 
   @override

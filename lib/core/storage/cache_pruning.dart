@@ -26,3 +26,28 @@ Future<int> pruneDirectory(Directory dir, int maxBytes) async {
   }
   return freed;
 }
+
+/// Deletes what interrupted work leaves in the cache folder [cache]: the
+/// sound of a caption job, half written exports and recordings (`.part`
+/// files and their encoded side files), and voiceover takes never added.
+Future<void> removeLeftovers(Directory cache) async {
+  Future<void> remove(FileSystemEntity e) async {
+    try {
+      await e.delete(recursive: true);
+    } on FileSystemException {
+      // Gone already, or in use; next time.
+    }
+  }
+
+  for (final name in ['speech', 'voiceover']) {
+    final dir = Directory('${cache.path}/$name');
+    if (dir.existsSync()) await remove(dir);
+  }
+  final exports = Directory('${cache.path}/exports');
+  if (exports.existsSync()) {
+    for (final e in exports.listSync()) {
+      final name = e.uri.pathSegments.last;
+      if (name.contains('.part') || name.endsWith('.m4a')) await remove(e);
+    }
+  }
+}

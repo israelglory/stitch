@@ -76,7 +76,10 @@ class EditorController extends _$EditorController {
     ref.onDispose(() {
       _syncTimer?.cancel();
       unawaited(shown.cancel());
-      unawaited(flush().whenComplete(_engine.release));
+      // Released at once, not after the save: a release landing late
+      // would clear the next project's preview.
+      unawaited(_engine.release());
+      unawaited(flush());
     });
     final project = await _store.load(projectId);
     final initial = _latest = EditorState(
@@ -100,7 +103,15 @@ class EditorController extends _$EditorController {
       applyProject((p) => _withTimeline(p, edit(p.timeline)));
 
   /// Applies a project-level edit (canvas, background, media) as one step.
+  /// During a drag it waits for the drag to end: applied now, the drag's
+  /// next update (built on the timeline from before the drag) would undo
+  /// it. That matters for edits that arrive on their own, like an import
+  /// finishing.
   void applyProject(Project Function(Project project) edit) {
+    if (_gestureBase != null) {
+      _afterGesture.add(() => applyProject(edit));
+      return;
+    }
     final current = _current;
     final next = edit(current.project);
     if (identical(next, current.project)) return;
@@ -118,7 +129,9 @@ class EditorController extends _$EditorController {
     if (base == null) return;
     final next = _withTimeline(base, edit(base.timeline));
     final current = _current;
-    final history = identical(current.history.present, base)
+    // At the gesture's start (or back at it): the next change is a new
+    // step; after that, updates replace it.
+    final history = current.history.present == base
         ? current.history.push(next)
         : current.history.replace(next);
     _commit(current.copyWith(history: history), duringGesture: true);
@@ -134,32 +147,19 @@ class EditorController extends _$EditorController {
     }
   }
 
-  /// Edits that arrived during a gesture, applied when it ends.
+  /// Edits that arrived during a gesture, applied when it ends (see
+  /// [applyProject]).
   final _afterGesture = <void Function()>[];
 
   /// Replaces the captions with [segments], recognized from the sound of
-  /// [heard]: the timeline as it was when recognition started. Anchored
-  /// in that timeline, they land on the same speech in this one, even
-  /// after edits made meanwhile. Keeps the caption style. One undo step.
+  /// [heard]: the timeline as it was when recognition started. See
+  /// [CaptionOps.withRecognizedCaptions]. One undo step.
   void setRecognizedCaptions(
     Timeline heard,
     List<RecognizedSegment> segments, {
     String? language,
   }) {
-    final track = heard.setCaptions(segments, language: language).captionTrack;
-    void edit() => apply(
-      (t) => t.copyWith(
-        captionTrack: track.copyWith(
-          preset: t.captionTrack.preset,
-          position: t.captionTrack.position,
-        ),
-      ),
-    );
-    if (_gestureBase != null) {
-      _afterGesture.add(edit);
-    } else {
-      edit();
-    }
+    apply((t) => t.withRecognizedCaptions(heard, segments, language: language));
   }
 
   /// Gets the engine ready to export: every text drawn by the engine
@@ -352,7 +352,7 @@ class EditorController extends _$EditorController {
   String? get relinkableMedia {
     final current = _current;
     for (final c in current.timeline.videoClips) {
-      if (current.missingMedia.contains(c.mediaId)) return c.mediaId;
+      if (current.missingInUse.contains(c.mediaId)) return c.mediaId;
     }
     return null;
   }
@@ -368,31 +368,31 @@ class EditorController extends _$EditorController {
     );
     if (assets == null || assets.isEmpty || !ref.mounted) return false;
     final asset = assets.single;
-    applyProject((p) {
-      var timeline = p.timeline;
-      for (final clip in p.timeline.videoClips) {
-        if (clip.mediaId != mediaId) continue;
-        timeline = timeline.replaceClipMedia(
-          clip.id,
-          mediaId: asset.id,
-          kind: asset.kind,
-          mediaDurationUs: asset.durationUs,
-        );
-      }
-      // The missing file goes, unless sound on an audio lane still uses it.
-      final stillUsed = timeline.audioItems.any((a) => a.mediaId == mediaId);
-      return p.copyWith(
+    applyProject(
+      (p) => p.copyWith(
+        // The missing file's entry goes; everything that used it now uses
+        // the file found again.
         media: {
           for (final MapEntry(:key, :value) in p.media.entries)
-            if (key != mediaId || stillUsed) key: value,
+            if (key != mediaId) key: value,
           asset.id: asset,
         },
-        timeline: timeline,
-      );
-    });
+        timeline: p.timeline.relinkMedia(
+          mediaId,
+          toMediaId: asset.id,
+          mediaDurationUs: asset.durationUs,
+        ),
+      ),
+    );
     final current = _current;
+    // Checked again; what was missing stays known, for undo.
     _commit(
-      current.copyWith(missingMedia: _store.missingMedia(current.project)),
+      current.copyWith(
+        missingMedia: {
+          ...current.missingMedia,
+          ..._store.missingMedia(current.project),
+        },
+      ),
     );
     return true;
   }
@@ -405,10 +405,18 @@ class EditorController extends _$EditorController {
     _dirty = false;
     try {
       await _store.save(value.project.copyWith(updatedAt: _clock()));
-      if (ref.mounted) ref.invalidate(projectsControllerProvider);
+      if (!ref.mounted) return;
+      ref.invalidate(projectsControllerProvider);
+      if (_latest?.saveFailed ?? false) {
+        _emit(_latest!.copyWith(saveFailed: false));
+      }
     } on Object catch (e, st) {
       _dirty = true;
       _log.error('Autosave failed', e, st);
+      // Said on screen: edits that are not saved must not look saved.
+      if (ref.mounted && _latest != null) {
+        _emit(_latest!.copyWith(saveFailed: true));
+      }
     }
   }
 

@@ -106,23 +106,11 @@ abstract class AppLocalizations {
   /// **'Projects'**
   String get projectsTitle;
 
-  /// Fallback title of the editor before a project name is loaded.
-  ///
-  /// In en, this message translates to:
-  /// **'Editor'**
-  String get editorTitle;
-
   /// Title of the settings screen.
   ///
   /// In en, this message translates to:
   /// **'Settings'**
   String get settingsTitle;
-
-  /// Temporary title of the onboarding route until M4.
-  ///
-  /// In en, this message translates to:
-  /// **'Welcome'**
-  String get onboardingTitle;
 
   /// Title of the hidden developer screen listing all design components.
   ///
@@ -172,11 +160,11 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get retry;
 
-  /// Accessibility label for a project thumbnail: project name and total duration.
+  /// Accessibility label for a project thumbnail: name, total duration, and when it was last edited.
   ///
   /// In en, this message translates to:
-  /// **'{name}, {duration}'**
-  String projectCardSemantics(String name, String duration);
+  /// **'{name}, {duration}, {edited}'**
+  String projectCardSemantics(String name, String duration, String edited);
 
   /// Accessibility label for the overflow menu button on a project.
   ///
@@ -646,11 +634,11 @@ abstract class AppLocalizations {
   /// **'Audio'**
   String get laneAudio;
 
-  /// Accessibility label for a clip.
+  /// Accessibility label for a clip on the timeline.
   ///
   /// In en, this message translates to:
-  /// **'Clip {index}, {duration}'**
-  String clipSemantics(int index, String duration);
+  /// **'Clip {index} of {count}, {duration}'**
+  String clipSemantics(int index, int count, String duration);
 
   /// Accessibility label for a transition button.
   ///
@@ -1101,12 +1089,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose a file'**
   String get chooseFile;
-
-  /// Shown while an audio file is copied into the project.
-  ///
-  /// In en, this message translates to:
-  /// **'Adding audio'**
-  String get addingAudio;
 
   /// Sheet title: original sound vs added audio.
   ///
@@ -1965,6 +1947,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try again, or export at a lower resolution.'**
   String get exportFailedHint;
+
+  /// Title of the notice after an import fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Media could not be added'**
+  String get importFailedTitle;
+
+  /// Acknowledges a notice.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// Shown in the transitions sheet when a cut has no room for one.
+  ///
+  /// In en, this message translates to:
+  /// **'These clips are too short for a transition.'**
+  String get transitionTooShort;
+
+  /// Title of the notice when renaming, duplicating, or deleting a project fails.
+  ///
+  /// In en, this message translates to:
+  /// **'The project could not be changed'**
+  String get projectActionFailed;
+
+  /// Title when a license page is opened for an unknown package.
+  ///
+  /// In en, this message translates to:
+  /// **'No license here'**
+  String get licenseNotFound;
+
+  /// Message when a license page is opened for an unknown package.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back to the list of open source licenses.'**
+  String get licenseNotFoundMessage;
+
+  /// Banner in the editor when autosave fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes could not be saved. Free up some space, then retry.'**
+  String get saveFailed;
+
+  /// Accessibility label for a clip whose file is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip {index} of {count}, file missing'**
+  String clipMissingSemantics(int index, int count);
+
+  /// Screen reader action: moves a clip one place earlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Move earlier'**
+  String get moveEarlier;
+
+  /// Screen reader action: moves a clip one place later.
+  ///
+  /// In en, this message translates to:
+  /// **'Move later'**
+  String get moveLater;
+
+  /// A length in seconds, like 3.2s.
+  ///
+  /// In en, this message translates to:
+  /// **'{value}s'**
+  String valueSeconds(String value);
+
+  /// A playback speed, like 1.5x.
+  ///
+  /// In en, this message translates to:
+  /// **'{value}x'**
+  String valueSpeed(String value);
+
+  /// A percentage, like 40%.
+  ///
+  /// In en, this message translates to:
+  /// **'{value}%'**
+  String valuePercent(int value);
+
+  /// Screen reader label of the project name in the editor, which renames it.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename {name}'**
+  String renameProjectSemantics(String name);
+
+  /// A file or storage size, like 820 KB. The number is already formatted.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} KB'**
+  String sizeKilobytes(String size);
+
+  /// A file or storage size, like 45 MB. The number is already formatted.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} MB'**
+  String sizeMegabytes(String size);
+
+  /// A file or storage size, like 1.2 GB. The number is already formatted.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} GB'**
+  String sizeGigabytes(String size);
 }
 
 class _AppLocalizationsDelegate

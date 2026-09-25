@@ -6,6 +6,7 @@ import 'package:stitch/features/media/domain/library_item.dart';
 import 'package:stitch/features/projects/application/projects_controller.dart';
 import 'package:stitch/features/projects/data/media_importer.dart';
 import 'package:stitch/features/projects/domain/project.dart';
+import 'package:stitch/features/timeline/domain/limits.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
 
 part 'import_controller.g.dart';
@@ -36,7 +37,9 @@ List<VideoClip> clipsFor(List<MediaAsset> assets, String Function() newId) => [
   for (final a in assets)
     if (a.kind == MediaKind.photo)
       VideoClip.photo(id: newId(), mediaId: a.id)
-    else if ((a.durationUs ?? 0) > 0)
+    // Shorter than the shortest clip: nothing to edit (and it would break
+    // the minimum), so it is left out.
+    else if ((a.durationUs ?? 0) >= TimelineLimits.minDurationUs)
       VideoClip.video(
         id: newId(),
         mediaId: a.id,
@@ -67,29 +70,54 @@ class ImportController extends _$ImportController {
   }) async {
     final store = ref.read(projectStoreProvider);
     final first = items.isEmpty ? null : items.first;
-    final project = await store.create(
-      name: name,
-      canvas: ProjectCanvas.forPreset(
-        preset,
-        original: first == null ? null : (first.width, first.height),
-      ),
-    );
+    final Project project;
+    try {
+      project = await store.create(
+        name: name,
+        canvas: ProjectCanvas.forPreset(
+          preset,
+          original: first == null ? null : (first.width, first.height),
+        ),
+      );
+    } on Object catch (e, st) {
+      state = ImportFailed(_failure(e, st));
+      return null;
+    }
     final assets = await importInto(project.id, items);
     if (assets == null) {
-      await store.delete(project.id);
+      await _discard(project.id);
       return null;
     }
     final ids = ref.read(idGeneratorProvider);
-    await store.save(
-      project.copyWith(
-        media: {for (final a in assets) a.id: a},
-        timeline: Timeline(videoClips: clipsFor(assets, ids.next)),
-      ),
-    );
+    try {
+      await store.save(
+        project.copyWith(
+          media: {for (final a in assets) a.id: a},
+          timeline: Timeline(videoClips: clipsFor(assets, ids.next)),
+        ),
+      );
+    } on Object catch (e, st) {
+      // The media fit but the project could not be written: nothing half
+      // made stays behind.
+      await _discard(project.id);
+      state = ImportFailed(_failure(e, st));
+      return null;
+    }
     ref.invalidate(projectsControllerProvider);
     state = const ImportIdle();
     return project.id;
   }
+
+  Future<void> _discard(String projectId) async {
+    try {
+      await ref.read(projectStoreProvider).delete(projectId);
+    } on Object {
+      // Already gone, or the disk refuses; the index rebuild skips it.
+    }
+  }
+
+  static Failure _failure(Object e, StackTrace st) =>
+      e is Failure ? e : UnexpectedFailure(cause: e, stackTrace: st);
 
   /// Copies [items] into project [projectId]. Returns the new assets, or
   /// null when cancelled or failed.
@@ -113,11 +141,8 @@ class ImportController extends _$ImportController {
     } on CancelledFailure {
       state = const ImportIdle();
       return null;
-    } on Failure catch (f) {
-      state = ImportFailed(f);
-      return null;
     } on Object catch (e, st) {
-      state = ImportFailed(UnexpectedFailure(cause: e, stackTrace: st));
+      state = ImportFailed(_failure(e, st));
       return null;
     } finally {
       if (identical(_cancel, cancel)) _cancel = null;

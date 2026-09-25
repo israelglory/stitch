@@ -70,7 +70,11 @@ class ProjectCard extends StatelessWidget {
       children: [
         Pressable(
           onPressed: onTap,
-          semanticLabel: l10n.projectCardSemantics(name, durationLabel),
+          semanticLabel: l10n.projectCardSemantics(
+            name,
+            durationLabel,
+            editedLabel,
+          ),
           child: AspectRatio(
             aspectRatio: _projectThumbAspect,
             child: ClipRRect(
@@ -290,7 +294,7 @@ class _OrderBadge extends StatelessWidget {
       height: AppSizes.orderBadge,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(AppRadius.small),
         color: selected ? colors.accent : colors.overlay,
         border: Border.all(
           color: selected ? colors.accent : colors.onOverlay,

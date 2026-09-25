@@ -37,7 +37,18 @@ class PlaybackController extends _$PlaybackController {
 
   Future<void> toggle() => state.isPlaying ? pause() : play();
 
-  Future<void> play() => _engine.play();
+  /// Plays from the playhead; at the end, from the start again.
+  Future<void> play() async {
+    _scrubbing = false;
+    final atEnd =
+        state.durationUs > 0 &&
+        state.positionUs >= state.durationUs - _endSlackUs;
+    if (atEnd) await seek(0);
+    await _engine.play();
+  }
+
+  /// Within this of the end counts as the end (a frame at 25 fps).
+  static const _endSlackUs = 40000;
 
   Future<void> pause() => _engine.pause();
 

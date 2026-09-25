@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/semantics.dart';
 import 'package:flutter/widgets.dart';
 import 'package:stitch/design/components/media.dart';
 import 'package:stitch/design/components/pressable.dart';
@@ -18,6 +19,8 @@ class VideoClipTile extends StatelessWidget {
     required this.frameBuilder,
     required this.durationLabel,
     required this.onTap,
+    this.semanticLabel,
+    this.semanticActions = const {},
     this.selected = false,
     this.speedLabel,
     this.isMissing = false,
@@ -32,6 +35,13 @@ class VideoClipTile extends StatelessWidget {
   final Widget Function(BuildContext context, int index) frameBuilder;
   final String durationLabel;
   final VoidCallback? onTap;
+
+  /// What screen readers say; the duration when null.
+  final String? semanticLabel;
+
+  /// Extra screen reader actions (moving the clip, say): what a drag does
+  /// for everyone else.
+  final Map<CustomSemanticsAction, VoidCallback> semanticActions;
   final bool selected;
 
   /// Shown when the clip's speed is not 1x, for example "2x".
@@ -50,64 +60,67 @@ class VideoClipTile extends StatelessWidget {
       child: SizedBox(
         width: width,
         height: AppSizes.videoTrackHeight,
-        child: Pressable(
-          onPressed: onTap,
-          semanticLabel: durationLabel,
-          selected: selected,
-          minSize: Size.zero,
-          child: TimelineItemFrame(
+        child: Semantics(
+          customSemanticsActions: semanticActions,
+          child: Pressable(
+            onPressed: onTap,
+            semanticLabel: semanticLabel ?? durationLabel,
             selected: selected,
-            trim: trim,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.control),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (isMissing)
-                    ColoredBox(
-                      color: colors.surfaceRaised,
-                      child: Icon(
-                        AppIcons.alert,
-                        size: AppSizes.inlineIcon,
-                        color: colors.destructive,
-                      ),
-                    )
-                  else
-                    ClipRect(
-                      child: OverflowBox(
-                        alignment: AlignmentDirectional.centerStart,
-                        maxWidth: frameCount * AppSizes.videoTrackHeight,
-                        child: Row(
-                          children: [
-                            for (var i = 0; i < frameCount; i++)
-                              SizedBox.square(
-                                dimension: AppSizes.videoTrackHeight,
-                                child: frameBuilder(context, i),
-                              ),
-                          ],
+            minSize: Size.zero,
+            child: TimelineItemFrame(
+              selected: selected,
+              trim: trim,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.control),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (isMissing)
+                      ColoredBox(
+                        color: colors.surfaceRaised,
+                        child: Icon(
+                          AppIcons.alert,
+                          size: AppSizes.inlineIcon,
+                          color: colors.destructive,
+                        ),
+                      )
+                    else
+                      ClipRect(
+                        child: OverflowBox(
+                          alignment: AlignmentDirectional.centerStart,
+                          maxWidth: frameCount * AppSizes.videoTrackHeight,
+                          child: Row(
+                            children: [
+                              for (var i = 0; i < frameCount; i++)
+                                SizedBox.square(
+                                  dimension: AppSizes.videoTrackHeight,
+                                  child: frameBuilder(context, i),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  if ((speedLabel != null || selected) &&
-                      width >= _minLabelledClipWidth)
-                    PositionedDirectional(
-                      start: selected
-                          ? AppSizes.trimHandleWidth + AppSpacing.xs
-                          : AppSpacing.xs,
-                      top: AppSpacing.xs,
-                      end: AppSpacing.xs,
-                      child: ClipRect(
-                        child: Row(
-                          children: [
-                            if (selected) MediaLabel(durationLabel),
-                            if (selected && speedLabel != null)
-                              const SizedBox(width: AppSpacing.xs),
-                            if (speedLabel != null) MediaLabel(speedLabel!),
-                          ],
+                    if ((speedLabel != null || selected) &&
+                        width >= _minLabelledClipWidth)
+                      PositionedDirectional(
+                        start: selected
+                            ? AppSizes.trimHandleWidth + AppSpacing.xs
+                            : AppSpacing.xs,
+                        top: AppSpacing.xs,
+                        end: AppSpacing.xs,
+                        child: ClipRect(
+                          child: Row(
+                            children: [
+                              if (selected) MediaLabel(durationLabel),
+                              if (selected && speedLabel != null)
+                                const SizedBox(width: AppSpacing.xs),
+                              if (speedLabel != null) MediaLabel(speedLabel!),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

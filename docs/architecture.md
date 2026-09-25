@@ -49,11 +49,13 @@ projects/<id>/media/         imported copies of picked photos and videos
 projects/<id>/posters/       one still per media item
 ```
 
-- Every write is atomic: the app writes a temp file, then renames it over the old one.
+- Every write is atomic: the app writes a uniquely named temp file, flushes it, then renames it over the old one.
+- Saves of one project run one at a time, and index updates run one at a time, so an older save never lands after a newer one. A failed save shows a banner with Retry.
+- Duplicating assembles the copy in a `.staging` folder and renames it when complete; leftovers are removed when the index is rebuilt.
 - The index is rebuilt from the project documents when it is missing or unreadable. An unreadable project is skipped, not fatal.
 - Media is copied on import, so projects keep working when the gallery changes.
 - The editor autosaves 500 ms after the last edit. It also saves when you leave the editor or the app goes to the background.
-- A clip whose copy has gone missing shows a banner with Relink: a new pick replaces the file for every clip that used it, as one undo step.
+- A clip whose copy has gone missing shows a banner with Relink: a new pick replaces the file for every clip and sound that used it, as one undo step. Trims and speed are kept (cut back if the new file is shorter). Export is disabled while any media in use is missing.
 
 The cache folder holds what can be made again, and Settings shows its size and clears it:
 

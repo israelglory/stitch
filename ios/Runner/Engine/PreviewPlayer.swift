@@ -22,6 +22,7 @@ final class PreviewPlayer: NSObject, FlutterTexture, @unchecked Sendable {
   private var timeObserver: Any?
   private var endObserver: NSObjectProtocol?
   private var interruptionObserver: NSObjectProtocol?
+  private var routeObserver: NSObjectProtocol?
   private var buildTask: Task<Void, Never>?
   private var durationUs: Int64 = 0
   /// Version of the document on screen (see `EngineDocument.version`).
@@ -47,6 +48,15 @@ final class PreviewPlayer: NSObject, FlutterTexture, @unchecked Sendable {
       let type = (note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt)
         .flatMap(AVAudioSession.InterruptionType.init)
       if type == .began { self?.pause() }
+    }
+    // Headphones unplugged: AVPlayer pauses on its own; the preview must
+    // agree, or the next document would start it again out loud.
+    routeObserver = NotificationCenter.default.addObserver(
+      forName: AVAudioSession.routeChangeNotification, object: nil, queue: .main
+    ) { [weak self] note in
+      let reason = (note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt)
+        .flatMap(AVAudioSession.RouteChangeReason.init)
+      if reason == .oldDeviceUnavailable { self?.pause() }
     }
 
     timeObserver = player.addPeriodicTimeObserver(
@@ -119,6 +129,7 @@ final class PreviewPlayer: NSObject, FlutterTexture, @unchecked Sendable {
     }
 
     player.replaceCurrentItem(with: item)
+    displayLink?.isPaused = false
     let target = min(position, built.duration)
     player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
       guard let self else { return }
@@ -193,6 +204,12 @@ final class PreviewPlayer: NSObject, FlutterTexture, @unchecked Sendable {
     player.replaceCurrentItem(with: nil)
     output = nil
     durationUs = 0
+    // Nothing to draw until the next document: stop the frame callback
+    // and let the last frame go.
+    displayLink?.isPaused = true
+    frameLock.lock()
+    latestFrame = nil
+    frameLock.unlock()
     publish()
   }
 
@@ -202,6 +219,7 @@ final class PreviewPlayer: NSObject, FlutterTexture, @unchecked Sendable {
     if let timeObserver { player.removeTimeObserver(timeObserver) }
     if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
     if let interruptionObserver { NotificationCenter.default.removeObserver(interruptionObserver) }
+    if let routeObserver { NotificationCenter.default.removeObserver(routeObserver) }
     textures.unregisterTexture(textureId)
   }
 }

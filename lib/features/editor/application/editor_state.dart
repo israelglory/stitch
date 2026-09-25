@@ -61,6 +61,7 @@ final class EditorState {
     this.selection = const NoSelection(),
     this.missingMedia = const {},
     this.liveTexts = const {},
+    this.saveFailed = false,
   });
 
   /// Project snapshots. Every edit, including canvas and background
@@ -68,13 +69,28 @@ final class EditorState {
   final EditHistory<Project> history;
   final Selection selection;
 
-  /// Media whose imported file is gone (shown as missing clips).
+  /// Media whose imported file was gone when last checked (on opening
+  /// and after a relink). Kept through edits and undo, so a clip that
+  /// comes back with an undo still shows as missing.
   final Set<String> missingMedia;
+
+  /// Of [missingMedia], what the timeline uses now: a missing clip that
+  /// was deleted no longer counts.
+  late final Set<String> missingInUse = {
+    for (final id in missingMedia)
+      if (timeline.videoClips.any((c) => c.mediaId == id) ||
+          timeline.audioItems.any((a) => a.mediaId == id))
+        id,
+  };
 
   /// Text items the editor draws over the preview itself instead of the
   /// engine: the selected one, so editing is instant, and any just
   /// deselected until the engine shows them.
   final Set<String> liveTexts;
+
+  /// The last save failed (a full disk, say); edits are kept in memory
+  /// and saved again on the next change or Retry.
+  final bool saveFailed;
 
   Project get project => history.present;
   Timeline get timeline => project.timeline;
@@ -90,10 +106,12 @@ final class EditorState {
     Selection? selection,
     Set<String>? missingMedia,
     Set<String>? liveTexts,
+    bool? saveFailed,
   }) => EditorState(
     history: history ?? this.history,
     selection: selection ?? this.selection,
     missingMedia: missingMedia ?? this.missingMedia,
     liveTexts: liveTexts ?? this.liveTexts,
+    saveFailed: saveFailed ?? this.saveFailed,
   );
 }

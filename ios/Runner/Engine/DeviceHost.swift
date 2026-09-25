@@ -31,10 +31,14 @@ final class DeviceHost: NSObject, DeviceHostApi, UIDocumentPickerDelegate,
   private var pick: CheckedContinuation<PickedFileMessage?, Never>?
   private var pickDir: String?
 
+  /// Pigeon runs async methods off the main thread; picker state is only
+  /// touched on it, so a delegate callback can never race a new pick.
   func pickAudioFile(outDir: String) async throws -> PickedFileMessage? {
-    pick?.resume(returning: nil)
     return await withCheckedContinuation { continuation in
       Task { @MainActor in
+        // An earlier pick still open ends with nothing.
+        self.pick?.resume(returning: nil)
+        self.pick = nil
         guard let presenter = Self.topViewController() else {
           continuation.resume(returning: nil)
           return
@@ -279,7 +283,9 @@ final class DeviceHost: NSObject, DeviceHostApi, UIDocumentPickerDelegate,
   }
 
   func stopRecording() async throws -> RecordingMessage {
-    guard let (path, _) = finish(keep: true) else {
+    // The level timer and recorder belong to the main thread.
+    let finished = await MainActor.run { self.finish(keep: true) }
+    guard let (path, _) = finished else {
       throw PigeonError(code: "recording_failed", message: "Nothing was recorded", details: nil)
     }
     // The file knows its exact length.

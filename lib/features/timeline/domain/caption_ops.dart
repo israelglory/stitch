@@ -19,8 +19,16 @@ typedef RecognizedSegment = ({
   List<RecognizedWord> words,
 });
 
+/// Whisper codes of languages written without spaces between words.
+const unspacedLanguages = {'zh', 'yue', 'ja', 'th', 'lo', 'km', 'my', 'bo'};
+
+bool isUnspacedLanguage(String? code) => unspacedLanguages.contains(code);
+
 /// Caption edits.
 extension CaptionOps on Timeline {
+  /// What goes between words of the captions' language.
+  String get _wordGap => isUnspacedLanguage(captionTrack.language) ? '' : ' ';
+
   List<CaptionSegment> get _segments => captionTrack.segments;
 
   CaptionSegment? captionById(String id) {
@@ -76,6 +84,50 @@ extension CaptionOps on Timeline {
     );
   }
 
+  /// Replaces all captions with [segments], recognized from the sound of
+  /// [heard]: this timeline as it was when recognition started. Each is
+  /// anchored where it was heard, then placed on this timeline: on the
+  /// same clip when that still holds the moment, on the clip that holds it
+  /// now (after a split), or, when the footage was deleted, at its old
+  /// time and flagged for review. Keeps the caption style.
+  Timeline withRecognizedCaptions(
+    Timeline heard,
+    List<RecognizedSegment> segments, {
+    String? language,
+  }) {
+    final heardLayout = TimelineLayout.of(heard);
+    final nowLayout = TimelineLayout.of(this);
+    final placed = heard.setCaptions(segments, language: language).captionTrack;
+
+    CaptionSegment place(CaptionSegment s) {
+      final anchor = s.anchor;
+      if (anchor is! ClipAnchor) return s;
+      bool holds(VideoClip c) =>
+          anchor.sourceUs >= c.sourceInUs && anchor.sourceUs < c.sourceOutUs;
+      final same = clipById(anchor.clipId);
+      if (same != null && holds(same)) return s;
+      final mediaId = heard.clipById(anchor.clipId)?.mediaId;
+      for (final c in videoClips) {
+        if (c.mediaId == mediaId && holds(c)) {
+          return s.copyWith(anchor: anchor.copyWith(clipId: c.id));
+        }
+      }
+      final t = heardLayout.startOf(anchor);
+      return s.copyWith(
+        anchor: nowLayout.anchorAt(math.min(t, nowLayout.durationUs)),
+        needsReview: true,
+      );
+    }
+
+    return copyWith(
+      captionTrack: placed.copyWith(
+        segments: [for (final s in placed.segments) place(s)],
+        preset: captionTrack.preset,
+        position: captionTrack.position,
+      ),
+    );
+  }
+
   /// Replaces a segment's text. Word timings are kept when the word count
   /// is unchanged (a typo fix); otherwise the new words are spread evenly
   /// over the segment.
@@ -83,7 +135,23 @@ extension CaptionOps on Timeline {
     final segment = captionById(id);
     final trimmed = text.trim();
     if (segment == null || trimmed == segment.text) return this;
-    final newWords = _splitWords(trimmed);
+    final List<String> newWords;
+    if (_wordGap.isEmpty) {
+      // No spaces to split on: keep each word's share of the text, so a
+      // typo fix keeps its timings; otherwise a word per character.
+      final oldLengths = [for (final w in segment.words) w.text.length];
+      final sameLength =
+          oldLengths.fold(0, (a, b) => a + b) == trimmed.length &&
+          oldLengths.isNotEmpty;
+      if (sameLength) {
+        var at = 0;
+        newWords = [for (final n in oldLengths) trimmed.substring(at, at += n)];
+      } else {
+        newWords = [for (final r in trimmed.runes) String.fromCharCode(r)];
+      }
+    } else {
+      newWords = _splitWords(trimmed);
+    }
     final List<CaptionWord> words;
     if (newWords.length == segment.words.length) {
       words = [
@@ -139,7 +207,7 @@ extension CaptionOps on Timeline {
     final end = math.max(aStart + a.durationUs, bStart + b.durationUs);
     final shift = bStart - aStart;
     final merged = a.copyWith(
-      text: '${a.text} ${b.text}'.trim(),
+      text: '${a.text}$_wordGap${b.text}'.trim(),
       durationUs: end - aStart,
       needsReview: a.needsReview || b.needsReview,
       words: [
@@ -190,13 +258,13 @@ extension CaptionOps on Timeline {
         ),
     ];
     final first = s.copyWith(
-      text: firstWords.map((w) => w.text).join(' '),
+      text: firstWords.map((w) => w.text).join(_wordGap),
       durationUs: at,
       words: firstWords,
     );
     final second = s.copyWith(
       id: newId,
-      text: secondWords.map((w) => w.text).join(' '),
+      text: secondWords.map((w) => w.text).join(_wordGap),
       anchor: layout.anchorAt(layout.startOf(s.anchor) + at),
       durationUs: s.durationUs - at,
       words: secondWords,

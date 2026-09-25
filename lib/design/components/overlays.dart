@@ -176,6 +176,35 @@ Future<bool> showConfirmDialog({
   return result ?? false;
 }
 
+/// A notice with one button, for something the user should know (an
+/// import that failed, say).
+Future<void> showNoticeDialog({
+  required BuildContext context,
+  required String title,
+  required String message,
+  required String buttonLabel,
+}) async {
+  final colors = context.colors;
+  await showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    barrierColor: colors.scrim,
+    transitionDuration: AppMotion.of(context, AppMotion.standard),
+    transitionBuilder: (context, animation, _, child) => FadeTransition(
+      opacity: CurvedAnimation(parent: animation, curve: AppMotion.curve),
+      child: child,
+    ),
+    pageBuilder: (context, _, _) => ConfirmDialog(
+      title: title,
+      message: message,
+      confirmLabel: buttonLabel,
+      onCancel: null,
+      onConfirm: () => Navigator.of(context).pop(),
+    ),
+  );
+}
+
 /// Body of a confirmation dialog. Use [showConfirmDialog] to present it.
 class ConfirmDialog extends StatelessWidget {
   const new({
@@ -196,7 +225,9 @@ class ConfirmDialog extends StatelessWidget {
   /// Defaults to "Cancel".
   final String? cancelLabel;
   final bool destructive;
-  final VoidCallback onCancel;
+
+  /// Null leaves only the confirm button: a notice to acknowledge.
+  final VoidCallback? onCancel;
   final VoidCallback onConfirm;
 
   /// Above this text scale the buttons stack so labels are not truncated.
@@ -262,7 +293,9 @@ class ConfirmDialog extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xl),
-                    if (stacked) ...[
+                    if (onCancel == null)
+                      confirm
+                    else if (stacked) ...[
                       confirm,
                       const SizedBox(height: AppSpacing.sm),
                       cancel,

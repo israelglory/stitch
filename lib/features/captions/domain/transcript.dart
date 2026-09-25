@@ -52,7 +52,7 @@ final class Transcript {
   final List<List<SpeechToken>> segments;
 
   /// Written without spaces between words.
-  bool get unspaced => unspacedLanguages.contains(language);
+  bool get unspaced => isUnspacedLanguage(language);
 
   /// Words, in order, with times that never go backwards.
   List<RecognizedWord> words() {
@@ -104,10 +104,15 @@ final class Transcript {
           final next = i + 1 < groups.length
               ? groups[i + 1].first.startUs
               : null;
-          final end = math.max(
-            spoken,
-            math.min(spoken + captionHoldUs, next ?? spoken + captionHoldUs),
-          );
+          // Never into the next caption, even when the words' own times
+          // overlap it: two captions would show at once, one over the other.
+          final held = spoken + captionHoldUs;
+          final end = next == null
+              ? held
+              : math.max(
+                  start + TimelineLimits.minDurationUs,
+                  math.min(held, next),
+                );
           return (
             id: newId(),
             text: joinWords(group, spaced: !unspaced),
@@ -128,9 +133,6 @@ final class Transcript {
     }
   }
 }
-
-/// Whisper codes of languages written without spaces between words.
-const unspacedLanguages = {'zh', 'yue', 'ja', 'th', 'lo', 'km', 'my', 'bo'};
 
 /// How long a caption stays after its last word, unless the next starts.
 const captionHoldUs = 400000;

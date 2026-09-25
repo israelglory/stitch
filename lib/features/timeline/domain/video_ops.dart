@@ -156,7 +156,36 @@ extension VideoTrackOps on Timeline {
       math.min(TimelineLimits.maxSpeed, maxForLength),
     );
     if (clamped == clip.speed) return this;
-    return normalize(_replaceClip(clipId, (c) => c.copyWith(speed: clamped)));
+    // Captions on this clip follow its speech: their lengths and word
+    // times (in timeline time) scale with it.
+    final ratio = clip.speed / clamped;
+    int scaled(int us) => (us * ratio).round();
+    final withCaptions = copyWith(
+      captionTrack: captionTrack.copyWith(
+        segments: [
+          for (final seg in captionTrack.segments)
+            if (seg.anchor case ClipAnchor(clipId: final id) when id == clipId)
+              seg.copyWith(
+                durationUs: math.max(
+                  TimelineLimits.minDurationUs,
+                  scaled(seg.durationUs),
+                ),
+                words: [
+                  for (final w in seg.words)
+                    w.copyWith(
+                      startOffsetUs: scaled(w.startOffsetUs),
+                      endOffsetUs: scaled(w.endOffsetUs),
+                    ),
+                ],
+              )
+            else
+              seg,
+        ],
+      ),
+    );
+    return normalize(
+      withCaptions._replaceClip(clipId, (c) => c.copyWith(speed: clamped)),
+    );
   }
 
   Timeline setClipVolume(String clipId, double volume) {
@@ -177,6 +206,65 @@ extension VideoTrackOps on Timeline {
     return _replaceClip(clipId, (c) => c.copyWith(framing: framing));
   }
 
+  /// Points everything that used [fromMediaId] (clips, and sound taken
+  /// from them) at [toMediaId]: the same footage, found again. Trims,
+  /// speed, and detached sound are kept; ranges past the end of a shorter
+  /// file are cut back.
+  Timeline relinkMedia(
+    String fromMediaId, {
+    required String toMediaId,
+    required int? mediaDurationUs,
+  }) {
+    final uses =
+        videoClips.any((c) => c.mediaId == fromMediaId) ||
+        audioItems.any((a) => a.mediaId == fromMediaId);
+    if (!uses) return this;
+    final limit = mediaDurationUs ?? _unbounded;
+    (int, int) fit(int sourceIn, int sourceOut) {
+      final out = math.min(sourceOut, limit);
+      final inUs = math.min(
+        sourceIn,
+        math.max(0, out - TimelineLimits.minDurationUs),
+      );
+      return (inUs, math.max(out, inUs + TimelineLimits.minDurationUs));
+    }
+
+    return normalize(
+      copyWith(
+        videoClips: [
+          for (final c in videoClips)
+            if (c.mediaId != fromMediaId)
+              c
+            else
+              () {
+                final (sourceIn, sourceOut) = fit(c.sourceInUs, c.sourceOutUs);
+                return c.copyWith(
+                  mediaId: toMediaId,
+                  mediaDurationUs: mediaDurationUs,
+                  sourceInUs: sourceIn,
+                  sourceOutUs: sourceOut,
+                );
+              }(),
+        ],
+        audioItems: [
+          for (final a in audioItems)
+            if (a.mediaId != fromMediaId)
+              a
+            else
+              () {
+                final (sourceIn, sourceOut) = fit(a.sourceInUs, a.sourceOutUs);
+                return a.copyWith(
+                  mediaId: toMediaId,
+                  mediaDurationUs: mediaDurationUs ?? a.mediaDurationUs,
+                  sourceInUs: sourceIn,
+                  sourceOutUs: sourceOut,
+                );
+              }(),
+        ],
+      ),
+    );
+  }
+
   /// Swaps the media of [clipId], keeping its timeline length when the new
   /// source is long enough (otherwise the clip shortens). Speed, volume,
   /// and framing are kept. Anchored items keep their offset into the clip.
@@ -190,7 +278,10 @@ extension VideoTrackOps on Timeline {
     if (clip == null) return this;
     final wanted = clip.sourceDurationUs;
     final available = mediaDurationUs ?? wanted;
-    final length = math.max(1, math.min(wanted, available));
+    final length = math.max(
+      TimelineLimits.minDurationUs,
+      math.min(wanted, available),
+    );
     final replaced = clip.copyWith(
       mediaId: mediaId,
       kind: kind,

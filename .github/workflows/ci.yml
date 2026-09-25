@@ -24,12 +24,22 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      # The build hook compiles whisper.cpp with the system clang.
+      - name: Clang is available
+        run: |
+          command -v clang || { sudo apt-get update && sudo apt-get install -y clang; }
+          clang --version
       - run: flutter pub get
       - name: Generated code is up to date
+        # Porcelain status also catches generated files that were never
+        # committed, and the Pigeon outputs on the native side.
         run: |
           flutter gen-l10n
           dart run build_runner build --delete-conflicting-outputs
-          git diff --exit-code -- lib
+          dart run pigeon --input pigeons/engine_api.dart
+          dart format lib/engine/pigeon
+          changed=$(git status --porcelain -- lib ios/Runner android/app/src)
+          if [ -n "$changed" ]; then echo "$changed"; git diff; exit 1; fi
       - name: Format
         run: dart format --output=none --set-exit-if-changed lib test integration_test hook
       - name: Analyze
@@ -64,6 +74,10 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter build apk --debug
+      - name: Release build
+        # Without android/key.properties this signs with the debug key and
+        # warns; it still proves minification and resource shrinking work.
+        run: flutter build apk --release
       - name: Enable KVM for the emulator
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -80,11 +94,17 @@ jobs:
           script: >-
             cd android && ./gradlew :app:connectedDebugAndroidTest
             -Pandroid.testInstrumentationRunnerArguments.notClass=xyz.gloryolaifa.stitch.engine.EngineTests#reportExportSpeedOneMinute1080p
+            && cd .. && adb shell mkdir -p /data/local/tmp/stitch_media
+            && adb push test_media/large_1440p.mp4 test_media/rotated_portrait.mp4 test_media/speech.mp4 test_media/vfr.mp4 /data/local/tmp/stitch_media
+            && adb shell chmod -R a+rX /data/local/tmp/stitch_media
+            && flutter test integration_test -d emulator-5554 --dart-define=STITCH_TEST_MEDIA=/data/local/tmp/stitch_media
 
   ios:
-    name: iOS build
+    name: iOS build and tests
     needs: check
-    runs-on: macos-latest
+    # Pinned: goldens are compared pixel for pixel, and font rendering
+    # changes between macOS images.
+    runs-on: macos-15
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
@@ -110,3 +130,9 @@ jobs:
             -destination "platform=iOS Simulator,id=$DEVICE" \
             -only-testing:RunnerTests/EngineTests \
             -test-timeouts-enabled YES -default-test-execution-time-allowance 120
+          echo "DEVICE=$DEVICE" >> "$GITHUB_ENV"
+      - name: End to end tests
+        run: |
+          xcrun simctl boot "$DEVICE" || true
+          xcrun simctl privacy "$DEVICE" grant photos-add xyz.gloryolaifa.stitch
+          flutter test integration_test -d "$DEVICE" --dart-define=STITCH_TEST_MEDIA=$PWD/test_media

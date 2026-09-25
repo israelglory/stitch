@@ -56,125 +56,137 @@ class SettingsScreen extends ConsumerWidget {
     final export = settings.export;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: AppIconButton(
-          icon: AppIcons.back,
-          semanticLabel: l10n.back,
-          onPressed: () => context.pop(),
-        ),
-        title: Text(l10n.settingsTitle),
-      ),
-      body: ListView(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _Section(l10n.settingsExport),
-          ListRow(
-            title: l10n.exportResolution,
-            value: resolutionName(export.resolution),
-            showChevron: true,
-            onTap: () => _choose(
-              context,
-              title: l10n.exportResolution,
-              options: [
-                for (final r in ExportResolution.values)
-                  if (r != ExportResolution.uhd || (caps?.max4k ?? false))
-                    (r, resolutionName(r)),
+          AppHeader(
+            title: l10n.settingsTitle,
+            leading: AppIconButton(
+              icon: AppIcons.back,
+              semanticLabel: l10n.back,
+              onPressed: () => context.pop(),
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              children: [
+                _Section(l10n.settingsExport),
+                ListRow(
+                  title: l10n.exportResolution,
+                  value: resolutionName(export.resolution),
+                  showChevron: true,
+                  onTap: () => _choose(
+                    context,
+                    title: l10n.exportResolution,
+                    options: [
+                      for (final r in ExportResolution.values)
+                        if (r != ExportResolution.uhd || (caps?.max4k ?? false))
+                          (r, resolutionName(r)),
+                    ],
+                    selected: export.resolution,
+                    onSelected: (r) => controller.update(
+                      (s) =>
+                          s.copyWith(export: s.export.copyWith(resolution: r)),
+                    ),
+                  ),
+                ),
+                ListRow(
+                  title: l10n.exportFrameRate,
+                  value: '${export.frameRate}',
+                  showChevron: true,
+                  onTap: () => _choose(
+                    context,
+                    title: l10n.exportFrameRate,
+                    options: [for (final f in exportFrameRates) (f, '$f')],
+                    selected: export.frameRate,
+                    onSelected: (f) => controller.update(
+                      (s) =>
+                          s.copyWith(export: s.export.copyWith(frameRate: f)),
+                    ),
+                  ),
+                ),
+                ListRow(
+                  title: l10n.exportQuality,
+                  value: qualityName(export.quality),
+                  showChevron: true,
+                  onTap: () => _choose(
+                    context,
+                    title: l10n.exportQuality,
+                    options: [
+                      for (final q in ExportQuality.values) (q, qualityName(q)),
+                    ],
+                    selected: export.quality,
+                    onSelected: (q) => controller.update(
+                      (s) => s.copyWith(export: s.export.copyWith(quality: q)),
+                    ),
+                  ),
+                ),
+                _Section(l10n.settingsNewProjects),
+                ListRow(
+                  title: l10n.settingsDefaultFormat,
+                  value: aspectLabel(l10n, settings.aspect),
+                  showChevron: true,
+                  onTap: () => _choose(
+                    context,
+                    title: l10n.settingsDefaultFormat,
+                    options: [
+                      for (final (preset, _, _) in aspectChoices)
+                        (preset, aspectLabel(l10n, preset)),
+                    ],
+                    selected: settings.aspect,
+                    onSelected: (a) =>
+                        controller.update((s) => s.copyWith(aspect: a)),
+                  ),
+                ),
+                _Section(l10n.settingsAppearance),
+                ListRow(
+                  title: l10n.settingsTheme,
+                  value: themeName(settings.theme),
+                  showChevron: true,
+                  onTap: () => _choose(
+                    context,
+                    title: l10n.settingsTheme,
+                    options: [
+                      for (final t in ThemeChoice.values) (t, themeName(t)),
+                    ],
+                    selected: settings.theme,
+                    onSelected: (t) =>
+                        controller.update((s) => s.copyWith(theme: t)),
+                  ),
+                ),
+                _Section(l10n.settingsStorage),
+                const _Storage(),
+                _Section(l10n.settingsCaptionModels),
+                for (final model in CaptionModel.values) _ModelRow(model),
+                _Section(l10n.settingsAbout),
+                ListRow(title: l10n.settingsVersion, value: version ?? ''),
+                ListRow(
+                  title: l10n.openSourceLicenses,
+                  showChevron: true,
+                  onTap: () => context.go(AppRoutes.licenses),
+                ),
+                ListRow(
+                  title: l10n.sourceCode,
+                  subtitle: 'github.com/israelglory/stitch',
+                  trailing: Icon(
+                    AppIcons.externalLink,
+                    size: AppSizes.inlineIcon,
+                    color: context.colors.textTertiary,
+                  ),
+                  onTap: () => unawaited(
+                    ref.read(systemServicesProvider).openUrl(sourceCodeUrl),
+                  ),
+                ),
+                if (kDebugMode || kProfileMode)
+                  ListRow(
+                    title: l10n.designGalleryTitle,
+                    showChevron: true,
+                    onTap: () => context.go(AppRoutes.designGallery),
+                  ),
+                const SizedBox(height: AppSpacing.xl),
               ],
-              selected: export.resolution,
-              onSelected: (r) => controller.update(
-                (s) => s.copyWith(export: s.export.copyWith(resolution: r)),
-              ),
             ),
           ),
-          ListRow(
-            title: l10n.exportFrameRate,
-            value: '${export.frameRate}',
-            showChevron: true,
-            onTap: () => _choose(
-              context,
-              title: l10n.exportFrameRate,
-              options: [for (final f in exportFrameRates) (f, '$f')],
-              selected: export.frameRate,
-              onSelected: (f) => controller.update(
-                (s) => s.copyWith(export: s.export.copyWith(frameRate: f)),
-              ),
-            ),
-          ),
-          ListRow(
-            title: l10n.exportQuality,
-            value: qualityName(export.quality),
-            showChevron: true,
-            onTap: () => _choose(
-              context,
-              title: l10n.exportQuality,
-              options: [
-                for (final q in ExportQuality.values) (q, qualityName(q)),
-              ],
-              selected: export.quality,
-              onSelected: (q) => controller.update(
-                (s) => s.copyWith(export: s.export.copyWith(quality: q)),
-              ),
-            ),
-          ),
-          _Section(l10n.settingsNewProjects),
-          ListRow(
-            title: l10n.settingsDefaultFormat,
-            value: aspectLabel(l10n, settings.aspect),
-            showChevron: true,
-            onTap: () => _choose(
-              context,
-              title: l10n.settingsDefaultFormat,
-              options: [
-                for (final (preset, _, _) in aspectChoices)
-                  (preset, aspectLabel(l10n, preset)),
-              ],
-              selected: settings.aspect,
-              onSelected: (a) =>
-                  controller.update((s) => s.copyWith(aspect: a)),
-            ),
-          ),
-          _Section(l10n.settingsAppearance),
-          ListRow(
-            title: l10n.settingsTheme,
-            value: themeName(settings.theme),
-            showChevron: true,
-            onTap: () => _choose(
-              context,
-              title: l10n.settingsTheme,
-              options: [for (final t in ThemeChoice.values) (t, themeName(t))],
-              selected: settings.theme,
-              onSelected: (t) => controller.update((s) => s.copyWith(theme: t)),
-            ),
-          ),
-          _Section(l10n.settingsStorage),
-          const _Storage(),
-          _Section(l10n.settingsCaptionModels),
-          for (final model in CaptionModel.values) _ModelRow(model),
-          _Section(l10n.settingsAbout),
-          ListRow(title: l10n.settingsVersion, value: version ?? ''),
-          ListRow(
-            title: l10n.openSourceLicenses,
-            showChevron: true,
-            onTap: () => context.go(AppRoutes.licenses),
-          ),
-          ListRow(
-            title: l10n.sourceCode,
-            subtitle: 'github.com/israelglory/stitch',
-            trailing: Icon(
-              AppIcons.externalLink,
-              size: AppSizes.inlineIcon,
-              color: context.colors.textTertiary,
-            ),
-            onTap: () => unawaited(
-              ref.read(systemServicesProvider).openUrl(sourceCodeUrl),
-            ),
-          ),
-          if (kDebugMode || kProfileMode)
-            ListRow(
-              title: l10n.designGalleryTitle,
-              showChevron: true,
-              onTap: () => context.go(AppRoutes.designGallery),
-            ),
-          const SizedBox(height: AppSpacing.xl),
         ],
       ),
     );
@@ -265,8 +277,10 @@ class _StorageState extends ConsumerState<_Storage> {
     if (!ok || !mounted) return;
     setState(() => _clearing = true);
     await ref.read(cacheCleanerProvider).clear();
+    // Left Settings meanwhile: nothing to show.
+    if (!mounted) return;
     ref.invalidate(storageUseProvider);
-    if (mounted) setState(() => _clearing = false);
+    setState(() => _clearing = false);
   }
 
   @override
@@ -275,7 +289,7 @@ class _StorageState extends ConsumerState<_Storage> {
     final use = ref.watch(storageUseProvider);
     Widget row(String title, int? bytes) => ListRow(
       title: title,
-      value: bytes == null ? null : formatBytes(bytes),
+      value: bytes == null ? null : formatBytes(l10n, bytes),
       trailing: bytes == null
           ? Skeleton.text(AppTypography.body, width: AppSizes.skeletonValue)
           : null,
@@ -327,7 +341,7 @@ class _ModelRow extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final status = ref.watch(captionModelsProvider)[model]!;
     final models = ref.read(captionModelsProvider.notifier);
-    final size = formatBytes(model.bytes);
+    final size = formatBytes(l10n, model.bytes);
     final title = switch (model) {
       CaptionModel.tiny => l10n.captionModelTiny,
       CaptionModel.base => l10n.captionModelBase,
@@ -346,9 +360,9 @@ class _ModelRow extends ConsumerWidget {
               confirmLabel: l10n.delete,
               destructive: true,
             );
-            if (!ok) return;
+            if (!ok || !context.mounted) return;
             await models.delete(model);
-            ref.invalidate(storageUseProvider);
+            if (context.mounted) ref.invalidate(storageUseProvider);
           },
         ),
       ),
@@ -369,7 +383,7 @@ class _ModelRow extends ConsumerWidget {
           label: status is ModelFailed ? l10n.retry : l10n.download,
           onPressed: () async {
             await models.download(model);
-            ref.invalidate(storageUseProvider);
+            if (context.mounted) ref.invalidate(storageUseProvider);
           },
         ),
       ),

@@ -75,8 +75,16 @@ class CaptionModels extends _$CaptionModels {
     state = {...state, model: status};
   }
 
+  /// Downloads being set up (space checked) but not yet started.
+  final _starting = <CaptionModel>{};
+
   Future<void> download(CaptionModel model) async {
-    if (_downloads.containsKey(model) || state[model] is ModelReady) return;
+    if (_downloads.containsKey(model) ||
+        _starting.contains(model) ||
+        state[model] is ModelReady) {
+      return;
+    }
+    _starting.add(model);
     try {
       await ensureSpace(
         ref.read(systemServicesProvider),
@@ -86,6 +94,8 @@ class CaptionModels extends _$CaptionModels {
     } on InsufficientStorageFailure catch (e) {
       _set(model, ModelFailed(e));
       return;
+    } finally {
+      _starting.remove(model);
     }
     final download = _store.download(model.file);
     _downloads[model] = download;

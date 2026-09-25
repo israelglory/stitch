@@ -103,6 +103,8 @@ class CaptionGeneration extends _$CaptionGeneration {
     _cancelled = false;
     state = const CaptionJobRunning(0);
     final editor = ref.read(editorControllerProvider(projectId).notifier);
+    // Read now: after the awaits below, the editor may have closed.
+    final models = ref.read(captionModelsProvider.notifier);
     final project = ref
         .read(editorControllerProvider(projectId))
         .requireValue
@@ -169,7 +171,7 @@ class CaptionGeneration extends _$CaptionGeneration {
       if (ref.mounted) state = const CaptionJobIdle();
     } on Object catch (e) {
       if (e case CaptionFailure(problem: CaptionProblem.modelDamaged)) {
-        await ref.read(captionModelsProvider.notifier).discard(model);
+        await models.discard(model);
       }
       if (ref.mounted) state = CaptionJobFailed(e);
     } finally {

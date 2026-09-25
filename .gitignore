@@ -52,3 +52,8 @@ app.*.map.json
 
 # Caption model for local tests (tool/fetch_test_model.sh)
 /.cache/
+
+# Release signing (see android/app/build.gradle.kts)
+/android/key.properties
+*.jks
+*.keystore

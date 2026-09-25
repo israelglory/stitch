@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:stitch/app/not_found_screen.dart';
 import 'package:stitch/design/gallery/design_gallery_screen.dart';
+import 'package:stitch/design/tokens.dart';
 import 'package:stitch/features/audio/presentation/audio_library_screen.dart';
 import 'package:stitch/features/editor/presentation/editor_screen.dart';
 import 'package:stitch/features/editor/presentation/fullscreen_preview.dart';
@@ -175,11 +176,15 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: 'preview',
             pageBuilder: (context, state) => CustomTransitionPage(
+              transitionDuration: AppMotion.standard,
+              reverseTransitionDuration: AppMotion.standard,
               child: FullscreenPreview(
                 projectId: state.pathParameters['projectId']!,
               ),
               transitionsBuilder: (context, animation, _, child) =>
-                  FadeTransition(opacity: animation, child: child),
+                  MediaQuery.maybeDisableAnimationsOf(context) ?? false
+                  ? child
+                  : FadeTransition(opacity: animation, child: child),
             ),
           ),
         ],

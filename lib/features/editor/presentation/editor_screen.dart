@@ -8,6 +8,7 @@ import 'package:stitch/app/router.dart';
 import 'package:stitch/design/design.dart';
 import 'package:stitch/features/captions/presentation/caption_progress.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
+import 'package:stitch/features/editor/application/playback_controller.dart';
 import 'package:stitch/features/editor/presentation/editor_toolbar.dart';
 import 'package:stitch/features/editor/presentation/preview.dart';
 import 'package:stitch/features/editor/presentation/sheets/tool_sheets.dart';
@@ -39,8 +40,13 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   @override
   void initState() {
     super.initState();
-    // Save before the system may stop the app.
-    _lifecycle = AppLifecycleListener(onPause: () => _controller.flush());
+    _lifecycle = AppLifecycleListener(
+      // Out of sight: stop playing (sound would go on in the background).
+      onHide: () =>
+          unawaited(ref.read(playbackControllerProvider.notifier).pause()),
+      // Save before the system may stop the app.
+      onPause: () => _controller.flush(),
+    );
   }
 
   @override
@@ -113,132 +119,157 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     final l10n = AppLocalizations.of(context);
     final editor = ref.watch(editorControllerProvider(widget.projectId));
 
-    return Scaffold(
-      body: switch (editor) {
-        AsyncData(value: final state) => Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AppHeader(
-              centerTitle: true,
-              leading: AppIconButton(
-                icon: AppIcons.close,
-                semanticLabel: l10n.close,
-                onPressed: _close,
-              ),
-              titleWidget: Semantics(
-                button: true,
-                label: '${l10n.rename}: ${state.project.name}',
-                excludeSemantics: true,
-                child: GestureDetector(
-                  onTap: () => _rename(state.project.name),
-                  child: Text(
-                    state.project.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: AppTypography.bodyLarge.semibold.copyWith(
-                      color: context.colors.textPrimary,
+    // Back (Android's button or gesture) saves and goes to Projects, like
+    // the close button; the editor is not stacked on Projects.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) unawaited(_close());
+      },
+      child: Scaffold(
+        body: switch (editor) {
+          AsyncData(value: final state) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppHeader(
+                centerTitle: true,
+                leading: AppIconButton(
+                  icon: AppIcons.close,
+                  semanticLabel: l10n.close,
+                  onPressed: _close,
+                ),
+                titleWidget: Semantics(
+                  button: true,
+                  label: l10n.renameProjectSemantics(state.project.name),
+                  excludeSemantics: true,
+                  child: GestureDetector(
+                    onTap: () => _rename(state.project.name),
+                    child: Text(
+                      state.project.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.bodyLarge.semibold.copyWith(
+                        color: context.colors.textPrimary,
+                      ),
                     ),
                   ),
                 ),
+                trailing: [
+                  AppIconButton(
+                    icon: AppIcons.undo,
+                    semanticLabel: l10n.undo,
+                    onPressed: state.canUndo ? _controller.undo : null,
+                  ),
+                  AppIconButton(
+                    icon: AppIcons.redo,
+                    semanticLabel: l10n.redo,
+                    onPressed: state.canRedo ? _controller.redo : null,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  PrimaryButton(
+                    label: l10n.export,
+                    size: ButtonSize.small,
+                    // Nothing to export, or files to relink first (the
+                    // banner below says so).
+                    onPressed:
+                        state.timeline.videoClips.isEmpty ||
+                            state.missingInUse.isNotEmpty
+                        ? null
+                        : () => unawaited(_export()),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                ],
               ),
-              trailing: [
-                AppIconButton(
-                  icon: AppIcons.undo,
-                  semanticLabel: l10n.undo,
-                  onPressed: state.canUndo ? _controller.undo : null,
+              if (state.saveFailed)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screen,
+                  ),
+                  child: ErrorBanner(
+                    message: l10n.saveFailed,
+                    onRetry: () => unawaited(_controller.flush()),
+                  ),
                 ),
-                AppIconButton(
-                  icon: AppIcons.redo,
-                  semanticLabel: l10n.redo,
-                  onPressed: state.canRedo ? _controller.redo : null,
+              if (state.missingInUse.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screen,
+                  ),
+                  child: ErrorBanner(
+                    message: l10n.missingMediaNote,
+                    retryLabel: l10n.relink,
+                    onRetry: _controller.relinkableMedia == null
+                        ? null
+                        : () => unawaited(_relink()),
+                  ),
                 ),
-                const SizedBox(width: AppSpacing.xs),
-                PrimaryButton(
-                  label: l10n.export,
-                  size: ButtonSize.small,
-                  onPressed: state.timeline.videoClips.isEmpty
-                      ? null
-                      : () => unawaited(_export()),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.screen),
+                  child: EditorPreview(projectId: widget.projectId),
                 ),
-                const SizedBox(width: AppSpacing.sm),
-              ],
-            ),
-            if (state.missingMedia.isNotEmpty)
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.screen,
                 ),
-                child: ErrorBanner(
-                  message: l10n.missingMediaNote,
-                  retryLabel: l10n.relink,
-                  onRetry: _controller.relinkableMedia == null
-                      ? null
-                      : () => unawaited(_relink()),
-                ),
-              ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.screen),
-                child: EditorPreview(projectId: widget.projectId),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screen,
-              ),
-              child: Row(
-                children: [
-                  const Expanded(child: TimeReadout()),
-                  const PlayButton(),
-                  Expanded(
-                    child: Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: AppIconButton(
-                        icon: AppIcons.fullscreen,
-                        semanticLabel: l10n.fullScreen,
-                        onPressed: () => context.push(
-                          AppRoutes.editorPreview(widget.projectId),
+                child: Row(
+                  children: [
+                    const Expanded(child: TimeReadout()),
+                    const PlayButton(),
+                    Expanded(
+                      child: Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: AppIconButton(
+                          icon: AppIcons.fullscreen,
+                          semanticLabel: l10n.fullScreen,
+                          onPressed: () => context.push(
+                            AppRoutes.editorPreview(widget.projectId),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            CaptionProgress(projectId: widget.projectId),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: _maxTimelineHeight),
-              child: TimelineView(
-                projectId: widget.projectId,
-                onAddMedia: _addMedia,
-                onTransition: _openTransition,
+              CaptionProgress(projectId: widget.projectId),
+              ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxHeight: _maxTimelineHeight,
+                ),
+                child: TimelineView(
+                  projectId: widget.projectId,
+                  onAddMedia: _addMedia,
+                  onTransition: _openTransition,
+                ),
               ),
-            ),
-            EditorToolbar(projectId: widget.projectId),
-          ],
-        ),
-        AsyncError(:final error) => SafeArea(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              EmptyState(
-                title: failureMessage(l10n, error) ?? l10n.failureGeneric,
-                message: l10n.editorLoadError,
-                actionLabel: l10n.retry,
-                primaryAction: true,
-                onAction: () =>
-                    ref.invalidate(editorControllerProvider(widget.projectId)),
-              ),
-              AppTextButton(
-                label: l10n.backToProjects,
-                onPressed: () => context.go(AppRoutes.projects),
-              ),
+              EditorToolbar(projectId: widget.projectId),
             ],
           ),
-        ),
-        _ => const _EditorSkeleton(),
-      },
+          AsyncError(:final error) => SafeArea(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                EmptyState(
+                  title: failureMessage(l10n, error) ?? l10n.failureGeneric,
+                  message: l10n.editorLoadError,
+                  actionLabel: l10n.retry,
+                  primaryAction: true,
+                  onAction: () => ref.invalidate(
+                    editorControllerProvider(widget.projectId),
+                  ),
+                ),
+                AppTextButton(
+                  label: l10n.backToProjects,
+                  onPressed: () => context.go(AppRoutes.projects),
+                ),
+              ],
+            ),
+          ),
+          _ => const _EditorSkeleton(),
+        },
+      ),
     );
   }
 }

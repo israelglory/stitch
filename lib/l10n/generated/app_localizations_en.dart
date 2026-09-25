@@ -16,13 +16,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectsTitle => 'Projects';
 
   @override
-  String get editorTitle => 'Editor';
-
-  @override
   String get settingsTitle => 'Settings';
-
-  @override
-  String get onboardingTitle => 'Welcome';
 
   @override
   String get designGalleryTitle => 'Design gallery';
@@ -49,8 +43,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get retry => 'Retry';
 
   @override
-  String projectCardSemantics(String name, String duration) {
-    return '$name, $duration';
+  String projectCardSemantics(String name, String duration, String edited) {
+    return '$name, $duration, $edited';
   }
 
   @override
@@ -328,8 +322,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get laneAudio => 'Audio';
 
   @override
-  String clipSemantics(int index, String duration) {
-    return 'Clip $index, $duration';
+  String clipSemantics(int index, int count, String duration) {
+    return 'Clip $index of $count, $duration';
   }
 
   @override
@@ -563,9 +557,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chooseFile => 'Choose a file';
-
-  @override
-  String get addingAudio => 'Adding audio';
 
   @override
   String get balanceTitle => 'Volume balance';
@@ -1038,4 +1029,74 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportFailedHint => 'Try again, or export at a lower resolution.';
+
+  @override
+  String get importFailedTitle => 'Media could not be added';
+
+  @override
+  String get ok => 'OK';
+
+  @override
+  String get transitionTooShort =>
+      'These clips are too short for a transition.';
+
+  @override
+  String get projectActionFailed => 'The project could not be changed';
+
+  @override
+  String get licenseNotFound => 'No license here';
+
+  @override
+  String get licenseNotFoundMessage =>
+      'Go back to the list of open source licenses.';
+
+  @override
+  String get saveFailed =>
+      'Changes could not be saved. Free up some space, then retry.';
+
+  @override
+  String clipMissingSemantics(int index, int count) {
+    return 'Clip $index of $count, file missing';
+  }
+
+  @override
+  String get moveEarlier => 'Move earlier';
+
+  @override
+  String get moveLater => 'Move later';
+
+  @override
+  String valueSeconds(String value) {
+    return '${value}s';
+  }
+
+  @override
+  String valueSpeed(String value) {
+    return '${value}x';
+  }
+
+  @override
+  String valuePercent(int value) {
+    return '$value%';
+  }
+
+  @override
+  String renameProjectSemantics(String name) {
+    return 'Rename $name';
+  }
+
+  @override
+  String sizeKilobytes(String size) {
+    return '$size KB';
+  }
+
+  @override
+  String sizeMegabytes(String size) {
+    return '$size MB';
+  }
+
+  @override
+  String sizeGigabytes(String size) {
+    return '$size GB';
+  }
 }

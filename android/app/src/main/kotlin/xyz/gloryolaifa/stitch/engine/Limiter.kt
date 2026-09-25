@@ -21,7 +21,8 @@ class Limiter(
   sampleRate: Int,
   private val ceiling: Float = CEILING,
 ) {
-  private val lookahead = max(1, (sampleRate * LOOKAHEAD_S).toInt())
+  /** Frames the sound comes out late. */
+  val lookahead = max(1, (sampleRate * LOOKAHEAD_S).toInt())
   private val window = lookahead + 1
   private val release = (1 - exp(-1.0 / (RELEASE_S * sampleRate))).toFloat()
 

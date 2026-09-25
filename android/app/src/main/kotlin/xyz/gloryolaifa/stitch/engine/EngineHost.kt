@@ -1,6 +1,7 @@
 package xyz.gloryolaifa.stitch.engine
 
 import android.content.Context
+import android.util.Log
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.view.TextureRegistry
@@ -118,7 +119,15 @@ class EngineHost(
     }
     jobs[jobId] = job to listener
     // Start after returning the id, so Dart knows the job before any event.
-    scope.launch { job.start(listener) }
+    scope.launch {
+      try {
+        job.start(listener)
+      } catch (e: Exception) {
+        // Anything unexpected ends this job, not the app.
+        Log.e(TAG, "Job failed to start", e)
+        listener.onFailed(EngineException.exportFailed(e.message ?: "Could not start"))
+      }
+    }
     return jobId
   }
 
@@ -141,6 +150,8 @@ class EngineHost(
   }
 
   companion object {
+    private const val TAG = "StitchEngine"
+
     fun register(context: Context, engine: FlutterEngine): EngineHost {
       val messenger = engine.dartExecutor.binaryMessenger
       val host = EngineHost(context.applicationContext, messenger, engine.renderer)

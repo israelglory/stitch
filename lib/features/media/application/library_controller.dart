@@ -81,9 +81,19 @@ class LibraryItems extends _$LibraryItems {
     state = AsyncData(
       LibraryPage(items: current.items, hasMore: true, loadingMore: true),
     );
-    final next = await ref
-        .read(mediaLibraryProvider)
-        .items(filter, page: _page + 1);
+    final page = _page;
+    final List<LibraryItem> next;
+    try {
+      next = await ref.read(mediaLibraryProvider).items(filter, page: page + 1);
+    } on Object {
+      // Scrolling to the end again tries again.
+      if (ref.mounted && identical(state.value?.items, current.items)) {
+        state = AsyncData(LibraryPage(items: current.items, hasMore: true));
+      }
+      return;
+    }
+    // Reloaded meanwhile (back from the background): this page is stale.
+    if (!ref.mounted || _page != page) return;
     _page += 1;
     state = AsyncData(
       LibraryPage(items: [...current.items, ...next], hasMore: next.isNotEmpty),

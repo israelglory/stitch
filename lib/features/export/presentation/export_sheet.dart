@@ -131,7 +131,7 @@ class _ExportPanelState extends ConsumerState<ExportPanel> {
           const SizedBox(height: AppSpacing.md),
           Text(
             l10n.exportEstimate(
-              formatBytes(estimatedExportBytes(options, durationUs)),
+              formatBytes(l10n, estimatedExportBytes(options, durationUs)),
             ),
             textAlign: TextAlign.center,
             style: AppTypography.body.tabular.copyWith(

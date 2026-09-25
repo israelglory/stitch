@@ -209,7 +209,10 @@ abstract final class AppSpacing {
 }
 
 abstract final class AppRadius {
-  /// Tiny elements only: labels on media, text skeletons.
+  /// Indicators a few pixels across (page dots): softened, not round.
+  static const double hairline = 2;
+
+  /// Tiny elements only: labels on media, text skeletons, badges.
   static const double small = 4;
 
   /// Buttons, inputs, thumbnails, timeline items.

@@ -49,6 +49,9 @@ void main(List<String> args) async {
     final flags = [
       '-fvisibility=hidden',
       '-Wno-unused-function',
+      // Source paths in the binary (from asserts) relative to the package,
+      // so builds on any machine are byte for byte the same (F-Droid).
+      '-ffile-prefix-map=${input.packageRoot.toFilePath()}=.',
       if (code.targetArchitecture == Architecture.arm) '-mfpu=neon-fp-armv8',
     ];
 

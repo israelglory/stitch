@@ -8,17 +8,9 @@
   "@projectsTitle": {
     "description": "Title of the home screen listing the user's projects."
   },
-  "editorTitle": "Editor",
-  "@editorTitle": {
-    "description": "Fallback title of the editor before a project name is loaded."
-  },
   "settingsTitle": "Settings",
   "@settingsTitle": {
     "description": "Title of the settings screen."
-  },
-  "onboardingTitle": "Welcome",
-  "@onboardingTitle": {
-    "description": "Temporary title of the onboarding route until M4."
   },
   "designGalleryTitle": "Design gallery",
   "@designGalleryTitle": {
@@ -52,14 +44,17 @@
   "@retry": {
     "description": "Button that tries a failed action again."
   },
-  "projectCardSemantics": "{name}, {duration}",
+  "projectCardSemantics": "{name}, {duration}, {edited}",
   "@projectCardSemantics": {
-    "description": "Accessibility label for a project thumbnail: project name and total duration.",
+    "description": "Accessibility label for a project thumbnail: name, total duration, and when it was last edited.",
     "placeholders": {
       "name": {
         "type": "String"
       },
       "duration": {
+        "type": "String"
+      },
+      "edited": {
         "type": "String"
       }
     }
@@ -424,11 +419,14 @@
   "@laneAudio": {
     "description": "Audio lane label."
   },
-  "clipSemantics": "Clip {index}, {duration}",
+  "clipSemantics": "Clip {index} of {count}, {duration}",
   "@clipSemantics": {
-    "description": "Accessibility label for a clip.",
+    "description": "Accessibility label for a clip on the timeline.",
     "placeholders": {
       "index": {
+        "type": "int"
+      },
+      "count": {
         "type": "int"
       },
       "duration": {
@@ -753,10 +751,6 @@
   "chooseFile": "Choose a file",
   "@chooseFile": {
     "description": "Button: opens the system file picker."
-  },
-  "addingAudio": "Adding audio",
-  "@addingAudio": {
-    "description": "Shown while an audio file is copied into the project."
   },
   "balanceTitle": "Volume balance",
   "@balanceTitle": {
@@ -1402,5 +1396,118 @@
   "exportFailedHint": "Try again, or export at a lower resolution.",
   "@exportFailedHint": {
     "description": "Shown under a failed export."
+  },
+  "importFailedTitle": "Media could not be added",
+  "@importFailedTitle": {
+    "description": "Title of the notice after an import fails."
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "Acknowledges a notice."
+  },
+  "transitionTooShort": "These clips are too short for a transition.",
+  "@transitionTooShort": {
+    "description": "Shown in the transitions sheet when a cut has no room for one."
+  },
+  "projectActionFailed": "The project could not be changed",
+  "@projectActionFailed": {
+    "description": "Title of the notice when renaming, duplicating, or deleting a project fails."
+  },
+  "licenseNotFound": "No license here",
+  "@licenseNotFound": {
+    "description": "Title when a license page is opened for an unknown package."
+  },
+  "licenseNotFoundMessage": "Go back to the list of open source licenses.",
+  "@licenseNotFoundMessage": {
+    "description": "Message when a license page is opened for an unknown package."
+  },
+  "saveFailed": "Changes could not be saved. Free up some space, then retry.",
+  "@saveFailed": {
+    "description": "Banner in the editor when autosave fails."
+  },
+  "clipMissingSemantics": "Clip {index} of {count}, file missing",
+  "@clipMissingSemantics": {
+    "description": "Accessibility label for a clip whose file is missing.",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "moveEarlier": "Move earlier",
+  "@moveEarlier": {
+    "description": "Screen reader action: moves a clip one place earlier."
+  },
+  "moveLater": "Move later",
+  "@moveLater": {
+    "description": "Screen reader action: moves a clip one place later."
+  },
+  "valueSeconds": "{value}s",
+  "@valueSeconds": {
+    "description": "A length in seconds, like 3.2s.",
+    "placeholders": {
+      "value": {
+        "type": "String",
+        "example": "3.2"
+      }
+    }
+  },
+  "valueSpeed": "{value}x",
+  "@valueSpeed": {
+    "description": "A playback speed, like 1.5x.",
+    "placeholders": {
+      "value": {
+        "type": "String",
+        "example": "1.5"
+      }
+    }
+  },
+  "valuePercent": "{value}%",
+  "@valuePercent": {
+    "description": "A percentage, like 40%.",
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "renameProjectSemantics": "Rename {name}",
+  "@renameProjectSemantics": {
+    "description": "Screen reader label of the project name in the editor, which renames it.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sizeKilobytes": "{size} KB",
+  "@sizeKilobytes": {
+    "description": "A file or storage size, like 820 KB. The number is already formatted.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sizeMegabytes": "{size} MB",
+  "@sizeMegabytes": {
+    "description": "A file or storage size, like 45 MB. The number is already formatted.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sizeGigabytes": "{size} GB",
+  "@sizeGigabytes": {
+    "description": "A file or storage size, like 1.2 GB. The number is already formatted.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
   }
 }

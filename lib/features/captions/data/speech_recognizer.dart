@@ -4,7 +4,6 @@ import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:math' as math;
-import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:stitch/core/errors/failure.dart';
@@ -158,15 +157,33 @@ String? _transcribe({
   required int progressAddress,
   required int cancelAddress,
 }) {
-  final bytes = File(audioPath).readAsBytesSync();
-  final count = bytes.length ~/ 4;
-  if (count < speechSampleRate ~/ 10) return null;
+  final file = File(audioPath).openSync();
+  final int count;
+  try {
+    count = file.lengthSync() ~/ 4;
+  } on Object {
+    file.closeSync();
+    rethrow;
+  }
+  if (count < speechSampleRate ~/ 10) {
+    file.closeSync();
+    return null;
+  }
   return using((arena) {
+    // Read straight into native memory: one copy of the sound, not two
+    // (an hour is about 230 MB).
     final samples = arena<Float>(count);
-    samples
-        .cast<Uint8>()
-        .asTypedList(count * 4)
-        .setAll(0, Uint8List.sublistView(bytes, 0, count * 4));
+    final view = samples.cast<Uint8>().asTypedList(count * 4);
+    try {
+      var read = 0;
+      while (read < view.length) {
+        final n = file.readIntoSync(view, read);
+        if (n == 0) break;
+        read += n;
+      }
+    } finally {
+      file.closeSync();
+    }
     final out = whisperTranscribe(
       modelPath.toNativeUtf8(allocator: arena),
       samples,

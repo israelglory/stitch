@@ -17,7 +17,8 @@ final class Limiter {
 
   private let channels: Int
   private let ceiling: Float
-  private let lookahead: Int
+  /// Frames the sound comes out late.
+  let lookahead: Int
   private let window: Int
   private let release: Float
 

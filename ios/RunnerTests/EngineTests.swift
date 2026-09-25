@@ -468,6 +468,23 @@ final class EngineTests: XCTestCase {
     return path
   }
 
+  func testCancelBeforeReadingStartsStopsTheExport() async throws {
+    let out = tempDir.appendingPathComponent("early.mp4").path
+    let exporter = Exporter(
+      doc: sampleDocument(),
+      request: ExportRequestMessage(
+        outputPath: out, width: 360, height: 640, frameRate: 30, videoBitrate: 1_000_000,
+        hevc: false, progressTitle: "Exporting"))
+    // Before run: the composition is still to be built.
+    exporter.cancel()
+    do {
+      _ = try await exporter.run { _ in }
+      XCTFail("A cancelled export must not finish")
+    } catch EngineError.cancelled {
+    }
+    XCTAssertFalse(FileManager.default.fileExists(atPath: out))
+  }
+
   func testLoudMixIsLimitedNotClipped() async throws {
     // Two copies of a loud tone at 200 percent: 3.6 times full scale.
     let tone = try loudTone()

@@ -328,8 +328,14 @@ object Waveform {
       extractor.selectTrack(track)
       val format = extractor.getTrackFormat(track)
       val codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
-      codec.configure(format, null, null, 0)
-      codec.start()
+      try {
+        codec.configure(format, null, null, 0)
+        codec.start()
+      } catch (e: Exception) {
+        // A decoder that did not start is still one of the few there are.
+        codec.release()
+        throw e
+      }
       val peaks = ArrayList<Double>()
       try {
         var sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)

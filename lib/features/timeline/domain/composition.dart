@@ -258,7 +258,15 @@ ResolvedAudio? _resolveAudio(
   AudioMix mix,
 ) {
   final start = layout.startOf(item.anchor);
-  final naturalEnd = audioEndUs(item, layout);
+  // Sound whose start was trimmed off the front with its clip (extracted
+  // audio): it starts at 0, that much later in the file, to stay in sync.
+  final unbounded = layout.unboundedStartOf(item.anchor);
+  final cutUs = !item.loop && unbounded < 0 ? -unbounded : 0;
+  final sourceIn = item.sourceInUs + timelineToSourceUs(cutUs, item.speed);
+  if (sourceIn >= item.sourceOutUs) return null;
+  final naturalEnd = cutUs > 0
+      ? unbounded + item.durationUs
+      : audioEndUs(item, layout);
   final window = _window(start, naturalEnd - start, layout.durationUs);
   if (window == null) return null;
   final (_, end) = window;
@@ -270,7 +278,7 @@ ResolvedAudio? _resolveAudio(
     kind: item.kind,
     startUs: start,
     endUs: end,
-    sourceInUs: item.sourceInUs,
+    sourceInUs: sourceIn,
     sourceOutUs: item.sourceOutUs,
     speed: item.speed,
     loop: item.loop,

@@ -25,6 +25,9 @@ Captions are made on the device with [whisper.cpp](https://github.com/ggml-org/w
    - A caption stays up 0.4 s after its last word, or until the next caption starts.
 4. **Applying them.**
    - Captions are anchored in the timeline as it was when the job started, then placed on the current one. Edits made meanwhile (a trimmed clip, say) keep them on the same speech.
+   - If a caption's clip was split meanwhile, it moves to the part that holds its speech. If its speech is gone (the clip was deleted), it keeps its time and is flagged for review.
+   - Captions on a clip follow its speed: a clip at 2x makes its captions and word times half as long.
+   - Languages written without spaces (Chinese, Japanese, Thai, and others) are joined without spaces when captions are merged or split, and a typo fix keeps the word timings when the length matches.
    - Replacing the captions is one undo step. The track's style and position are kept.
    - During a drag, they wait until it ends.
 

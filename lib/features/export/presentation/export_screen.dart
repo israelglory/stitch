@@ -75,6 +75,11 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
       destructive: true,
     );
     if (!stop || !mounted) return;
+    // It may have finished while the question was open: then there is
+    // nothing to stop, and the result stays on screen.
+    final now = ref.read(exportControllerProvider(widget.projectId));
+    if (now is! ExportRunning && now is! ExportIdle) return;
+    if (now case ExportRunning(saving: true)) return;
     await _export.cancel();
     if (mounted) context.pop();
   }
@@ -86,7 +91,10 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
     return PopScope(
       canPop: !running,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) unawaited(_confirmStop());
+        if (didPop) return;
+        // Saving to the gallery cannot be stopped; it takes a moment.
+        if (state case ExportRunning(saving: true)) return;
+        unawaited(_confirmStop());
       },
       child: Scaffold(
         body: SafeArea(
@@ -158,7 +166,7 @@ class _Progress extends ConsumerWidget {
                   size: AppSizes.exportRing,
                 ),
                 Text(
-                  '$percent%',
+                  l10n.valuePercent(percent),
                   style: AppTypography.title.semibold.tabular.copyWith(
                     color: colors.textPrimary,
                   ),

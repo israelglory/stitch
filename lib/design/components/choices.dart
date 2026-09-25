@@ -25,8 +25,10 @@ class PageDots extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
               width: _dot,
               height: _dot,
+              // Softened squares: only icon buttons and the record button
+              // are fully round.
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(AppRadius.hairline),
                 color: i == index ? colors.accent : colors.border,
               ),
             ),

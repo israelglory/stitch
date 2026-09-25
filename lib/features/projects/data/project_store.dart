@@ -42,6 +42,13 @@ class ProjectStore {
   /// Index writes are serialized so concurrent saves cannot lose entries.
   Future<void> _indexQueue = Future.value();
 
+  /// Saves of each project, one after another, so a slow write can never
+  /// land after (and over) a newer one.
+  final _saveQueues = <String, Future<void>>{};
+
+  /// A duplicate is assembled under this suffix, then renamed into place.
+  static const _stagingSuffix = '.staging';
+
   Directory get _projectsDir => Directory(p.join(root.path, 'projects'));
   File get _indexFile => File(p.join(_projectsDir.path, 'index.json'));
 
@@ -56,7 +63,11 @@ class ProjectStore {
 
   /// Summaries, most recently edited first.
   Future<List<ProjectSummary>> list() async {
-    final index = await _readIndex() ?? await _rebuildIndex();
+    final index =
+        await _readIndex() ??
+        await _queued<Map<String, ProjectSummary>>(
+          () async => await _readIndex() ?? await _rebuildIndex(),
+        );
     return [...index.values]
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   }
@@ -66,14 +77,27 @@ class ProjectStore {
     if (!file.existsSync()) {
       throw ProjectCorruptedFailure(id, cause: 'Project file missing');
     }
-    return codec.decode(await file.readAsString(), projectId: id);
+    final project = codec.decode(await file.readAsString(), projectId: id);
+    // The folder names the project: a document carrying another id (from
+    // an interrupted copy) must never save over that other project.
+    return project.id == id ? project : project.copyWith(id: id);
   }
 
   /// Writes [project] and updates its index entry. Its `updatedAt` is
-  /// stored as given; callers set it.
-  Future<void> save(Project project) async {
-    await writeFileAtomically(_document(project.id), codec.encode(project));
-    await _updateIndex((index) => index[project.id] = summarize(project));
+  /// stored as given; callers set it. Saves of one project run in order.
+  Future<void> save(Project project) {
+    final previous = _saveQueues[project.id] ?? Future<void>.value();
+    final done = previous.then<void>((_) {}, onError: (_) {}).then((_) async {
+      await writeFileAtomically(_document(project.id), codec.encode(project));
+      await _updateIndex((index) => index[project.id] = summarize(project));
+    });
+    _saveQueues[project.id] = done;
+    return done.whenComplete(() {
+      // Map.remove returns the removed future; nothing to wait for.
+      if (identical(_saveQueues[project.id], done)) {
+        unawaited(_saveQueues.remove(project.id));
+      }
+    });
   }
 
   Future<Project> create({
@@ -99,10 +123,12 @@ class ProjectStore {
   }
 
   /// Copies the whole project folder, including media, under a new id.
+  /// The copy is assembled aside and renamed into place, so an interrupted
+  /// copy leaves nothing that looks like a project.
   Future<Project> duplicate(String id, {required String name}) async {
     final source = await load(id);
     final copyId = ids.next();
-    await _copyDirectory(projectDir(id), projectDir(copyId));
+    final staging = Directory('${projectDir(copyId).path}$_stagingSuffix');
     final now = clock();
     final copy = source.copyWith(
       id: copyId,
@@ -110,7 +136,18 @@ class ProjectStore {
       createdAt: now,
       updatedAt: now,
     );
-    await save(copy);
+    try {
+      await _copyDirectory(projectDir(id), staging);
+      await writeFileAtomically(
+        File(p.join(staging.path, 'project.json')),
+        codec.encode(copy),
+      );
+      await staging.rename(projectDir(copyId).path);
+    } on Object {
+      if (staging.existsSync()) await staging.delete(recursive: true);
+      rethrow;
+    }
+    await _updateIndex((index) => index[copyId] = summarize(copy));
     return copy;
   }
 
@@ -164,6 +201,11 @@ class ProjectStore {
     if (dir.existsSync()) {
       for (final entry in dir.listSync().whereType<Directory>()) {
         final id = p.basename(entry.path);
+        // A copy that was interrupted: never finished, so never a project.
+        if (id.endsWith(_stagingSuffix)) {
+          await entry.delete(recursive: true);
+          continue;
+        }
         try {
           index[id] = summarize(await load(id));
         } on ProjectCorruptedFailure catch (e) {
@@ -175,14 +217,18 @@ class ProjectStore {
     return index;
   }
 
-  Future<void> _updateIndex(void Function(Map<String, ProjectSummary>) edit) {
-    final done = _indexQueue.then((_) async {
-      final index = await _readIndex() ?? await _rebuildIndex();
-      edit(index);
-      await _writeIndex(index);
-    });
+  Future<void> _updateIndex(void Function(Map<String, ProjectSummary>) edit) =>
+      _queued(() async {
+        final index = await _readIndex() ?? await _rebuildIndex();
+        edit(index);
+        await _writeIndex(index);
+      });
+
+  /// Runs [task] after every index read-modify-write queued before it.
+  Future<T> _queued<T>(Future<T> Function() task) {
+    final done = _indexQueue.then((_) => task());
     // Keep the queue alive after a failure; the caller still sees it.
-    _indexQueue = done.catchError((_) {});
+    _indexQueue = done.then<void>((_) {}, onError: (_) {});
     return done;
   }
 

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stitch/app/failure_messages.dart';
 import 'package:stitch/app/providers.dart';
 import 'package:stitch/app/router.dart';
 import 'package:stitch/core/time/time.dart';
@@ -180,6 +181,21 @@ class _ProjectGrid extends ConsumerWidget {
   ) {
     final l10n = AppLocalizations.of(context);
     final controller = ref.read(projectsControllerProvider.notifier);
+    // A failure (a full disk while copying, say) is explained, not lost.
+    Future<void> attempt(Future<void> Function() action) async {
+      try {
+        await action();
+      } on Object catch (e) {
+        if (!context.mounted) return;
+        await showNoticeDialog(
+          context: context,
+          title: l10n.projectActionFailed,
+          message: failureMessage(l10n, e) ?? l10n.failureGeneric,
+          buttonLabel: l10n.ok,
+        );
+      }
+    }
+
     return showActionSheet(
       context: context,
       title: project.name,
@@ -194,15 +210,19 @@ class _ProjectGrid extends ConsumerWidget {
               confirmLabel: l10n.save,
               initialValue: project.name,
             );
-            if (name != null) await controller.rename(project.id, name);
+            if (name != null) {
+              await attempt(() => controller.rename(project.id, name));
+            }
           },
         ),
         SheetAction(
           icon: AppIcons.duplicate,
           label: l10n.duplicate,
-          onSelected: () => controller.duplicate(
-            project.id,
-            name: l10n.copyName(project.name),
+          onSelected: () => attempt(
+            () => controller.duplicate(
+              project.id,
+              name: l10n.copyName(project.name),
+            ),
           ),
         ),
         SheetAction(
@@ -217,7 +237,7 @@ class _ProjectGrid extends ConsumerWidget {
               confirmLabel: l10n.delete,
               destructive: true,
             );
-            if (confirmed) await controller.delete(project.id);
+            if (confirmed) await attempt(() => controller.delete(project.id));
           },
         ),
       ],

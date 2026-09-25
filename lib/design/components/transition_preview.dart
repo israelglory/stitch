@@ -1,5 +1,4 @@
 import 'package:flutter/widgets.dart';
-import 'package:stitch/design/tokens.dart';
 
 /// Transition looks the preview can show. Mirrors the editor's transition
 /// types; kept here so the design system does not depend on features.
@@ -94,7 +93,8 @@ class _TransitionPreviewState extends State<TransitionPreview>
   Widget _frame(double p) {
     final from = widget.from;
     final to = widget.to;
-    final black = context.colors.background;
+    // Black in either theme: it is the video going dark, not the UI.
+    const black = Color(0xFF000000);
     Widget stack(List<Widget> children) =>
         Stack(fit: StackFit.expand, children: children);
 
@@ -111,7 +111,7 @@ class _TransitionPreviewState extends State<TransitionPreview>
             if (p < 0.5) from else to,
             Opacity(
               opacity: 1 - (p - 0.5).abs() * 2,
-              child: ColoredBox(color: black),
+              child: const ColoredBox(color: black),
             ),
           ]),
           TransitionLook.slideLeft => stack([

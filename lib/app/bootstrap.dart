@@ -85,7 +85,7 @@ Future<void> bootstrap({
         cacheRootProvider.overrideWithValue(cache),
         ...overrides,
       ],
-      child: const StitchApp(),
+      child: const StitchApp(splash: true),
     ),
   );
 }

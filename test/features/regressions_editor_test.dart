@@ -152,6 +152,30 @@ void main() {
       await tester.pump(autosaveDelay * 2);
       await settle(tester);
     });
+
+    testWidgets('clips far along the timeline can be tapped', (tester) async {
+      env = await createEnv(tester);
+      final id = await createProject(tester, env, seconds: [10, 10, 10]);
+      await pumpApp(tester, env, location: AppRoutes.editor(id));
+      await settleUntil(tester, find.byType(VideoClipTile));
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(EditorScreen)),
+      );
+      final third = stateOf(tester, id).timeline.videoClips[2].id;
+      // The third clip under the playhead: more than a screen width past
+      // the start of the content, where taps used to be dropped.
+      await container.read(playbackControllerProvider.notifier).seek(s(25));
+      await settle(tester);
+      final tiles = find.byType(VideoClipTile);
+      final playheadX = tester.getCenter(find.byType(Playhead)).dx;
+      await tester.tapAt(Offset(playheadX, tester.getCenter(tiles.first).dy));
+      await settle(tester);
+      final selection = stateOf(tester, id).selection;
+      expect(selection, isA<ClipSelected>());
+      expect((selection as ClipSelected).id, third);
+      await tester.pump(autosaveDelay * 2);
+      await settle(tester);
+    });
   });
 
   group('editing', () {

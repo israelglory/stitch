@@ -53,6 +53,7 @@ flutter:
 
   assets:
     - assets/licenses/
+    - assets/splash/
     - assets/audio/music/
     - assets/audio/sfx/
 

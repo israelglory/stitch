@@ -243,8 +243,15 @@ class _TimelineViewState extends ConsumerState<TimelineView>
               height: contentHeight,
               child: Stack(
                 children: [
-                  // Scrolling content, positioned by the playhead.
-                  Positioned.fill(
+                  // Scrolling content, positioned by the playhead. It is
+                  // laid out at its full width: taps outside a box's size
+                  // never reach its children, so a viewport-wide box here
+                  // made items past the first screen untappable.
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: contentWidth,
                     child: ValueListenableBuilder<int>(
                       valueListenable: _position,
                       builder: (context, position, child) =>
@@ -252,14 +259,7 @@ class _TimelineViewState extends ConsumerState<TimelineView>
                             offset: Offset(center - _scale.usToPx(position), 0),
                             child: child,
                           ),
-                      child: OverflowBox(
-                        alignment: AlignmentDirectional.topStart,
-                        maxWidth: double.infinity,
-                        child: SizedBox(
-                          width: contentWidth,
-                          child: RepaintBoundary(child: content),
-                        ),
-                      ),
+                      child: RepaintBoundary(child: content),
                     ),
                   ),
                   // Fixed lane headers, over the content.

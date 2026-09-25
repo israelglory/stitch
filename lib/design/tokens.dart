@@ -255,6 +255,10 @@ abstract final class AppSizes {
   /// Height of the live recording level meter.
   static const double levelMeter = 48;
 
+  /// Side of the splash logo artwork. The native launch screens draw it at
+  /// the same size (tool/make_icons.sh), so the handoff is invisible.
+  static const double splashLogo = 160;
+
   /// Width of a caption's time in the caption editor.
   static const double captionTime = 56;
 

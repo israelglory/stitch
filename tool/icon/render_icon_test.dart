@@ -12,6 +12,10 @@ import 'package:flutter_test/flutter_test.dart';
 /// as on iOS and stays inside the 66 dp safe zone.
 const double _adaptiveVisible = 72 / 108;
 
+/// Side of the splash artwork square, in logical pixels. Matches
+/// `AppSizes.splashLogo`.
+const double _splashLogoSize = 160;
+
 Future<ui.Image> _load(String path) async {
   final codec = await ui.instantiateImageCodec(File(path).readAsBytesSync());
   return (await codec.getNextFrame()).image;
@@ -83,6 +87,32 @@ void main() {
     await _save('$out/android_foreground_dark.png', 432, (c, b) {
       _draw(c, dark, artwork(b), _letters(const Color(0xFFFFFFFF)));
     });
+
+    // Splash logo: the artwork square at `_splashLogoSize` logical pixels,
+    // letters only, per scale. The same images serve Flutter, iOS, and
+    // Android before 12.
+    for (final (name, ink) in [
+      ('light', const Color(0xFF000000)),
+      ('dark', const Color(0xFFFFFFFF)),
+    ]) {
+      for (final scale in [1, 2, 3, 4]) {
+        await _save(
+          '$out/splash_${name}_${scale}x.png',
+          (_splashLogoSize * scale).round(),
+          (c, b) => _draw(c, dark, b, _letters(ink)),
+        );
+      }
+      // Android 12 and later draw the splash icon in a 288 dp box (masked
+      // to a 192 dp circle); the artwork keeps its size in the middle.
+      await _save('$out/splash_${name}_android12.png', 288 * 4, (c, b) {
+        final logo = Rect.fromCenter(
+          center: b.center,
+          width: _splashLogoSize * 4,
+          height: _splashLogoSize * 4,
+        );
+        _draw(c, dark, logo, _letters(ink));
+      });
+    }
 
     File('$out/backgrounds.txt')
         .writeAsStringSync('${await _corner(light)} ${await _corner(dark)}\n');

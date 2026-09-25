@@ -7,6 +7,8 @@
 # - Android: an adaptive icon (letters over a background color), light by
 #   default and dark in night mode, with a monochrome layer for themed
 #   icons (Android 13 and later).
+# - The splash logo, light and dark: Flutter assets (assets/splash), the
+#   iOS launch screen image, and the Android launch drawables.
 #
 # Uses sips (macOS).
 set -eu
@@ -100,4 +102,40 @@ cat > "$res/mipmap-anydpi-v26/ic_launcher.xml" <<'XML'
     <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
 </adaptive-icon>
 XML
+# Splash logo. Flutter picks the scale from the 2.0x and 3.0x folders.
+for mode in light dark; do
+  mkdir -p assets/splash/2.0x assets/splash/3.0x
+  cp "$out/splash_${mode}_1x.png" "assets/splash/logo_$mode.png"
+  cp "$out/splash_${mode}_2x.png" "assets/splash/2.0x/logo_$mode.png"
+  cp "$out/splash_${mode}_3x.png" "assets/splash/3.0x/logo_$mode.png"
+done
+launch="ios/Runner/Assets.xcassets/SplashLogo.imageset"
+rm -f "$launch"/*.png
+for scale in 1 2 3; do
+  suffix=$([ "$scale" = 1 ] && echo "" || echo "@${scale}x")
+  cp "$out/splash_light_${scale}x.png" "$launch/SplashLogo$suffix.png"
+  cp "$out/splash_dark_${scale}x.png" "$launch/SplashLogo-dark$suffix.png"
+done
+cat > "$launch/Contents.json" <<'JSON'
+{
+  "images" : [
+    { "filename" : "SplashLogo.png", "idiom" : "universal", "scale" : "1x" },
+    { "appearances" : [ { "appearance" : "luminosity", "value" : "dark" } ], "filename" : "SplashLogo-dark.png", "idiom" : "universal", "scale" : "1x" },
+    { "filename" : "SplashLogo@2x.png", "idiom" : "universal", "scale" : "2x" },
+    { "appearances" : [ { "appearance" : "luminosity", "value" : "dark" } ], "filename" : "SplashLogo-dark@2x.png", "idiom" : "universal", "scale" : "2x" },
+    { "filename" : "SplashLogo@3x.png", "idiom" : "universal", "scale" : "3x" },
+    { "appearances" : [ { "appearance" : "luminosity", "value" : "dark" } ], "filename" : "SplashLogo-dark@3x.png", "idiom" : "universal", "scale" : "3x" }
+  ],
+  "info" : { "author" : "xcode", "version" : 1 }
+}
+JSON
+# Android scales the xxxhdpi image down for other densities.
+for mode in light dark; do
+  dir="$res/drawable-xxxhdpi"
+  [ "$mode" = dark ] && dir="$res/drawable-night-xxxhdpi"
+  mkdir -p "$dir"
+  cp "$out/splash_${mode}_4x.png" "$dir/splash_logo.png"
+  cp "$out/splash_${mode}_android12.png" "$dir/splash_icon.png"
+done
+
 echo "Icons written (backgrounds $light_bg and $dark_bg)."

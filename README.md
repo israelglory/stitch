@@ -95,7 +95,7 @@ keyAlias=stitch
 keyPassword=...
 ```
 
-Without that file the release build falls back to the debug key and prints a warning. The app icon comes from `assets/light.png` and `assets/dark.png`. After changing either, run `tool/make_icons.sh`: it writes the iOS icon (light, plus dark and tinted variants for iOS 18) and the Android adaptive icon (light by default, dark in night mode, and a monochrome layer for themed icons).
+Without that file the release build falls back to the debug key and prints a warning. The app icon comes from `assets/light.png` and `assets/dark.png`. After changing either, run `tool/make_icons.sh`: it writes the iOS icon (light, plus dark and tinted variants for iOS 18) and the Android adaptive icon (light by default, dark in night mode, and a monochrome layer for themed icons). The same script makes the splash logo: the native launch screens (iOS `LaunchScreen.storyboard`, Android `launch_background.xml` and the Android 12 splash theme) and `assets/splash/`, which Flutter draws in the same place before fading into the app (`lib/app/splash.dart`).
 
 ## F-Droid
 

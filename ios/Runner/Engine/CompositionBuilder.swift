@@ -40,19 +40,23 @@ final class StitchInstruction: NSObject, AVVideoCompositionInstructionProtocol,
   let transition: CompositorTransition?
   let canvasSize: CGSize
   let background: EngineDocument.Background
+  /// Every overlay of the document; the compositor draws those showing.
+  let overlays: [EngineDocument.Overlay]
 
   init(
     timeRange: CMTimeRange,
     layers: [CompositorLayer],
     transition: CompositorTransition?,
     canvasSize: CGSize,
-    background: EngineDocument.Background
+    background: EngineDocument.Background,
+    overlays: [EngineDocument.Overlay] = []
   ) {
     self.timeRange = timeRange
     self.layers = layers
     self.transition = transition
     self.canvasSize = canvasSize
     self.background = background
+    self.overlays = overlays
     let ids = layers.compactMap(\.trackID)
     requiredSourceTrackIDs = ids.isEmpty ? nil : ids.map { NSNumber(value: $0) }
   }
@@ -311,7 +315,8 @@ enum CompositionBuilder {
           layers: active2.compactMap { layers[$0.clipId] },
           transition: transition,
           canvasSize: canvas,
-          background: doc.background))
+          background: doc.background,
+          overlays: doc.overlays))
     }
 
     let videoComposition = AVMutableVideoComposition()

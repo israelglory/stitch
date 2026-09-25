@@ -52,8 +52,11 @@ data class Gain(
   }
 
   companion object {
-    /** Volumes go up to 200 percent, as in the editor. */
-    const val MAX_GAIN = 2f
+    /**
+     * An item's own volume (up to 200 percent) times the added-audio level
+     * (up to 200 percent).
+     */
+    const val MAX_GAIN = 4f
   }
 }
 
@@ -64,6 +67,10 @@ data class Gain(
  * the item's start (timeline time, after speed changes), so the gain follows
  * seeks in preview.
  *
+ * Gain is applied in float. When the item can go above 100 percent, a
+ * [Limiter] at full scale keeps it from clipping before the mix, which
+ * has its own limiter ([LimitingAudioMixer]).
+ *
  * The input is read out before the output buffer is claimed: Media3 can
  * hand a processor its own (empty) output buffer as input.
  */
@@ -71,6 +78,8 @@ data class Gain(
 class GainProcessor(private val gain: Gain) : BaseAudioProcessor() {
   private var framesSinceFlush = 0L
   private var startUs = 0L
+  private var limiter: Limiter? = null
+  private var samples = FloatArray(0)
 
   override fun onConfigure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
     if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT &&
@@ -84,30 +93,35 @@ class GainProcessor(private val gain: Gain) : BaseAudioProcessor() {
   override fun onFlush(streamMetadata: AudioProcessor.StreamMetadata) {
     framesSinceFlush = 0
     startUs = max(0, streamMetadata.positionOffsetUs)
+    limiter = if (gain.volume > 1f) {
+      Limiter(inputAudioFormat.channelCount, inputAudioFormat.sampleRate, ceiling = 1f)
+    } else {
+      null
+    }
   }
 
   override fun queueInput(inputBuffer: ByteBuffer) {
     val format = inputAudioFormat
     val input = inputBuffer.order(ByteOrder.nativeOrder())
     val frames = input.remaining() / format.bytesPerFrame
-    val samples = frames * format.channelCount
+    val count = frames * format.channelCount
     val isFloat = format.encoding == C.ENCODING_PCM_FLOAT
-    val floats = if (isFloat) FloatArray(samples) { input.float } else null
-    val shorts = if (!isFloat) ShortArray(samples) { input.short } else null
+    if (samples.size < count) samples = FloatArray(count)
+    for (i in 0 until count) {
+      samples[i] = if (isFloat) input.float else input.short / 32768f
+    }
 
-    val out = replaceOutputBuffer(frames * format.bytesPerFrame).order(ByteOrder.nativeOrder())
     var i = 0
     for (f in 0 until frames) {
       val g = gain.at(startUs + (framesSinceFlush + f) * 1_000_000L / format.sampleRate)
-      for (ch in 0 until format.channelCount) {
-        if (isFloat) {
-          out.putFloat((floats!![i] * g).coerceIn(-1f, 1f))
-        } else {
-          val s = shorts!![i] * g
-          out.putShort(s.coerceIn(Short.MIN_VALUE.toFloat(), Short.MAX_VALUE.toFloat()).toInt().toShort())
-        }
-        i++
-      }
+      repeat(format.channelCount) { samples[i++] *= g }
+    }
+    limiter?.process(samples, 0, frames)
+
+    val out = replaceOutputBuffer(frames * format.bytesPerFrame).order(ByteOrder.nativeOrder())
+    for (k in 0 until count) {
+      val v = samples[k].coerceIn(-1f, 1f)
+      if (isFloat) out.putFloat(v) else out.putShort((v * Short.MAX_VALUE).toInt().toShort())
     }
     framesSinceFlush += frames
     out.flip()

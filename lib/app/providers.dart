@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:stitch/core/ids/ids.dart';
+import 'package:stitch/core/platform/system_services.dart';
 import 'package:stitch/core/time/clock.dart';
 import 'package:stitch/engine/engine_provider.dart';
 import 'package:stitch/features/media/data/media_library.dart';
@@ -27,6 +28,10 @@ Directory storageRoot(Ref ref) =>
 @Riverpod(keepAlive: true)
 IdGenerator idGenerator(Ref ref) => RandomIdGenerator();
 
+/// Free space, the photo library, sharing, and links. Tests override it.
+@Riverpod(keepAlive: true)
+SystemServices systemServices(Ref ref) => platformSystemServices();
+
 @Riverpod(keepAlive: true)
 Clock clock(Ref ref) => systemClock;
 
@@ -46,6 +51,7 @@ MediaImporter mediaImporter(Ref ref) => MediaImporter(
   library: ref.watch(mediaLibraryProvider),
   engine: ref.watch(editorEngineProvider),
   ids: ref.watch(idGeneratorProvider),
+  freeSpace: ref.watch(systemServicesProvider).freeSpace,
 );
 
 /// App cache folder (thumbnails, filmstrips). Overridden in bootstrap and

@@ -45,3 +45,14 @@ ffmpeg $q -f lavfi -i "sine=frequency=262:sample_rate=44100" -t 5 -c:a libmp3lam
 
 # A still photo.
 ffmpeg $q -f lavfi -i "testsrc2=size=1200x1600" -frames:v 1 -q:v 5 still.jpg
+
+# Speech for captions (macOS only: uses the system voice). The .f32 file is
+# the same sound as speech recognition takes it: 16 kHz mono float, raw.
+if command -v say >/dev/null; then
+  say -v Samantha -o _speech.aiff "Stitch makes captions on your phone. Everything stays on your device."
+  afconvert -f m4af -d aac@48000 -b 96000 _speech.aiff speech.m4a
+  ffmpeg $q -i _speech.aiff -ar 16000 -ac 1 -f f32le speech_16k.f32
+  ffmpeg $q -f lavfi -i "testsrc2=size=360x640:rate=30" -i speech.m4a \
+    -c:v libx264 -pix_fmt yuv420p -c:a copy -shortest speech.mp4
+  rm _speech.aiff
+fi

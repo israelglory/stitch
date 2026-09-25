@@ -31,11 +31,19 @@ jobs:
           dart run build_runner build --delete-conflicting-outputs
           git diff --exit-code -- lib
       - name: Format
-        run: dart format --output=none --set-exit-if-changed lib test
+        run: dart format --output=none --set-exit-if-changed lib test integration_test hook
       - name: Analyze
         run: flutter analyze --fatal-infos --fatal-warnings
+      # The caption model for the speech recognition tests (they skip
+      # without it). Cached; the script checks its hash.
+      - uses: actions/cache@v4
+        with:
+          path: .cache/models
+          key: whisper-tiny-q8_0-c2085835
+      - run: tool/fetch_test_model.sh
       - name: Test
-        # Goldens run in the macOS job, where they were generated.
+        # Goldens run in the macOS job, where they were generated. The build
+        # hook compiles whisper.cpp for this machine first.
         run: flutter test --coverage --exclude-tags golden
 
   android:

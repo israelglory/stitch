@@ -867,6 +867,1104 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Extracted audio'**
   String get extractedAudioName;
+
+  /// Toolbar item: music, sound effects, and voiceover.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get toolAudio;
+
+  /// Toolbar item: adds text to the video.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get toolText;
+
+  /// Audio menu item.
+  ///
+  /// In en, this message translates to:
+  /// **'Music'**
+  String get toolMusic;
+
+  /// Audio menu item.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound effects'**
+  String get toolSoundEffects;
+
+  /// Audio menu item: record your voice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voiceover'**
+  String get toolVoiceover;
+
+  /// Audio menu item: balance between the videos' own sound and added audio.
+  ///
+  /// In en, this message translates to:
+  /// **'Original sound'**
+  String get toolOriginalSound;
+
+  /// Music library screen title.
+  ///
+  /// In en, this message translates to:
+  /// **'Music'**
+  String get musicTitle;
+
+  /// Sound effects library screen title.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound effects'**
+  String get soundEffectsTitle;
+
+  /// Tab: music that comes with the app.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundled'**
+  String get tabBundled;
+
+  /// Tab: audio files on this device.
+  ///
+  /// In en, this message translates to:
+  /// **'From device'**
+  String get tabFromDevice;
+
+  /// Music mood heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Upbeat'**
+  String get moodUpbeat;
+
+  /// Music mood heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Calm'**
+  String get moodCalm;
+
+  /// Music mood heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Cinematic'**
+  String get moodCinematic;
+
+  /// Music mood heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Playful'**
+  String get moodPlayful;
+
+  /// Sound effect group heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Clicks'**
+  String get effectGroupClicks;
+
+  /// Sound effect group heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Hits'**
+  String get effectGroupHits;
+
+  /// Sound effect group heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Jingles'**
+  String get effectGroupJingles;
+
+  /// Sound effect name.
+  ///
+  /// In en, this message translates to:
+  /// **'Click'**
+  String get effectClick;
+
+  /// Sound effect name.
+  ///
+  /// In en, this message translates to:
+  /// **'Pop'**
+  String get effectPop;
+
+  /// Sound effect name.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get effectConfirm;
+
+  /// Sound effect name.
+  ///
+  /// In en, this message translates to:
+  /// **'Glass'**
+  String get effectGlass;
+
+  /// Sound effect name.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch'**
+  String get effectSwitch;
+
+  /// Sound effect name.
+  ///
+  /// In en, this message translates to:
+  /// **'Punch'**
+  String get effectPunch;
+
+  /// Sound effect name.
+  ///
+  /// In en, this message translates to:
+  /// **'Knock'**
+  String get effectKnock;
+
+  /// Sound effect name.
+  ///
+  /// In en, this message translates to:
+  /// **'Clang'**
+  String get effectClang;
+
+  /// Sound effect name.
+  ///
+  /// In en, this message translates to:
+  /// **'Bell'**
+  String get effectBell;
+
+  /// Sound effect name.
+  ///
+  /// In en, this message translates to:
+  /// **'Footstep'**
+  String get effectStep;
+
+  /// Sound effect name.
+  ///
+  /// In en, this message translates to:
+  /// **'Sax'**
+  String get effectSax;
+
+  /// Sound effect name.
+  ///
+  /// In en, this message translates to:
+  /// **'Steel drum'**
+  String get effectSteelDrum;
+
+  /// Sound effect name.
+  ///
+  /// In en, this message translates to:
+  /// **'Pizzicato'**
+  String get effectPizzicato;
+
+  /// Sound effect name.
+  ///
+  /// In en, this message translates to:
+  /// **'Chiptune'**
+  String get effectChiptune;
+
+  /// Sound effect name.
+  ///
+  /// In en, this message translates to:
+  /// **'Fanfare'**
+  String get effectFanfare;
+
+  /// Button: adds this sound at the playhead.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get add;
+
+  /// Button: plays a sound before adding it.
+  ///
+  /// In en, this message translates to:
+  /// **'Play {name}'**
+  String playPreviewOf(String name);
+
+  /// Button: stops playing a sound.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stopPreview;
+
+  /// Mini player label.
+  ///
+  /// In en, this message translates to:
+  /// **'Now playing'**
+  String get nowPlaying;
+
+  /// From device tab title.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a song from your files'**
+  String get deviceAudioTitle;
+
+  /// From device tab explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'It is copied into this project, so the project keeps working if the file moves.'**
+  String get deviceAudioMessage;
+
+  /// Button: opens the system file picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a file'**
+  String get chooseFile;
+
+  /// Shown while an audio file is copied into the project.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding audio'**
+  String get addingAudio;
+
+  /// Sheet title: original sound vs added audio.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume balance'**
+  String get balanceTitle;
+
+  /// Slider label: volume of the videos' own sound.
+  ///
+  /// In en, this message translates to:
+  /// **'Original sound'**
+  String get originalSoundLevel;
+
+  /// Slider label: volume of music, effects, and voiceovers.
+  ///
+  /// In en, this message translates to:
+  /// **'Added audio'**
+  String get addedAudioLevel;
+
+  /// Voiceover sheet title.
+  ///
+  /// In en, this message translates to:
+  /// **'Voiceover'**
+  String get voiceoverTitle;
+
+  /// Microphone permission explanation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Record your voice over the video'**
+  String get micAccessTitle;
+
+  /// Microphone permission explanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Stitch uses the microphone only while you record. Recordings stay on this device.'**
+  String get micAccessMessage;
+
+  /// Button: asks for microphone access.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow microphone'**
+  String get allowMicrophone;
+
+  /// Shown when microphone access was refused.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone access is off'**
+  String get micDeniedTitle;
+
+  /// Shown when microphone access was refused for good.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on microphone access for Stitch in Settings to record a voiceover.'**
+  String get micDeniedMessage;
+
+  /// Shown when microphone access was refused but can be asked again.
+  ///
+  /// In en, this message translates to:
+  /// **'Stitch needs the microphone to record a voiceover.'**
+  String get micAskAgainMessage;
+
+  /// Where a new voiceover starts on the timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Records from {time}'**
+  String recordsFrom(String time);
+
+  /// Button: starts recording after a countdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get record;
+
+  /// Button: ends the recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop recording'**
+  String get stopRecording;
+
+  /// Countdown, for screen readers.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording starts in {seconds}'**
+  String recordingStartsIn(int seconds);
+
+  /// Shown while recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording, {time}'**
+  String recordingElapsed(String time);
+
+  /// Button: discards the recording and records again.
+  ///
+  /// In en, this message translates to:
+  /// **'Retake'**
+  String get retake;
+
+  /// Button: adds the recording to the timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get useRecording;
+
+  /// Shown when a call or another app ends a recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording stopped because another app used the audio.'**
+  String get recordingInterrupted;
+
+  /// Length of a finished recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Length {time}'**
+  String recordingLength(String time);
+
+  /// Name of a recorded voiceover on the timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Voiceover'**
+  String get voiceoverName;
+
+  /// Text editor sheet title.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get textEditorTitle;
+
+  /// Hint in the empty text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter text'**
+  String get textHint;
+
+  /// Text editor tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Font'**
+  String get tabFont;
+
+  /// Text editor tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Style'**
+  String get tabStyle;
+
+  /// Text editor tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Animation'**
+  String get tabAnimation;
+
+  /// Slider label: text size.
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get textSize;
+
+  /// Text style row label.
+  ///
+  /// In en, this message translates to:
+  /// **'Color'**
+  String get textColor;
+
+  /// Text style row label: a line around the letters.
+  ///
+  /// In en, this message translates to:
+  /// **'Outline'**
+  String get textStroke;
+
+  /// Text style row label: a filled box behind the text.
+  ///
+  /// In en, this message translates to:
+  /// **'Box'**
+  String get textBox;
+
+  /// Choice: no outline, no box, or no animation.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get none;
+
+  /// Text animation row label: how text appears.
+  ///
+  /// In en, this message translates to:
+  /// **'In'**
+  String get animationIn;
+
+  /// Text animation row label: how text leaves.
+  ///
+  /// In en, this message translates to:
+  /// **'Out'**
+  String get animationOut;
+
+  /// Text animation.
+  ///
+  /// In en, this message translates to:
+  /// **'Fade'**
+  String get animationFade;
+
+  /// Text animation.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide up'**
+  String get animationSlideUp;
+
+  /// Text animation.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide down'**
+  String get animationSlideDown;
+
+  /// Text animation.
+  ///
+  /// In en, this message translates to:
+  /// **'Scale'**
+  String get animationScale;
+
+  /// Text animation: letters appear one by one.
+  ///
+  /// In en, this message translates to:
+  /// **'Typewriter'**
+  String get animationTypewriter;
+
+  /// Screen reader label of a text box on the preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Text: {text}'**
+  String textItemSemantics(String text);
+
+  /// Text color name.
+  ///
+  /// In en, this message translates to:
+  /// **'Yellow'**
+  String get colorYellow;
+
+  /// Text color name.
+  ///
+  /// In en, this message translates to:
+  /// **'Red'**
+  String get colorRed;
+
+  /// Text color name.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get colorGreen;
+
+  /// Text color name.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get colorBlue;
+
+  /// Text color name.
+  ///
+  /// In en, this message translates to:
+  /// **'Purple'**
+  String get colorPurple;
+
+  /// Text color name.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange'**
+  String get colorOrange;
+
+  /// Toolbar item that makes or edits captions.
+  ///
+  /// In en, this message translates to:
+  /// **'Captions'**
+  String get toolCaptions;
+
+  /// Title of the sheet that generates captions.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto captions'**
+  String get captionsTitle;
+
+  /// Title of the caption editor sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Captions'**
+  String get captionEditorTitle;
+
+  /// Label of the language row in the captions sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get captionLanguage;
+
+  /// Language choice that detects the spoken language.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto detect'**
+  String get captionLanguageAuto;
+
+  /// Label of the choice of which sound to caption.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound'**
+  String get captionSource;
+
+  /// Caption the clips' own sound.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get captionSourceVideo;
+
+  /// Caption recorded voiceovers only.
+  ///
+  /// In en, this message translates to:
+  /// **'Voiceover'**
+  String get captionSourceVoiceover;
+
+  /// Caption all sound, music included.
+  ///
+  /// In en, this message translates to:
+  /// **'All sound'**
+  String get captionSourceAll;
+
+  /// Label of the speech model choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get captionModel;
+
+  /// Smaller speech model.
+  ///
+  /// In en, this message translates to:
+  /// **'Faster'**
+  String get captionModelTiny;
+
+  /// Larger speech model.
+  ///
+  /// In en, this message translates to:
+  /// **'More accurate'**
+  String get captionModelBase;
+
+  /// Size of the speech model to download.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} download, needed once'**
+  String captionModelDownload(String size);
+
+  /// The speech model is on the device.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded'**
+  String get captionModelReady;
+
+  /// Speech model download progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading, {percent}%'**
+  String captionModelDownloading(int percent);
+
+  /// Stops the model download.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel download'**
+  String get cancelDownload;
+
+  /// Button that starts making captions.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate captions'**
+  String get generateCaptions;
+
+  /// Shown when captions already exist.
+  ///
+  /// In en, this message translates to:
+  /// **'Replaces the current captions.'**
+  String get captionsReplaceNote;
+
+  /// Speech recognition is not built for this processor.
+  ///
+  /// In en, this message translates to:
+  /// **'Captions are not available on this device.'**
+  String get captionsUnavailable;
+
+  /// Progress of caption generation.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating captions, {percent}%'**
+  String captionsProgress(int percent);
+
+  /// Caption generation heard no speech.
+  ///
+  /// In en, this message translates to:
+  /// **'No speech was found in this sound.'**
+  String get failureNoSpeech;
+
+  /// The model file could not be loaded and was removed.
+  ///
+  /// In en, this message translates to:
+  /// **'The speech model was damaged. Generate again to download it again.'**
+  String get failureCaptionModel;
+
+  /// Caption generation failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Captions could not be made.'**
+  String get failureCaptions;
+
+  /// Caption editor tab listing caption text.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get tabText;
+
+  /// Label of the caption position choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Position'**
+  String get captionPosition;
+
+  /// Caption position.
+  ///
+  /// In en, this message translates to:
+  /// **'Top'**
+  String get positionTop;
+
+  /// Caption position.
+  ///
+  /// In en, this message translates to:
+  /// **'Middle'**
+  String get positionMiddle;
+
+  /// Caption position.
+  ///
+  /// In en, this message translates to:
+  /// **'Bottom'**
+  String get positionBottom;
+
+  /// Caption style: white text with a thin outline.
+  ///
+  /// In en, this message translates to:
+  /// **'Plain'**
+  String get captionPresetPlain;
+
+  /// Caption style: text on a dark box.
+  ///
+  /// In en, this message translates to:
+  /// **'Box'**
+  String get captionPresetBoxed;
+
+  /// Caption style: the spoken word in color.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlight'**
+  String get captionPresetHighlight;
+
+  /// Caption style: bold text with a heavy outline.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get captionPresetOutline;
+
+  /// Splits a caption where the cursor is.
+  ///
+  /// In en, this message translates to:
+  /// **'Split at cursor'**
+  String get captionSplit;
+
+  /// Joins a caption with the next one.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge with next'**
+  String get captionMerge;
+
+  /// Semantic label of a caption's time, which seeks there.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to {time}'**
+  String captionSeek(String time);
+
+  /// Semantic label of a caption's text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Caption text'**
+  String get captionText;
+
+  /// Makes captions again, replacing these.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate again'**
+  String get generateAgain;
+
+  /// Toolbar item that opens caption style.
+  ///
+  /// In en, this message translates to:
+  /// **'Style'**
+  String get toolStyle;
+
+  /// Title of the export sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get exportTitle;
+
+  /// Label of the export resolution choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolution'**
+  String get exportResolution;
+
+  /// Export resolution.
+  ///
+  /// In en, this message translates to:
+  /// **'720p'**
+  String get resolution720;
+
+  /// Export resolution.
+  ///
+  /// In en, this message translates to:
+  /// **'1080p'**
+  String get resolution1080;
+
+  /// Export resolution.
+  ///
+  /// In en, this message translates to:
+  /// **'4K'**
+  String get resolution4k;
+
+  /// Label of the export frame rate choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Frame rate'**
+  String get exportFrameRate;
+
+  /// Label of the export quality choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Quality'**
+  String get exportQuality;
+
+  /// Export quality: lower bitrate.
+  ///
+  /// In en, this message translates to:
+  /// **'Smaller file'**
+  String get qualitySmaller;
+
+  /// Export quality: higher bitrate.
+  ///
+  /// In en, this message translates to:
+  /// **'Better quality'**
+  String get qualityBetter;
+
+  /// Label of the video codec choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get exportFormat;
+
+  /// Video codec, the most compatible.
+  ///
+  /// In en, this message translates to:
+  /// **'H.264'**
+  String get formatH264;
+
+  /// Video codec, smaller files.
+  ///
+  /// In en, this message translates to:
+  /// **'HEVC'**
+  String get formatHevc;
+
+  /// Also writes the captions to a subtitle file.
+  ///
+  /// In en, this message translates to:
+  /// **'Export captions as SRT'**
+  String get exportCaptionsFile;
+
+  /// Estimated size of the exported video.
+  ///
+  /// In en, this message translates to:
+  /// **'About {size}'**
+  String exportEstimate(String size);
+
+  /// Shown while the video is exported, and in Android's progress notification.
+  ///
+  /// In en, this message translates to:
+  /// **'Exporting video'**
+  String get exportingTitle;
+
+  /// Screen reader text for export progress.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} percent exported'**
+  String exportProgressSemantics(int percent);
+
+  /// After encoding, on iOS.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving to Photos'**
+  String get savingToPhotos;
+
+  /// After encoding, on Android.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving to your gallery'**
+  String get savingToGallery;
+
+  /// Confirm leaving a running export.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop exporting?'**
+  String get stopExportTitle;
+
+  /// Confirm leaving a running export.
+  ///
+  /// In en, this message translates to:
+  /// **'The video exported so far is not kept.'**
+  String get stopExportMessage;
+
+  /// Stops the export.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stopExport;
+
+  /// Closes the dialog; the export goes on.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep exporting'**
+  String get keepExporting;
+
+  /// Title of the screen after exporting.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported'**
+  String get exportDoneTitle;
+
+  /// The export is in the photo library (iOS).
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to Photos'**
+  String get savedToPhotos;
+
+  /// The export is in the gallery (Android).
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to your gallery, in Movies/Stitch'**
+  String get savedToGallery;
+
+  /// Saving the export was refused.
+  ///
+  /// In en, this message translates to:
+  /// **'Stitch cannot save to your photos without access.'**
+  String get saveDenied;
+
+  /// Opens the share sheet for the exported video.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get share;
+
+  /// Shares the exported SRT file.
+  ///
+  /// In en, this message translates to:
+  /// **'Share captions file'**
+  String get shareCaptions;
+
+  /// Leaves the export screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to editing'**
+  String get backToEditing;
+
+  /// Semantic label of the export preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Play the exported video'**
+  String get playExport;
+
+  /// The export failed.
+  ///
+  /// In en, this message translates to:
+  /// **'The export did not finish.'**
+  String get failureExport;
+
+  /// The export ran out of background time (iOS).
+  ///
+  /// In en, this message translates to:
+  /// **'The export stopped while Stitch was in the background. Keep Stitch open while it exports.'**
+  String get failureExportInterrupted;
+
+  /// Settings section.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get settingsExport;
+
+  /// Settings section.
+  ///
+  /// In en, this message translates to:
+  /// **'New projects'**
+  String get settingsNewProjects;
+
+  /// Default aspect ratio for new projects.
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get settingsDefaultFormat;
+
+  /// Settings section.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settingsAppearance;
+
+  /// Settings row.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get settingsTheme;
+
+  /// Theme follows the device.
+  ///
+  /// In en, this message translates to:
+  /// **'Same as device'**
+  String get themeSystem;
+
+  /// Theme.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// Theme.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// Settings section.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get settingsStorage;
+
+  /// Space used by projects and their media.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get storageProjects;
+
+  /// Space used by thumbnails, waveforms, and exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache'**
+  String get storageCache;
+
+  /// Space used by downloaded caption models.
+  ///
+  /// In en, this message translates to:
+  /// **'Caption models'**
+  String get storageModels;
+
+  /// Deletes the cache.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear cache'**
+  String get clearCache;
+
+  /// Confirm clearing the cache.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the cache?'**
+  String get clearCacheTitle;
+
+  /// Confirm clearing the cache.
+  ///
+  /// In en, this message translates to:
+  /// **'Thumbnails, waveforms, and exported copies are deleted and made again when needed. Projects, caption models, and videos saved to your gallery stay.'**
+  String get clearCacheMessage;
+
+  /// Confirms clearing the cache.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clear;
+
+  /// Settings section.
+  ///
+  /// In en, this message translates to:
+  /// **'Caption models'**
+  String get settingsCaptionModels;
+
+  /// A caption model on the device.
+  ///
+  /// In en, this message translates to:
+  /// **'{size}, downloaded'**
+  String modelDownloaded(String size);
+
+  /// A caption model not on the device.
+  ///
+  /// In en, this message translates to:
+  /// **'{size}, not downloaded'**
+  String modelNotDownloaded(String size);
+
+  /// Downloads a caption model.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get download;
+
+  /// Confirm deleting a caption model.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this model?'**
+  String get deleteModelTitle;
+
+  /// Confirm deleting a caption model.
+  ///
+  /// In en, this message translates to:
+  /// **'Captions you made stay. The model downloads again the next time you use it.'**
+  String get deleteModelMessage;
+
+  /// Settings section.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get settingsAbout;
+
+  /// Settings row showing the app version.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get settingsVersion;
+
+  /// Opens the licenses screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open source licenses'**
+  String get openSourceLicenses;
+
+  /// Opens the project on GitHub.
+  ///
+  /// In en, this message translates to:
+  /// **'Source code'**
+  String get sourceCode;
+
+  /// How many licenses a package has.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 license} other{{count} licenses}}'**
+  String licenseCount(int count);
+
+  /// Replaces a missing media file with one picked again.
+  ///
+  /// In en, this message translates to:
+  /// **'Relink'**
+  String get relink;
+
+  /// Shown under a failed export.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again, or export at a lower resolution.'**
+  String get exportFailedHint;
 }
 
 class _AppLocalizationsDelegate

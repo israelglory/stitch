@@ -136,14 +136,15 @@ class IconsSpecimen extends StatelessWidget {
   static const List<IconData> _icons = [
     AppIcons.close, AppIcons.check, AppIcons.back, AppIcons.chevronRight, //
     AppIcons.chevronDown, AppIcons.more, AppIcons.settings, AppIcons.add,
-    AppIcons.undo, AppIcons.redo, AppIcons.play, AppIcons.pause,
+    AppIcons.undo, AppIcons.redo, AppIcons.play, AppIcons.pause, AppIcons.stop,
     AppIcons.fullscreen, AppIcons.exitFullscreen, AppIcons.edit,
     AppIcons.split, AppIcons.speed, AppIcons.volume, AppIcons.muted,
     AppIcons.delete, AppIcons.duplicate, AppIcons.replace,
     AppIcons.extractAudio, AppIcons.audio, AppIcons.text, AppIcons.captions,
     AppIcons.aspectRatio, AppIcons.background, AppIcons.transition,
     AppIcons.fade, AppIcons.loop, AppIcons.microphone, AppIcons.soundEffects,
-    AppIcons.folder, AppIcons.image, AppIcons.video, AppIcons.film,
+    AppIcons.folder, AppIcons.audioFile, AppIcons.image, AppIcons.video,
+    AppIcons.film,
     AppIcons.share, AppIcons.download, AppIcons.link, AppIcons.externalLink,
     AppIcons.storage, AppIcons.clock, AppIcons.search, AppIcons.rename,
     AppIcons.alert, AppIcons.info, AppIcons.retry,
@@ -369,9 +370,18 @@ class ListRowSpecimen extends StatelessWidget {
           onPressed: _noop,
         ),
       ),
+      CheckRow(
+        title: 'Export captions as SRT',
+        checked: true,
+        onChanged: _noopBool,
+      ),
+      CheckRow(title: 'Unchecked', checked: false, onChanged: _noopBool),
+      CheckRow(title: 'Disabled', checked: false, onChanged: null),
     ],
   );
 }
+
+void _noopBool(bool _) {}
 
 class ToolbarSpecimen extends StatelessWidget {
   const new({super.key});
@@ -1049,6 +1059,96 @@ class ChoicesSpecimen extends StatelessWidget {
               onTap: _noop,
             ),
         ],
+      ),
+      const SpecimenLabel('Swatches with none (text outline, box)'),
+      Wrap(
+        spacing: AppSpacing.xs,
+        children: [
+          const ColorSwatchButton(
+            color: null,
+            semanticLabel: 'None',
+            selected: true,
+            onTap: _noop,
+          ),
+          for (final (i, color) in TextPalette.colors.take(4).indexed)
+            ColorSwatchButton(
+              color: color,
+              semanticLabel: 'Color $i',
+              selected: false,
+              onTap: _noop,
+            ),
+        ],
+      ),
+      const SpecimenLabel('Option chips'),
+      const Wrap(
+        spacing: AppSpacing.sm,
+        children: [
+          OptionChip(label: 'None', selected: false, onTap: _noop),
+          OptionChip(label: 'Fade', selected: true, onTap: _noop),
+          OptionChip(label: 'Typewriter', selected: false, onTap: _noop),
+        ],
+      ),
+      const SpecimenLabel('Font tiles (text in the video)'),
+      Wrap(
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.md,
+        children: [
+          for (final font in OverlayFont.values)
+            SizedBox(
+              width: 64,
+              child: ChoiceTile(
+                label: font.displayName,
+                selected: font == OverlayFont.inter,
+                onTap: _noop,
+                visual: SizedBox.square(
+                  dimension: 64,
+                  child: Center(child: OverlayFontSample(font)),
+                ),
+              ),
+            ),
+        ],
+      ),
+    ],
+  );
+}
+
+class AudioSpecimen extends StatelessWidget {
+  const new({super.key});
+
+  @override
+  Widget build(BuildContext context) => _Padded(
+    children: [
+      const SpecimenLabel('Record button: ready, counting down, recording'),
+      const Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          RecordButton(
+            state: RecordButtonState.ready,
+            semanticLabel: 'Record',
+            onPressed: _noop,
+          ),
+          RecordButton(
+            state: RecordButtonState.countdown,
+            count: 2,
+            semanticLabel: 'Recording starts in 2',
+            onPressed: null,
+          ),
+          RecordButton(
+            state: RecordButtonState.recording,
+            semanticLabel: 'Stop recording',
+            onPressed: _noop,
+          ),
+        ],
+      ),
+      const SpecimenLabel('Level meter'),
+      LevelMeter(levels: sampleWaveform(80)),
+      const SpecimenLabel('Mini player'),
+      const MiniPlayer(
+        caption: 'Now playing',
+        title: 'Roller Fever',
+        progress: 0.4,
+        stopLabel: 'Stop',
+        onStop: _noop,
       ),
     ],
   );

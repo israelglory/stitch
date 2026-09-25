@@ -592,5 +592,815 @@
   "extractedAudioName": "Extracted audio",
   "@extractedAudioName": {
     "description": "Name of an audio item made from a clip's sound."
+  },
+  "toolAudio": "Audio",
+  "@toolAudio": {
+    "description": "Toolbar item: music, sound effects, and voiceover."
+  },
+  "toolText": "Text",
+  "@toolText": {
+    "description": "Toolbar item: adds text to the video."
+  },
+  "toolMusic": "Music",
+  "@toolMusic": {
+    "description": "Audio menu item."
+  },
+  "toolSoundEffects": "Sound effects",
+  "@toolSoundEffects": {
+    "description": "Audio menu item."
+  },
+  "toolVoiceover": "Voiceover",
+  "@toolVoiceover": {
+    "description": "Audio menu item: record your voice."
+  },
+  "toolOriginalSound": "Original sound",
+  "@toolOriginalSound": {
+    "description": "Audio menu item: balance between the videos' own sound and added audio."
+  },
+  "musicTitle": "Music",
+  "@musicTitle": {
+    "description": "Music library screen title."
+  },
+  "soundEffectsTitle": "Sound effects",
+  "@soundEffectsTitle": {
+    "description": "Sound effects library screen title."
+  },
+  "tabBundled": "Bundled",
+  "@tabBundled": {
+    "description": "Tab: music that comes with the app."
+  },
+  "tabFromDevice": "From device",
+  "@tabFromDevice": {
+    "description": "Tab: audio files on this device."
+  },
+  "moodUpbeat": "Upbeat",
+  "@moodUpbeat": {
+    "description": "Music mood heading."
+  },
+  "moodCalm": "Calm",
+  "@moodCalm": {
+    "description": "Music mood heading."
+  },
+  "moodCinematic": "Cinematic",
+  "@moodCinematic": {
+    "description": "Music mood heading."
+  },
+  "moodPlayful": "Playful",
+  "@moodPlayful": {
+    "description": "Music mood heading."
+  },
+  "effectGroupClicks": "Clicks",
+  "@effectGroupClicks": {
+    "description": "Sound effect group heading."
+  },
+  "effectGroupHits": "Hits",
+  "@effectGroupHits": {
+    "description": "Sound effect group heading."
+  },
+  "effectGroupJingles": "Jingles",
+  "@effectGroupJingles": {
+    "description": "Sound effect group heading."
+  },
+  "effectClick": "Click",
+  "@effectClick": {
+    "description": "Sound effect name."
+  },
+  "effectPop": "Pop",
+  "@effectPop": {
+    "description": "Sound effect name."
+  },
+  "effectConfirm": "Confirm",
+  "@effectConfirm": {
+    "description": "Sound effect name."
+  },
+  "effectGlass": "Glass",
+  "@effectGlass": {
+    "description": "Sound effect name."
+  },
+  "effectSwitch": "Switch",
+  "@effectSwitch": {
+    "description": "Sound effect name."
+  },
+  "effectPunch": "Punch",
+  "@effectPunch": {
+    "description": "Sound effect name."
+  },
+  "effectKnock": "Knock",
+  "@effectKnock": {
+    "description": "Sound effect name."
+  },
+  "effectClang": "Clang",
+  "@effectClang": {
+    "description": "Sound effect name."
+  },
+  "effectBell": "Bell",
+  "@effectBell": {
+    "description": "Sound effect name."
+  },
+  "effectStep": "Footstep",
+  "@effectStep": {
+    "description": "Sound effect name."
+  },
+  "effectSax": "Sax",
+  "@effectSax": {
+    "description": "Sound effect name."
+  },
+  "effectSteelDrum": "Steel drum",
+  "@effectSteelDrum": {
+    "description": "Sound effect name."
+  },
+  "effectPizzicato": "Pizzicato",
+  "@effectPizzicato": {
+    "description": "Sound effect name."
+  },
+  "effectChiptune": "Chiptune",
+  "@effectChiptune": {
+    "description": "Sound effect name."
+  },
+  "effectFanfare": "Fanfare",
+  "@effectFanfare": {
+    "description": "Sound effect name."
+  },
+  "add": "Add",
+  "@add": {
+    "description": "Button: adds this sound at the playhead."
+  },
+  "playPreviewOf": "Play {name}",
+  "@playPreviewOf": {
+    "description": "Button: plays a sound before adding it.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stopPreview": "Stop",
+  "@stopPreview": {
+    "description": "Button: stops playing a sound."
+  },
+  "nowPlaying": "Now playing",
+  "@nowPlaying": {
+    "description": "Mini player label."
+  },
+  "deviceAudioTitle": "Use a song from your files",
+  "@deviceAudioTitle": {
+    "description": "From device tab title."
+  },
+  "deviceAudioMessage": "It is copied into this project, so the project keeps working if the file moves.",
+  "@deviceAudioMessage": {
+    "description": "From device tab explanation."
+  },
+  "chooseFile": "Choose a file",
+  "@chooseFile": {
+    "description": "Button: opens the system file picker."
+  },
+  "addingAudio": "Adding audio",
+  "@addingAudio": {
+    "description": "Shown while an audio file is copied into the project."
+  },
+  "balanceTitle": "Volume balance",
+  "@balanceTitle": {
+    "description": "Sheet title: original sound vs added audio."
+  },
+  "originalSoundLevel": "Original sound",
+  "@originalSoundLevel": {
+    "description": "Slider label: volume of the videos' own sound."
+  },
+  "addedAudioLevel": "Added audio",
+  "@addedAudioLevel": {
+    "description": "Slider label: volume of music, effects, and voiceovers."
+  },
+  "voiceoverTitle": "Voiceover",
+  "@voiceoverTitle": {
+    "description": "Voiceover sheet title."
+  },
+  "micAccessTitle": "Record your voice over the video",
+  "@micAccessTitle": {
+    "description": "Microphone permission explanation title."
+  },
+  "micAccessMessage": "Stitch uses the microphone only while you record. Recordings stay on this device.",
+  "@micAccessMessage": {
+    "description": "Microphone permission explanation."
+  },
+  "allowMicrophone": "Allow microphone",
+  "@allowMicrophone": {
+    "description": "Button: asks for microphone access."
+  },
+  "micDeniedTitle": "Microphone access is off",
+  "@micDeniedTitle": {
+    "description": "Shown when microphone access was refused."
+  },
+  "micDeniedMessage": "Turn on microphone access for Stitch in Settings to record a voiceover.",
+  "@micDeniedMessage": {
+    "description": "Shown when microphone access was refused for good."
+  },
+  "micAskAgainMessage": "Stitch needs the microphone to record a voiceover.",
+  "@micAskAgainMessage": {
+    "description": "Shown when microphone access was refused but can be asked again."
+  },
+  "recordsFrom": "Records from {time}",
+  "@recordsFrom": {
+    "description": "Where a new voiceover starts on the timeline.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "record": "Record",
+  "@record": {
+    "description": "Button: starts recording after a countdown."
+  },
+  "stopRecording": "Stop recording",
+  "@stopRecording": {
+    "description": "Button: ends the recording."
+  },
+  "recordingStartsIn": "Recording starts in {seconds}",
+  "@recordingStartsIn": {
+    "description": "Countdown, for screen readers.",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "recordingElapsed": "Recording, {time}",
+  "@recordingElapsed": {
+    "description": "Shown while recording.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "retake": "Retake",
+  "@retake": {
+    "description": "Button: discards the recording and records again."
+  },
+  "useRecording": "Add",
+  "@useRecording": {
+    "description": "Button: adds the recording to the timeline."
+  },
+  "recordingInterrupted": "Recording stopped because another app used the audio.",
+  "@recordingInterrupted": {
+    "description": "Shown when a call or another app ends a recording."
+  },
+  "recordingLength": "Length {time}",
+  "@recordingLength": {
+    "description": "Length of a finished recording.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceoverName": "Voiceover",
+  "@voiceoverName": {
+    "description": "Name of a recorded voiceover on the timeline."
+  },
+  "textEditorTitle": "Text",
+  "@textEditorTitle": {
+    "description": "Text editor sheet title."
+  },
+  "textHint": "Enter text",
+  "@textHint": {
+    "description": "Hint in the empty text field."
+  },
+  "tabFont": "Font",
+  "@tabFont": {
+    "description": "Text editor tab."
+  },
+  "tabStyle": "Style",
+  "@tabStyle": {
+    "description": "Text editor tab."
+  },
+  "tabAnimation": "Animation",
+  "@tabAnimation": {
+    "description": "Text editor tab."
+  },
+  "textSize": "Size",
+  "@textSize": {
+    "description": "Slider label: text size."
+  },
+  "textColor": "Color",
+  "@textColor": {
+    "description": "Text style row label."
+  },
+  "textStroke": "Outline",
+  "@textStroke": {
+    "description": "Text style row label: a line around the letters."
+  },
+  "textBox": "Box",
+  "@textBox": {
+    "description": "Text style row label: a filled box behind the text."
+  },
+  "none": "None",
+  "@none": {
+    "description": "Choice: no outline, no box, or no animation."
+  },
+  "animationIn": "In",
+  "@animationIn": {
+    "description": "Text animation row label: how text appears."
+  },
+  "animationOut": "Out",
+  "@animationOut": {
+    "description": "Text animation row label: how text leaves."
+  },
+  "animationFade": "Fade",
+  "@animationFade": {
+    "description": "Text animation."
+  },
+  "animationSlideUp": "Slide up",
+  "@animationSlideUp": {
+    "description": "Text animation."
+  },
+  "animationSlideDown": "Slide down",
+  "@animationSlideDown": {
+    "description": "Text animation."
+  },
+  "animationScale": "Scale",
+  "@animationScale": {
+    "description": "Text animation."
+  },
+  "animationTypewriter": "Typewriter",
+  "@animationTypewriter": {
+    "description": "Text animation: letters appear one by one."
+  },
+  "textItemSemantics": "Text: {text}",
+  "@textItemSemantics": {
+    "description": "Screen reader label of a text box on the preview.",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "colorYellow": "Yellow",
+  "@colorYellow": {
+    "description": "Text color name."
+  },
+  "colorRed": "Red",
+  "@colorRed": {
+    "description": "Text color name."
+  },
+  "colorGreen": "Green",
+  "@colorGreen": {
+    "description": "Text color name."
+  },
+  "colorBlue": "Blue",
+  "@colorBlue": {
+    "description": "Text color name."
+  },
+  "colorPurple": "Purple",
+  "@colorPurple": {
+    "description": "Text color name."
+  },
+  "colorOrange": "Orange",
+  "@colorOrange": {
+    "description": "Text color name."
+  },
+  "toolCaptions": "Captions",
+  "@toolCaptions": {
+    "description": "Toolbar item that makes or edits captions."
+  },
+  "captionsTitle": "Auto captions",
+  "@captionsTitle": {
+    "description": "Title of the sheet that generates captions."
+  },
+  "captionEditorTitle": "Captions",
+  "@captionEditorTitle": {
+    "description": "Title of the caption editor sheet."
+  },
+  "captionLanguage": "Language",
+  "@captionLanguage": {
+    "description": "Label of the language row in the captions sheet."
+  },
+  "captionLanguageAuto": "Auto detect",
+  "@captionLanguageAuto": {
+    "description": "Language choice that detects the spoken language."
+  },
+  "captionSource": "Sound",
+  "@captionSource": {
+    "description": "Label of the choice of which sound to caption."
+  },
+  "captionSourceVideo": "Video",
+  "@captionSourceVideo": {
+    "description": "Caption the clips' own sound."
+  },
+  "captionSourceVoiceover": "Voiceover",
+  "@captionSourceVoiceover": {
+    "description": "Caption recorded voiceovers only."
+  },
+  "captionSourceAll": "All sound",
+  "@captionSourceAll": {
+    "description": "Caption all sound, music included."
+  },
+  "captionModel": "Model",
+  "@captionModel": {
+    "description": "Label of the speech model choice."
+  },
+  "captionModelTiny": "Faster",
+  "@captionModelTiny": {
+    "description": "Smaller speech model."
+  },
+  "captionModelBase": "More accurate",
+  "@captionModelBase": {
+    "description": "Larger speech model."
+  },
+  "captionModelDownload": "{size} download, needed once",
+  "@captionModelDownload": {
+    "description": "Size of the speech model to download.",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "44 MB"
+      }
+    }
+  },
+  "captionModelReady": "Downloaded",
+  "@captionModelReady": {
+    "description": "The speech model is on the device."
+  },
+  "captionModelDownloading": "Downloading, {percent}%",
+  "@captionModelDownloading": {
+    "description": "Speech model download progress.",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "cancelDownload": "Cancel download",
+  "@cancelDownload": {
+    "description": "Stops the model download."
+  },
+  "generateCaptions": "Generate captions",
+  "@generateCaptions": {
+    "description": "Button that starts making captions."
+  },
+  "captionsReplaceNote": "Replaces the current captions.",
+  "@captionsReplaceNote": {
+    "description": "Shown when captions already exist."
+  },
+  "captionsUnavailable": "Captions are not available on this device.",
+  "@captionsUnavailable": {
+    "description": "Speech recognition is not built for this processor."
+  },
+  "captionsProgress": "Generating captions, {percent}%",
+  "@captionsProgress": {
+    "description": "Progress of caption generation.",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "failureNoSpeech": "No speech was found in this sound.",
+  "@failureNoSpeech": {
+    "description": "Caption generation heard no speech."
+  },
+  "failureCaptionModel": "The speech model was damaged. Generate again to download it again.",
+  "@failureCaptionModel": {
+    "description": "The model file could not be loaded and was removed."
+  },
+  "failureCaptions": "Captions could not be made.",
+  "@failureCaptions": {
+    "description": "Caption generation failed."
+  },
+  "tabText": "Text",
+  "@tabText": {
+    "description": "Caption editor tab listing caption text."
+  },
+  "captionPosition": "Position",
+  "@captionPosition": {
+    "description": "Label of the caption position choice."
+  },
+  "positionTop": "Top",
+  "@positionTop": {
+    "description": "Caption position."
+  },
+  "positionMiddle": "Middle",
+  "@positionMiddle": {
+    "description": "Caption position."
+  },
+  "positionBottom": "Bottom",
+  "@positionBottom": {
+    "description": "Caption position."
+  },
+  "captionPresetPlain": "Plain",
+  "@captionPresetPlain": {
+    "description": "Caption style: white text with a thin outline."
+  },
+  "captionPresetBoxed": "Box",
+  "@captionPresetBoxed": {
+    "description": "Caption style: text on a dark box."
+  },
+  "captionPresetHighlight": "Highlight",
+  "@captionPresetHighlight": {
+    "description": "Caption style: the spoken word in color."
+  },
+  "captionPresetOutline": "Bold",
+  "@captionPresetOutline": {
+    "description": "Caption style: bold text with a heavy outline."
+  },
+  "captionSplit": "Split at cursor",
+  "@captionSplit": {
+    "description": "Splits a caption where the cursor is."
+  },
+  "captionMerge": "Merge with next",
+  "@captionMerge": {
+    "description": "Joins a caption with the next one."
+  },
+  "captionSeek": "Go to {time}",
+  "@captionSeek": {
+    "description": "Semantic label of a caption's time, which seeks there.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "0:04"
+      }
+    }
+  },
+  "captionText": "Caption text",
+  "@captionText": {
+    "description": "Semantic label of a caption's text field."
+  },
+  "generateAgain": "Generate again",
+  "@generateAgain": {
+    "description": "Makes captions again, replacing these."
+  },
+  "toolStyle": "Style",
+  "@toolStyle": {
+    "description": "Toolbar item that opens caption style."
+  },
+  "exportTitle": "Export",
+  "@exportTitle": {
+    "description": "Title of the export sheet."
+  },
+  "exportResolution": "Resolution",
+  "@exportResolution": {
+    "description": "Label of the export resolution choice."
+  },
+  "resolution720": "720p",
+  "@resolution720": {
+    "description": "Export resolution."
+  },
+  "resolution1080": "1080p",
+  "@resolution1080": {
+    "description": "Export resolution."
+  },
+  "resolution4k": "4K",
+  "@resolution4k": {
+    "description": "Export resolution."
+  },
+  "exportFrameRate": "Frame rate",
+  "@exportFrameRate": {
+    "description": "Label of the export frame rate choice."
+  },
+  "exportQuality": "Quality",
+  "@exportQuality": {
+    "description": "Label of the export quality choice."
+  },
+  "qualitySmaller": "Smaller file",
+  "@qualitySmaller": {
+    "description": "Export quality: lower bitrate."
+  },
+  "qualityBetter": "Better quality",
+  "@qualityBetter": {
+    "description": "Export quality: higher bitrate."
+  },
+  "exportFormat": "Format",
+  "@exportFormat": {
+    "description": "Label of the video codec choice."
+  },
+  "formatH264": "H.264",
+  "@formatH264": {
+    "description": "Video codec, the most compatible."
+  },
+  "formatHevc": "HEVC",
+  "@formatHevc": {
+    "description": "Video codec, smaller files."
+  },
+  "exportCaptionsFile": "Export captions as SRT",
+  "@exportCaptionsFile": {
+    "description": "Also writes the captions to a subtitle file."
+  },
+  "exportEstimate": "About {size}",
+  "@exportEstimate": {
+    "description": "Estimated size of the exported video.",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "45 MB"
+      }
+    }
+  },
+  "exportingTitle": "Exporting video",
+  "@exportingTitle": {
+    "description": "Shown while the video is exported, and in Android's progress notification."
+  },
+  "exportProgressSemantics": "{percent} percent exported",
+  "@exportProgressSemantics": {
+    "description": "Screen reader text for export progress.",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "savingToPhotos": "Saving to Photos",
+  "@savingToPhotos": {
+    "description": "After encoding, on iOS."
+  },
+  "savingToGallery": "Saving to your gallery",
+  "@savingToGallery": {
+    "description": "After encoding, on Android."
+  },
+  "stopExportTitle": "Stop exporting?",
+  "@stopExportTitle": {
+    "description": "Confirm leaving a running export."
+  },
+  "stopExportMessage": "The video exported so far is not kept.",
+  "@stopExportMessage": {
+    "description": "Confirm leaving a running export."
+  },
+  "stopExport": "Stop",
+  "@stopExport": {
+    "description": "Stops the export."
+  },
+  "keepExporting": "Keep exporting",
+  "@keepExporting": {
+    "description": "Closes the dialog; the export goes on."
+  },
+  "exportDoneTitle": "Exported",
+  "@exportDoneTitle": {
+    "description": "Title of the screen after exporting."
+  },
+  "savedToPhotos": "Saved to Photos",
+  "@savedToPhotos": {
+    "description": "The export is in the photo library (iOS)."
+  },
+  "savedToGallery": "Saved to your gallery, in Movies/Stitch",
+  "@savedToGallery": {
+    "description": "The export is in the gallery (Android)."
+  },
+  "saveDenied": "Stitch cannot save to your photos without access.",
+  "@saveDenied": {
+    "description": "Saving the export was refused."
+  },
+  "share": "Share",
+  "@share": {
+    "description": "Opens the share sheet for the exported video."
+  },
+  "shareCaptions": "Share captions file",
+  "@shareCaptions": {
+    "description": "Shares the exported SRT file."
+  },
+  "backToEditing": "Back to editing",
+  "@backToEditing": {
+    "description": "Leaves the export screen."
+  },
+  "playExport": "Play the exported video",
+  "@playExport": {
+    "description": "Semantic label of the export preview."
+  },
+  "failureExport": "The export did not finish.",
+  "@failureExport": {
+    "description": "The export failed."
+  },
+  "failureExportInterrupted": "The export stopped while Stitch was in the background. Keep Stitch open while it exports.",
+  "@failureExportInterrupted": {
+    "description": "The export ran out of background time (iOS)."
+  },
+  "settingsExport": "Export",
+  "@settingsExport": {
+    "description": "Settings section."
+  },
+  "settingsNewProjects": "New projects",
+  "@settingsNewProjects": {
+    "description": "Settings section."
+  },
+  "settingsDefaultFormat": "Format",
+  "@settingsDefaultFormat": {
+    "description": "Default aspect ratio for new projects."
+  },
+  "settingsAppearance": "Appearance",
+  "@settingsAppearance": {
+    "description": "Settings section."
+  },
+  "settingsTheme": "Theme",
+  "@settingsTheme": {
+    "description": "Settings row."
+  },
+  "themeSystem": "Same as device",
+  "@themeSystem": {
+    "description": "Theme follows the device."
+  },
+  "themeDark": "Dark",
+  "@themeDark": {
+    "description": "Theme."
+  },
+  "themeLight": "Light",
+  "@themeLight": {
+    "description": "Theme."
+  },
+  "settingsStorage": "Storage",
+  "@settingsStorage": {
+    "description": "Settings section."
+  },
+  "storageProjects": "Projects",
+  "@storageProjects": {
+    "description": "Space used by projects and their media."
+  },
+  "storageCache": "Cache",
+  "@storageCache": {
+    "description": "Space used by thumbnails, waveforms, and exports."
+  },
+  "storageModels": "Caption models",
+  "@storageModels": {
+    "description": "Space used by downloaded caption models."
+  },
+  "clearCache": "Clear cache",
+  "@clearCache": {
+    "description": "Deletes the cache."
+  },
+  "clearCacheTitle": "Clear the cache?",
+  "@clearCacheTitle": {
+    "description": "Confirm clearing the cache."
+  },
+  "clearCacheMessage": "Thumbnails, waveforms, and exported copies are deleted and made again when needed. Projects, caption models, and videos saved to your gallery stay.",
+  "@clearCacheMessage": {
+    "description": "Confirm clearing the cache."
+  },
+  "clear": "Clear",
+  "@clear": {
+    "description": "Confirms clearing the cache."
+  },
+  "settingsCaptionModels": "Caption models",
+  "@settingsCaptionModels": {
+    "description": "Settings section."
+  },
+  "modelDownloaded": "{size}, downloaded",
+  "@modelDownloaded": {
+    "description": "A caption model on the device.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelNotDownloaded": "{size}, not downloaded",
+  "@modelNotDownloaded": {
+    "description": "A caption model not on the device.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "download": "Download",
+  "@download": {
+    "description": "Downloads a caption model."
+  },
+  "deleteModelTitle": "Delete this model?",
+  "@deleteModelTitle": {
+    "description": "Confirm deleting a caption model."
+  },
+  "deleteModelMessage": "Captions you made stay. The model downloads again the next time you use it.",
+  "@deleteModelMessage": {
+    "description": "Confirm deleting a caption model."
+  },
+  "settingsAbout": "About",
+  "@settingsAbout": {
+    "description": "Settings section."
+  },
+  "settingsVersion": "Version",
+  "@settingsVersion": {
+    "description": "Settings row showing the app version."
+  },
+  "openSourceLicenses": "Open source licenses",
+  "@openSourceLicenses": {
+    "description": "Opens the licenses screen."
+  },
+  "sourceCode": "Source code",
+  "@sourceCode": {
+    "description": "Opens the project on GitHub."
+  },
+  "licenseCount": "{count, plural, =1{1 license} other{{count} licenses}}",
+  "@licenseCount": {
+    "description": "How many licenses a package has.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relink": "Relink",
+  "@relink": {
+    "description": "Replaces a missing media file with one picked again."
+  },
+  "exportFailedHint": "Try again, or export at a lower resolution.",
+  "@exportFailedHint": {
+    "description": "Shown under a failed export."
   }
 }

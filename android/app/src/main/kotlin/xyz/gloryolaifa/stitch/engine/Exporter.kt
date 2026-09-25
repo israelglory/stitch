@@ -23,6 +23,14 @@ import androidx.media3.transformer.Transformer
 import androidx.media3.transformer.VideoEncoderSettings
 import java.io.File
 
+/** A long engine task that reports through an [Exporter.Listener]. */
+interface EngineJob {
+  fun start(listener: Exporter.Listener)
+
+  /** Stops the job and deletes partial output; reports `cancelled`. */
+  fun cancel(listener: Exporter.Listener)
+}
+
 /**
  * Renders a document to an MP4 with a Media3 [Transformer]. Mirrors
  * Exporter.swift: H.264 or HEVC at the requested bitrate, AAC 48 kHz at
@@ -35,7 +43,7 @@ class Exporter(
   private val context: Context,
   private val doc: EngineDocument,
   private val request: ExportRequestMessage,
-) {
+) : EngineJob {
   interface Listener {
     fun onProgress(fraction: Double)
     fun onCompleted(path: String)
@@ -48,7 +56,7 @@ class Exporter(
   private val output = File(request.outputPath)
   private val temp = File(output.parentFile, output.nameWithoutExtension + ".part.mp4")
 
-  fun start(listener: Listener) {
+  override fun start(listener: Listener) {
     val composition = try {
       val built = CompositionBuilder.build(
         doc,
@@ -64,6 +72,7 @@ class Exporter(
     }
     temp.delete()
     val t = Transformer.Builder(context)
+      .setAudioMixerFactory(LimitingAudioMixer.Factory())
       .setVideoMimeType(if (request.hevc) MimeTypes.VIDEO_H265 else MimeTypes.VIDEO_H264)
       .setAudioMimeType(MimeTypes.AUDIO_AAC)
       .setEncoderFactory(
@@ -105,8 +114,7 @@ class Exporter(
     pollProgress(listener)
   }
 
-  /** Stops the export and deletes the partial file; reports `cancelled`. */
-  fun cancel(listener: Listener) {
+  override fun cancel(listener: Listener) {
     if (finished) return
     transformer?.cancel()
     temp.delete()

@@ -15,7 +15,9 @@ import 'package:stitch/app/providers.dart';
 import 'package:stitch/core/logging/logger.dart';
 import 'package:stitch/core/storage/cache_pruning.dart';
 import 'package:stitch/design/tokens.dart';
+import 'package:stitch/features/audio/application/waveforms.dart';
 import 'package:stitch/features/editor/application/filmstrip.dart';
+import 'package:stitch/features/text/application/text_rendering.dart';
 
 const _log = Logger('app');
 
@@ -62,12 +64,15 @@ Future<void> bootstrap({
   final documents = await getApplicationDocumentsDirectory();
   final cache = await getApplicationCacheDirectory();
   // Keep regenerated caches bounded; runs in the background.
-  unawaited(
-    pruneDirectory(
-      Directory(p.join(cache.path, 'filmstrip')),
-      filmstripCacheBytes,
-    ),
-  );
+  for (final (dir, bytes) in [
+    ('filmstrip', filmstripCacheBytes),
+    ('text', textCacheBytes),
+    ('waveforms', waveformCacheBytes),
+    // Exported copies; the gallery keeps its own.
+    ('exports', 500 * 1000 * 1000),
+  ]) {
+    unawaited(pruneDirectory(Directory(p.join(cache.path, dir)), bytes));
+  }
 
   runApp(
     ProviderScope(
@@ -82,11 +87,21 @@ Future<void> bootstrap({
   );
 }
 
-/// Licenses of bundled fonts, shown on the open source licenses screen.
+/// Licenses of bundled assets and native code, and of the downloadable
+/// caption models, shown on the open source licenses screen.
 Stream<LicenseEntry> _bundledAssetLicenses() async* {
   const licenses = {
     'Inter': 'assets/licenses/inter.txt',
     'Lucide': 'assets/licenses/lucide.txt',
+    'Anton': 'assets/licenses/anton.txt',
+    'Bebas Neue': 'assets/licenses/bebasneue.txt',
+    'DM Serif Display': 'assets/licenses/dmserifdisplay.txt',
+    'Pacifico': 'assets/licenses/pacifico.txt',
+    'Space Mono': 'assets/licenses/spacemono.txt',
+    'Bundled music': 'assets/licenses/music.txt',
+    'Bundled sound effects': 'assets/licenses/kenney.txt',
+    'whisper.cpp': 'assets/licenses/whisper_cpp.txt',
+    'Whisper models': 'assets/licenses/whisper_models.txt',
   };
   for (final MapEntry(key: name, value: path) in licenses.entries) {
     yield LicenseEntryWithLineBreaks([name], await rootBundle.loadString(path));

@@ -201,6 +201,32 @@ class FlutterError (
   val details: Any? = null
 ) : RuntimeException()
 
+enum class MicrophonePermission(val raw: Int) {
+  GRANTED(0),
+  UNDETERMINED(1),
+  DENIED(2),
+  PERMANENTLY_DENIED(3);
+
+  companion object {
+    fun ofRaw(raw: Int): MicrophonePermission? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
+/** How saving to the photo library went. */
+enum class GallerySaveResult(val raw: Int) {
+  SAVED(0),
+  DENIED(1),
+  PERMANENTLY_DENIED(2);
+
+  companion object {
+    fun ofRaw(raw: Int): GallerySaveResult? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
 /**
  * What a media file contains, from the file itself.
  *
@@ -321,7 +347,12 @@ data class ExportRequestMessage (
   val height: Long,
   val frameRate: Long,
   val videoBitrate: Long,
-  val hevc: Boolean
+  val hevc: Boolean,
+  /**
+   * Shown with the progress where the system shows it (Android's export
+   * notification).
+   */
+  val progressTitle: String
 )
  {
   companion object {
@@ -332,7 +363,8 @@ data class ExportRequestMessage (
       val frameRate = pigeonVar_list[3] as Long
       val videoBitrate = pigeonVar_list[4] as Long
       val hevc = pigeonVar_list[5] as Boolean
-      return ExportRequestMessage(outputPath, width, height, frameRate, videoBitrate, hevc)
+      val progressTitle = pigeonVar_list[6] as String
+      return ExportRequestMessage(outputPath, width, height, frameRate, videoBitrate, hevc, progressTitle)
     }
   }
   fun toList(): List<Any?> {
@@ -343,6 +375,7 @@ data class ExportRequestMessage (
       frameRate,
       videoBitrate,
       hevc,
+      progressTitle,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -353,7 +386,7 @@ data class ExportRequestMessage (
       return true
     }
     val other = other as ExportRequestMessage
-    return EngineApiPigeonUtils.deepEquals(this.outputPath, other.outputPath) && EngineApiPigeonUtils.deepEquals(this.width, other.width) && EngineApiPigeonUtils.deepEquals(this.height, other.height) && EngineApiPigeonUtils.deepEquals(this.frameRate, other.frameRate) && EngineApiPigeonUtils.deepEquals(this.videoBitrate, other.videoBitrate) && EngineApiPigeonUtils.deepEquals(this.hevc, other.hevc)
+    return EngineApiPigeonUtils.deepEquals(this.outputPath, other.outputPath) && EngineApiPigeonUtils.deepEquals(this.width, other.width) && EngineApiPigeonUtils.deepEquals(this.height, other.height) && EngineApiPigeonUtils.deepEquals(this.frameRate, other.frameRate) && EngineApiPigeonUtils.deepEquals(this.videoBitrate, other.videoBitrate) && EngineApiPigeonUtils.deepEquals(this.hevc, other.hevc) && EngineApiPigeonUtils.deepEquals(this.progressTitle, other.progressTitle)
   }
 
   override fun hashCode(): Int {
@@ -364,10 +397,11 @@ data class ExportRequestMessage (
     result = 31 * result + EngineApiPigeonUtils.deepHash(this.frameRate)
     result = 31 * result + EngineApiPigeonUtils.deepHash(this.videoBitrate)
     result = 31 * result + EngineApiPigeonUtils.deepHash(this.hevc)
+    result = 31 * result + EngineApiPigeonUtils.deepHash(this.progressTitle)
     return result
   }
   override fun toString(): String {
-    return "ExportRequestMessage(outputPath=$outputPath, width=$width, height=$height, frameRate=$frameRate, videoBitrate=$videoBitrate, hevc=$hevc)"
+    return "ExportRequestMessage(outputPath=$outputPath, width=$width, height=$height, frameRate=$frameRate, videoBitrate=$videoBitrate, hevc=$hevc, progressTitle=$progressTitle)"
   }
 }
 
@@ -376,7 +410,9 @@ data class PlaybackStateMessage (
   val positionUs: Long,
   val durationUs: Long,
   val isPlaying: Boolean,
-  val isBuffering: Boolean
+  val isBuffering: Boolean,
+  /** The `version` of the document the preview shows. */
+  val documentVersion: Long
 )
  {
   companion object {
@@ -385,7 +421,8 @@ data class PlaybackStateMessage (
       val durationUs = pigeonVar_list[1] as Long
       val isPlaying = pigeonVar_list[2] as Boolean
       val isBuffering = pigeonVar_list[3] as Boolean
-      return PlaybackStateMessage(positionUs, durationUs, isPlaying, isBuffering)
+      val documentVersion = pigeonVar_list[4] as Long
+      return PlaybackStateMessage(positionUs, durationUs, isPlaying, isBuffering, documentVersion)
     }
   }
   fun toList(): List<Any?> {
@@ -394,6 +431,7 @@ data class PlaybackStateMessage (
       durationUs,
       isPlaying,
       isBuffering,
+      documentVersion,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -404,7 +442,7 @@ data class PlaybackStateMessage (
       return true
     }
     val other = other as PlaybackStateMessage
-    return EngineApiPigeonUtils.deepEquals(this.positionUs, other.positionUs) && EngineApiPigeonUtils.deepEquals(this.durationUs, other.durationUs) && EngineApiPigeonUtils.deepEquals(this.isPlaying, other.isPlaying) && EngineApiPigeonUtils.deepEquals(this.isBuffering, other.isBuffering)
+    return EngineApiPigeonUtils.deepEquals(this.positionUs, other.positionUs) && EngineApiPigeonUtils.deepEquals(this.durationUs, other.durationUs) && EngineApiPigeonUtils.deepEquals(this.isPlaying, other.isPlaying) && EngineApiPigeonUtils.deepEquals(this.isBuffering, other.isBuffering) && EngineApiPigeonUtils.deepEquals(this.documentVersion, other.documentVersion)
   }
 
   override fun hashCode(): Int {
@@ -413,33 +451,195 @@ data class PlaybackStateMessage (
     result = 31 * result + EngineApiPigeonUtils.deepHash(this.durationUs)
     result = 31 * result + EngineApiPigeonUtils.deepHash(this.isPlaying)
     result = 31 * result + EngineApiPigeonUtils.deepHash(this.isBuffering)
+    result = 31 * result + EngineApiPigeonUtils.deepHash(this.documentVersion)
     return result
   }
   override fun toString(): String {
-    return "PlaybackStateMessage(positionUs=$positionUs, durationUs=$durationUs, isPlaying=$isPlaying, isBuffering=$isBuffering)"
+    return "PlaybackStateMessage(positionUs=$positionUs, durationUs=$durationUs, isPlaying=$isPlaying, isBuffering=$isBuffering, documentVersion=$documentVersion)"
+  }
+}
+
+/**
+ * A file the user picked, copied into the app.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class PickedFileMessage (
+  val path: String,
+  /** The name the user knows it by, without the extension. */
+  val name: String
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): PickedFileMessage {
+      val path = pigeonVar_list[0] as String
+      val name = pigeonVar_list[1] as String
+      return PickedFileMessage(path, name)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      path,
+      name,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as PickedFileMessage
+    return EngineApiPigeonUtils.deepEquals(this.path, other.path) && EngineApiPigeonUtils.deepEquals(this.name, other.name)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + EngineApiPigeonUtils.deepHash(this.path)
+    result = 31 * result + EngineApiPigeonUtils.deepHash(this.name)
+    return result
+  }
+  override fun toString(): String {
+    return "PickedFileMessage(path=$path, name=$name)"
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class AudioPreviewStateMessage (
+  val path: String,
+  val positionUs: Long,
+  val durationUs: Long,
+  val isPlaying: Boolean
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): AudioPreviewStateMessage {
+      val path = pigeonVar_list[0] as String
+      val positionUs = pigeonVar_list[1] as Long
+      val durationUs = pigeonVar_list[2] as Long
+      val isPlaying = pigeonVar_list[3] as Boolean
+      return AudioPreviewStateMessage(path, positionUs, durationUs, isPlaying)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      path,
+      positionUs,
+      durationUs,
+      isPlaying,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as AudioPreviewStateMessage
+    return EngineApiPigeonUtils.deepEquals(this.path, other.path) && EngineApiPigeonUtils.deepEquals(this.positionUs, other.positionUs) && EngineApiPigeonUtils.deepEquals(this.durationUs, other.durationUs) && EngineApiPigeonUtils.deepEquals(this.isPlaying, other.isPlaying)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + EngineApiPigeonUtils.deepHash(this.path)
+    result = 31 * result + EngineApiPigeonUtils.deepHash(this.positionUs)
+    result = 31 * result + EngineApiPigeonUtils.deepHash(this.durationUs)
+    result = 31 * result + EngineApiPigeonUtils.deepHash(this.isPlaying)
+    return result
+  }
+  override fun toString(): String {
+    return "AudioPreviewStateMessage(path=$path, positionUs=$positionUs, durationUs=$durationUs, isPlaying=$isPlaying)"
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class RecordingMessage (
+  val path: String,
+  val durationUs: Long
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): RecordingMessage {
+      val path = pigeonVar_list[0] as String
+      val durationUs = pigeonVar_list[1] as Long
+      return RecordingMessage(path, durationUs)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      path,
+      durationUs,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as RecordingMessage
+    return EngineApiPigeonUtils.deepEquals(this.path, other.path) && EngineApiPigeonUtils.deepEquals(this.durationUs, other.durationUs)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + EngineApiPigeonUtils.deepHash(this.path)
+    result = 31 * result + EngineApiPigeonUtils.deepHash(this.durationUs)
+    return result
+  }
+  override fun toString(): String {
+    return "RecordingMessage(path=$path, durationUs=$durationUs)"
   }
 }
 private open class EngineApiPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
       129.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let {
-          MediaInfoMessage.fromList(it)
+        return (readValue(buffer) as Long?)?.let {
+          MicrophonePermission.ofRaw(it.toInt())
         }
       }
       130.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let {
-          CapabilitiesMessage.fromList(it)
+        return (readValue(buffer) as Long?)?.let {
+          GallerySaveResult.ofRaw(it.toInt())
         }
       }
       131.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ExportRequestMessage.fromList(it)
+          MediaInfoMessage.fromList(it)
         }
       }
       132.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
+          CapabilitiesMessage.fromList(it)
+        }
+      }
+      133.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ExportRequestMessage.fromList(it)
+        }
+      }
+      134.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
           PlaybackStateMessage.fromList(it)
+        }
+      }
+      135.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          PickedFileMessage.fromList(it)
+        }
+      }
+      136.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          AudioPreviewStateMessage.fromList(it)
+        }
+      }
+      137.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          RecordingMessage.fromList(it)
         }
       }
       else -> super.readValueOfType(type, buffer)
@@ -447,20 +647,40 @@ private open class EngineApiPigeonCodec : StandardMessageCodec() {
   }
   override fun writeValue(stream: ByteArrayOutputStream, value: Any?)   {
     when (value) {
-      is MediaInfoMessage -> {
+      is MicrophonePermission -> {
         stream.write(129)
-        writeValue(stream, value.toList())
+        writeValue(stream, value.raw.toLong())
       }
-      is CapabilitiesMessage -> {
+      is GallerySaveResult -> {
         stream.write(130)
-        writeValue(stream, value.toList())
+        writeValue(stream, value.raw.toLong())
       }
-      is ExportRequestMessage -> {
+      is MediaInfoMessage -> {
         stream.write(131)
         writeValue(stream, value.toList())
       }
-      is PlaybackStateMessage -> {
+      is CapabilitiesMessage -> {
         stream.write(132)
+        writeValue(stream, value.toList())
+      }
+      is ExportRequestMessage -> {
+        stream.write(133)
+        writeValue(stream, value.toList())
+      }
+      is PlaybackStateMessage -> {
+        stream.write(134)
+        writeValue(stream, value.toList())
+      }
+      is PickedFileMessage -> {
+        stream.write(135)
+        writeValue(stream, value.toList())
+      }
+      is AudioPreviewStateMessage -> {
+        stream.write(136)
+        writeValue(stream, value.toList())
+      }
+      is RecordingMessage -> {
+        stream.write(137)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -495,7 +715,22 @@ interface EngineHostApi {
    * [EngineFlutterApi]. Returns a job id.
    */
   fun startExport(request: ExportRequestMessage): String
+  /** Stops an export or speech audio job. */
   fun cancelExport(jobId: String)
+  /**
+   * Renders the sound of [documentJson] (not the previewed document) for
+   * speech recognition: 16 kHz mono float PCM, raw and little endian, at
+   * [outputPath]. Reports like an export and is cancelled the same way.
+   * A document with no sound gives an empty file.
+   */
+  fun startSpeechAudio(documentJson: String, outputPath: String): String
+  /**
+   * Loudness of [path]'s sound: the peak (0 to 1) of every
+   * 1 / [peaksPerSecond] of a second.
+   */
+  suspend fun waveform(path: String, peaksPerSecond: Long): List<Double>
+  /** Volume of the preview, 0 to 1 (muted while recording a voiceover). */
+  fun setPreviewVolume(volume: Double)
 
   companion object {
     /** The codec used by EngineHostApi. */
@@ -717,6 +952,472 @@ interface EngineHostApi {
         } else {
           channel.setMessageHandler(null)
         }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.EngineHostApi.startSpeechAudio$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val documentJsonArg = args[0] as String
+            val outputPathArg = args[1] as String
+            val wrapped: List<Any?> = try {
+              listOf(api.startSpeechAudio(documentJsonArg, outputPathArg))
+            } catch (exception: Throwable) {
+              EngineApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.EngineHostApi.waveform$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val pathArg = args[0] as String
+            val peaksPerSecondArg = args[1] as Long
+            CoroutineScope(Dispatchers.Main).launch {
+              val wrapped: List<Any?> = try {
+                listOf(api.waveform(pathArg, peaksPerSecondArg))
+              } catch (exception: Throwable) {
+                EngineApiPigeonUtils.wrapError(exception)
+              }
+              reply.reply(wrapped)
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.EngineHostApi.setPreviewVolume$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val volumeArg = args[0] as Double
+            val wrapped: List<Any?> = try {
+              api.setPreviewVolume(volumeArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              EngineApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+    }
+  }
+}
+/**
+ * Device features used by the editor.
+ *
+ * Generated interface from Pigeon that represents a handler of messages from Flutter.
+ */
+interface DeviceHostApi {
+  /**
+   * Lets the user pick an audio file and copies it into [outDir]. Null
+   * when they cancel.
+   */
+  suspend fun pickAudioFile(outDir: String): PickedFileMessage?
+  /**
+   * Plays [path] on its own (to try music before adding it). State
+   * arrives through [DeviceFlutterApi.onAudioPreviewState].
+   */
+  fun startAudioPreview(path: String)
+  fun stopAudioPreview()
+  fun microphonePermission(): MicrophonePermission
+  /** Asks for the microphone if it has not been asked yet. */
+  suspend fun requestMicrophone(): MicrophonePermission
+  /** Opens this app's page in the system settings. */
+  fun openAppSettings()
+  /**
+   * Records the microphone to [outPath] (AAC in M4A, 48 kHz). Levels
+   * arrive through [DeviceFlutterApi.onRecordingLevel].
+   */
+  fun startRecording(outPath: String)
+  /** Stops and returns the recording. */
+  suspend fun stopRecording(): RecordingMessage
+  /** Stops and deletes the recording. */
+  fun cancelRecording()
+  /** Bytes free for new files on the volume holding [path]. */
+  fun freeSpace(path: String): Long
+  /**
+   * Copies the video at [path] into the photo library: Photos on iOS
+   * (add-only access, asked for now if needed), Movies/Stitch on Android.
+   */
+  suspend fun saveVideoToGallery(path: String): GallerySaveResult
+  /** Opens the system share sheet for the file at [path]. */
+  fun shareFile(path: String, mimeType: String)
+  /** Opens [url] in the browser. */
+  fun openUrl(url: String)
+  /** Keeps the screen on, during an export. */
+  fun setKeepScreenOn(on: Boolean)
+  /** The app's version, like "0.1.0 (1)". */
+  fun appVersion(): String
+  /**
+   * Asks to show notifications, for export progress (Android 13 and
+   * later; elsewhere always true). True when allowed.
+   */
+  suspend fun requestNotifications(): Boolean
+
+  companion object {
+    /** The codec used by DeviceHostApi. */
+    val codec: MessageCodec<Any?> by lazy {
+      EngineApiPigeonCodec()
+    }
+    /** Sets up an instance of `DeviceHostApi` to handle messages through the `binaryMessenger`. */
+    @JvmOverloads
+    fun setUp(binaryMessenger: BinaryMessenger, api: DeviceHostApi?, messageChannelSuffix: String = "") {
+      val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.pickAudioFile$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val outDirArg = args[0] as String
+            CoroutineScope(Dispatchers.Main).launch {
+              val wrapped: List<Any?> = try {
+                listOf(api.pickAudioFile(outDirArg))
+              } catch (exception: Throwable) {
+                EngineApiPigeonUtils.wrapError(exception)
+              }
+              reply.reply(wrapped)
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.startAudioPreview$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val pathArg = args[0] as String
+            val wrapped: List<Any?> = try {
+              api.startAudioPreview(pathArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              EngineApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.stopAudioPreview$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.stopAudioPreview()
+              listOf(null)
+            } catch (exception: Throwable) {
+              EngineApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.microphonePermission$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              listOf(api.microphonePermission())
+            } catch (exception: Throwable) {
+              EngineApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.requestMicrophone$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            CoroutineScope(Dispatchers.Main).launch {
+              val wrapped: List<Any?> = try {
+                listOf(api.requestMicrophone())
+              } catch (exception: Throwable) {
+                EngineApiPigeonUtils.wrapError(exception)
+              }
+              reply.reply(wrapped)
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.openAppSettings$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.openAppSettings()
+              listOf(null)
+            } catch (exception: Throwable) {
+              EngineApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.startRecording$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val outPathArg = args[0] as String
+            val wrapped: List<Any?> = try {
+              api.startRecording(outPathArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              EngineApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.stopRecording$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            CoroutineScope(Dispatchers.Main).launch {
+              val wrapped: List<Any?> = try {
+                listOf(api.stopRecording())
+              } catch (exception: Throwable) {
+                EngineApiPigeonUtils.wrapError(exception)
+              }
+              reply.reply(wrapped)
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.cancelRecording$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.cancelRecording()
+              listOf(null)
+            } catch (exception: Throwable) {
+              EngineApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.freeSpace$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val pathArg = args[0] as String
+            val wrapped: List<Any?> = try {
+              listOf(api.freeSpace(pathArg))
+            } catch (exception: Throwable) {
+              EngineApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.saveVideoToGallery$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val pathArg = args[0] as String
+            CoroutineScope(Dispatchers.Main).launch {
+              val wrapped: List<Any?> = try {
+                listOf(api.saveVideoToGallery(pathArg))
+              } catch (exception: Throwable) {
+                EngineApiPigeonUtils.wrapError(exception)
+              }
+              reply.reply(wrapped)
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.shareFile$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val pathArg = args[0] as String
+            val mimeTypeArg = args[1] as String
+            val wrapped: List<Any?> = try {
+              api.shareFile(pathArg, mimeTypeArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              EngineApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.openUrl$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val urlArg = args[0] as String
+            val wrapped: List<Any?> = try {
+              api.openUrl(urlArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              EngineApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.setKeepScreenOn$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val onArg = args[0] as Boolean
+            val wrapped: List<Any?> = try {
+              api.setKeepScreenOn(onArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              EngineApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.appVersion$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              listOf(api.appVersion())
+            } catch (exception: Throwable) {
+              EngineApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.requestNotifications$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            CoroutineScope(Dispatchers.Main).launch {
+              val wrapped: List<Any?> = try {
+                listOf(api.requestNotifications())
+              } catch (exception: Throwable) {
+                EngineApiPigeonUtils.wrapError(exception)
+              }
+              reply.reply(wrapped)
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+    }
+  }
+}
+/** Generated class from Pigeon that represents Flutter messages that can be called from Kotlin. */
+class DeviceFlutterApi(private val binaryMessenger: BinaryMessenger, private val messageChannelSuffix: String = "") {
+  companion object {
+    /** The codec used by DeviceFlutterApi. */
+    val codec: MessageCodec<Any?> by lazy {
+      EngineApiPigeonCodec()
+    }
+  }
+  suspend fun onAudioPreviewState(stateArg: AudioPreviewStateMessage)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    return suspendCancellableCoroutine { continuation ->
+      val channelName = "dev.flutter.pigeon.stitch.DeviceFlutterApi.onAudioPreviewState$separatedMessageChannelSuffix"
+      val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+      channel.send(listOf(stateArg)) {
+        if (it is List<*>) {
+          if (it.size > 1) {
+            continuation.resumeWithException(FlutterError(it[0] as String, it[1] as String, it[2] as String?))
+          } else {
+            continuation.resume(Unit)
+          }
+        } else {
+          continuation.resumeWithException(EngineApiPigeonUtils.createConnectionError(channelName))
+        } 
+      }
+    }
+  }
+  /** Microphone level, 0 to 1, about 20 times a second while recording. */
+  suspend fun onRecordingLevel(levelArg: Double)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    return suspendCancellableCoroutine { continuation ->
+      val channelName = "dev.flutter.pigeon.stitch.DeviceFlutterApi.onRecordingLevel$separatedMessageChannelSuffix"
+      val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+      channel.send(listOf(levelArg)) {
+        if (it is List<*>) {
+          if (it.size > 1) {
+            continuation.resumeWithException(FlutterError(it[0] as String, it[1] as String, it[2] as String?))
+          } else {
+            continuation.resume(Unit)
+          }
+        } else {
+          continuation.resumeWithException(EngineApiPigeonUtils.createConnectionError(channelName))
+        } 
+      }
+    }
+  }
+  /**
+   * Recording stopped on its own (a call, another app, an error). The
+   * file so far is kept at [path], or null when there is none.
+   */
+  suspend fun onRecordingInterrupted(pathArg: String?, durationUsArg: Long)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    return suspendCancellableCoroutine { continuation ->
+      val channelName = "dev.flutter.pigeon.stitch.DeviceFlutterApi.onRecordingInterrupted$separatedMessageChannelSuffix"
+      val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+      channel.send(listOf(pathArg, durationUsArg)) {
+        if (it is List<*>) {
+          if (it.size > 1) {
+            continuation.resumeWithException(FlutterError(it[0] as String, it[1] as String, it[2] as String?))
+          } else {
+            continuation.resume(Unit)
+          }
+        } else {
+          continuation.resumeWithException(EngineApiPigeonUtils.createConnectionError(channelName))
+        } 
       }
     }
   }

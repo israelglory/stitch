@@ -1524,7 +1524,9 @@ as double,
 mixin _$TextStyleSpec {
 
  String get fontId;/// Font size as a fraction of the canvas height.
- double get size; int get color; int? get strokeColor; double get strokeWidth; int? get backgroundColor; TextAlignment get alignment;
+ double get size; int get color; int? get strokeColor;/// Stroke width as a fraction of the font size; 0 for none.
+ double get strokeWidth;/// Fill of a rounded box behind the text, or null for none.
+ int? get backgroundColor; TextAlignment get alignment;
 /// Create a copy of TextStyleSpec
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1737,7 +1739,9 @@ class _TextStyleSpec implements TextStyleSpec {
 @override@JsonKey() final  double size;
 @override@JsonKey() final  int color;
 @override final  int? strokeColor;
+/// Stroke width as a fraction of the font size; 0 for none.
 @override@JsonKey() final  double strokeWidth;
+/// Fill of a rounded box behind the text, or null for none.
 @override final  int? backgroundColor;
 @override@JsonKey() final  TextAlignment alignment;
 

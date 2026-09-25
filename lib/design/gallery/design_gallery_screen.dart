@@ -41,6 +41,7 @@ class _DesignGalleryScreenState extends State<DesignGalleryScreen> {
       ('Confirm dialog', const _DialogSection()),
       ('Headers', const HeaderSpecimen()),
       ('Choices', const ChoicesSpecimen()),
+      ('Audio', const AudioSpecimen()),
       ('Transition previews', const TransitionPreviewSpecimen()),
       ('Timeline', const TimelineSpecimen()),
       ('Onboarding mock-ups', const MocksSpecimen()),

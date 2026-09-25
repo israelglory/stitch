@@ -69,9 +69,44 @@ class PreviewPlayer(
       Log.e(TAG, "Preview failed", error)
       publish()
     }
+
+    override fun onRenderedFirstFrame() = markShown()
+  }
+
+  /** Version of the document on screen (see `EngineDocument.version`). */
+  private var shownVersion = 0L
+  private var pendingVersion = 0L
+
+  /**
+   * The new document is on screen. Also run on a timer, in case no frame
+   * comes (an audio-only document).
+   */
+  private val markShown: () -> Unit = {
+    handler.removeCallbacks(markShownLater)
+    if (shownVersion != pendingVersion) {
+      shownVersion = pendingVersion
+      publish()
+    }
+  }
+  private val markShownLater = Runnable { markShown() }
+
+  /** Redraws left for the current position after missed transition frames. */
+  private var redrawsLeft = MAX_REDRAWS
+
+  /** Redraws a paused frame that was drawn while a decoder was starting. */
+  private val redraw = Runnable {
+    val p = player ?: return@Runnable
+    if (!p.isPlaying && redrawsLeft > 0) {
+      redrawsLeft--
+      p.seekTo(p.currentPosition)
+    }
   }
 
   init {
+    FrameMisses.listener = {
+      handler.removeCallbacks(redraw)
+      handler.postDelayed(redraw, REDRAW_DELAY_MS)
+    }
     producer.setCallback(object : TextureRegistry.SurfaceProducer.Callback {
       override fun onSurfaceAvailable() {
         player?.setVideoSurface(producer.surface, size)
@@ -84,6 +119,7 @@ class PreviewPlayer(
   }
 
   private fun ensurePlayer(): CompositionPlayer = player ?: CompositionPlayer.Builder(context)
+    .setAudioMixerFactory(LimitingAudioMixer.Factory())
     .setAudioAttributes(
       AudioAttributes.Builder()
         .setUsage(C.USAGE_MEDIA)
@@ -116,7 +152,11 @@ class PreviewPlayer(
       p.setVideoSurface(producer.surface, size)
       surfaceAttached = true
     }
+    pendingVersion = doc.version.toLong()
+    redrawsLeft = MAX_REDRAWS
     p.setComposition(built.composition, max(0, keepMs))
+    handler.removeCallbacks(markShownLater)
+    handler.postDelayed(markShownLater, SHOWN_FALLBACK_MS)
     if (p.playbackState == Player.STATE_IDLE) p.prepare()
     publish()
   }
@@ -127,6 +167,11 @@ class PreviewPlayer(
     if (p.currentPosition * 1000 >= durationUs - END_TOLERANCE_US) p.seekTo(0)
     p.play()
     publish()
+  }
+
+  /** 0 to 1; muted while a voiceover records. */
+  fun setVolume(volume: Double) {
+    player?.volume = volume.toFloat().coerceIn(0f, 1f)
   }
 
   fun pause() {
@@ -140,6 +185,7 @@ class PreviewPlayer(
   }
 
   fun seek(us: Long, exact: Boolean) {
+    redrawsLeft = MAX_REDRAWS
     val p = player ?: return
     // Scrubbing mode coalesces rapid seeks and allows landing near the target.
     p.isScrubbingModeEnabled = !exact
@@ -156,6 +202,7 @@ class PreviewPlayer(
         durationUs = durationUs,
         isPlaying = p?.isPlaying == true || (p?.playWhenReady == true && buffering),
         isBuffering = buffering,
+        documentVersion = shownVersion,
       ),
     )
   }
@@ -172,6 +219,8 @@ class PreviewPlayer(
   }
 
   fun dispose() {
+    FrameMisses.listener = null
+    handler.removeCallbacks(redraw)
     release()
     producer.release()
   }
@@ -188,5 +237,8 @@ class PreviewPlayer(
     const val TICK_MS = 33L
     const val END_TOLERANCE_US = 10_000L
     const val MAX_PREVIEW_SIDE = 1280
+    const val SHOWN_FALLBACK_MS = 1_500L
+    const val REDRAW_DELAY_MS = 500L
+    const val MAX_REDRAWS = 5
   }
 }

@@ -156,3 +156,73 @@ enum ProxyMaker {
     try FileManager.default.moveItem(at: temp, to: URL(fileURLWithPath: outPath))
   }
 }
+
+/// Loudness over time for the timeline's audio tiles.
+enum Waveform {
+  /// Decoding at a low rate is plenty for peaks drawn a few pixels wide.
+  private static let sampleRate = 11_025
+
+  /// The peak, 0 to 1, of every 1 / [peaksPerSecond] of a second of
+  /// [path]'s sound; empty when it has none.
+  static func peaks(path: String, peaksPerSecond: Int) async throws -> [Double] {
+    guard FileManager.default.fileExists(atPath: path) else {
+      throw EngineError.missingFile(path)
+    }
+    let asset = AVURLAsset(url: URL(fileURLWithPath: path))
+    let tracks = try await asset.loadTracks(withMediaType: .audio)
+    guard !tracks.isEmpty, peaksPerSecond > 0 else { return [] }
+    let reader = try AVAssetReader(asset: asset)
+    let output = AVAssetReaderAudioMixOutput(
+      audioTracks: tracks,
+      audioSettings: [
+        AVFormatIDKey: kAudioFormatLinearPCM,
+        AVSampleRateKey: sampleRate,
+        AVNumberOfChannelsKey: 1,
+        AVLinearPCMBitDepthKey: 16,
+        AVLinearPCMIsFloatKey: false,
+        AVLinearPCMIsBigEndianKey: false,
+        AVLinearPCMIsNonInterleaved: false,
+      ])
+    reader.add(output)
+    guard reader.startReading() else { throw EngineError.unsupportedMedia(path) }
+
+    let bucket = max(1, sampleRate / peaksPerSecond)
+    var peaks: [Double] = []
+    var current: Int16 = 0
+    var filled = 0
+    while let buffer = output.copyNextSampleBuffer() {
+      guard var block = CMSampleBufferGetDataBuffer(buffer) else { continue }
+      if !CMBlockBufferIsRangeContiguous(block, atOffset: 0, length: 0) {
+        var copy: CMBlockBuffer?
+        CMBlockBufferCreateContiguous(
+          allocator: nil, sourceBuffer: block, blockAllocator: nil, customBlockSource: nil,
+          offsetToData: 0, dataLength: 0, flags: 0, blockBufferOut: &copy)
+        guard let copy else { continue }
+        block = copy
+      }
+      var length = 0
+      var pointer: UnsafeMutablePointer<Int8>?
+      CMBlockBufferGetDataPointer(
+        block, atOffset: 0, lengthAtOffsetOut: &length, totalLengthOut: nil,
+        dataPointerOut: &pointer)
+      guard let pointer else { continue }
+      let count = length / 2
+      pointer.withMemoryRebound(to: Int16.self, capacity: count) { samples in
+        for i in 0..<count {
+          // Int16.min has no positive counterpart.
+          let v = samples[i] == .min ? .max : abs(samples[i])
+          if v > current { current = v }
+          filled += 1
+          if filled == bucket {
+            peaks.append(Double(current) / Double(Int16.max))
+            current = 0
+            filled = 0
+          }
+        }
+      }
+    }
+    if filled > 0 { peaks.append(Double(current) / Double(Int16.max)) }
+    if reader.status == .failed { throw EngineError.unsupportedMedia(path) }
+    return peaks
+  }
+}

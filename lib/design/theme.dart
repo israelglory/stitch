@@ -12,6 +12,8 @@ import 'package:stitch/design/tokens.dart';
 abstract final class AppTheme {
   static ThemeData dark() => _build(AppColors.dark, Brightness.dark);
 
+  static ThemeData light() => _build(AppColors.light, Brightness.light);
+
   static ThemeData _build(AppColors c, Brightness brightness) {
     final scheme = ColorScheme(
       brightness: brightness,

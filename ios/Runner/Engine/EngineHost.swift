@@ -1,4 +1,5 @@
 import Flutter
+import UIKit
 import Foundation
 
 /// Implements the Pigeon host API: owns the preview player and running
@@ -8,7 +9,7 @@ final class EngineHost: EngineHostApi {
   private let callbacks: EngineFlutterApi
   private var preview: PreviewPlayer?
   private var document: EngineDocument?
-  private var exports: [String: Exporter] = [:]
+  private var jobs: [String: EngineJob] = [:]
 
   init(messenger: FlutterBinaryMessenger, textures: FlutterTextureRegistry) {
     self.textures = textures
@@ -74,18 +75,49 @@ final class EngineHost: EngineHostApi {
 
   func capabilities() throws -> CapabilitiesMessage { Exporter.capabilities() }
 
+  func waveform(path: String, peaksPerSecond: Int64) async throws -> [Double] {
+    do { return try await Waveform.peaks(path: path, peaksPerSecond: Int(peaksPerSecond)) } catch
+      let e as EngineError
+    {
+      throw PigeonError(code: e.code, message: e.message, details: nil)
+    }
+  }
+
+  func setPreviewVolume(volume: Double) throws { preview?.setVolume(volume) }
+
   func startExport(request: ExportRequestMessage) throws -> String {
     guard let document else {
       throw PigeonError(code: "bad_document", message: "No document to export", details: nil)
     }
+    return start(Exporter(doc: document, request: request))
+  }
+
+  func startSpeechAudio(documentJson: String, outputPath: String) throws -> String {
+    let doc: EngineDocument
+    do {
+      doc = try EngineDocument.decode(documentJson)
+    } catch {
+      throw PigeonError(code: "bad_document", message: "\(error)", details: nil)
+    }
+    return start(SpeechAudio(doc: doc, outputPath: outputPath))
+  }
+
+  /// Runs [job], reporting through the export callbacks under a new id.
+  /// An export asks for time to finish in the background; when that runs
+  /// out, it stops as interrupted.
+  private func start(_ job: EngineJob) -> String {
     let jobId = UUID().uuidString
-    let exporter = Exporter(doc: document, request: request)
-    exports[jobId] = exporter
+    jobs[jobId] = job
     let callbacks = self.callbacks
+    let background = BackgroundTime()
+    if let exporter = job as? Exporter {
+      background.begin { exporter.interrupt() }
+    }
     Task { @MainActor [weak self] in
+      defer { background.end() }
       var lastReported = -1.0
       do {
-        let path = try await exporter.run { fraction in
+        let path = try await job.run { fraction in
           // Report at most every 1 percent.
           guard fraction - lastReported >= 0.01 || fraction >= 1 else { return }
           lastReported = fraction
@@ -100,10 +132,30 @@ final class EngineHost: EngineHostApi {
         try? await callbacks.onExportFailed(
           jobId: jobId, code: "export_failed", message: "\(error)")
       }
-      self?.exports[jobId] = nil
+      self?.jobs[jobId] = nil
     }
     return jobId
   }
 
-  func cancelExport(jobId: String) throws { exports[jobId]?.cancel() }
+  func cancelExport(jobId: String) throws { jobs[jobId]?.cancel() }
+}
+
+/// Time to keep working in the background. When the system is about to
+/// take it away, [onExpire] runs and the time is handed back at once, as
+/// iOS requires. Both calls are safe from any thread.
+private final class BackgroundTime {
+  private var id = UIBackgroundTaskIdentifier.invalid
+
+  func begin(onExpire: @escaping () -> Void) {
+    id = UIApplication.shared.beginBackgroundTask(withName: "Export") { [weak self] in
+      onExpire()
+      self?.end()
+    }
+  }
+
+  func end() {
+    guard id != .invalid else { return }
+    UIApplication.shared.endBackgroundTask(id)
+    id = .invalid
+  }
 }

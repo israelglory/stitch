@@ -46,12 +46,20 @@ class MediaImporter {
     required this.library,
     required this.engine,
     IdGenerator? ids,
+    this.freeSpace,
   }) : ids = ids ?? RandomIdGenerator();
 
   final ProjectStore store;
   final MediaLibrary library;
   final EditorEngine engine;
   final IdGenerator ids;
+
+  /// Bytes free where a path is; each copy checks first. Null skips the
+  /// check.
+  final Future<int> Function(String path)? freeSpace;
+
+  /// Room to leave free after a copy, for the project and the system.
+  static const int _spareBytes = 100 * 1000 * 1000;
 
   /// Imports [items] into [projectId] in order. Returns the new assets in
   /// the same order. On cancel or failure, files copied so far are removed
@@ -86,6 +94,16 @@ class MediaImporter {
         final ext = p.extension(source.path).toLowerCase();
         final mediaPath = p.join('media', '$mediaId$ext');
         final target = File(store.resolve(projectId, mediaPath));
+        if (freeSpace case final space?) {
+          final needed = source.lengthSync() + _spareBytes;
+          final free = await space(target.parent.path);
+          if (free < needed) {
+            throw InsufficientStorageFailure(
+              requiredBytes: needed,
+              availableBytes: free,
+            );
+          }
+        }
         created.add(target);
         await _copy(
           source,
@@ -159,6 +177,45 @@ class MediaImporter {
       for (final file in created) {
         if (file.existsSync()) await file.delete();
       }
+      rethrow;
+    }
+  }
+
+  /// Adds an audio file (picked, bundled, or recorded) to [projectId] as
+  /// [name]. A file the app made for this ([move]) is moved in; anything
+  /// else is copied. The engine measures it; a file without sound is
+  /// refused with [UnsupportedMediaFailure].
+  Future<MediaAsset> importAudio(
+    String projectId, {
+    required File source,
+    required String name,
+    bool move = false,
+  }) async {
+    if (!source.existsSync()) throw MissingSourceFailure(source.path);
+    final mediaId = ids.next();
+    final ext = p.extension(source.path).toLowerCase();
+    final mediaPath = p.join('media', '$mediaId$ext');
+    final target = File(store.resolve(projectId, mediaPath));
+    await target.parent.create(recursive: true);
+    if (move) {
+      await source.rename(target.path);
+    } else {
+      await _copy(source, target, onProgress: (_) {});
+    }
+    try {
+      final info = await engine.probe(target.path);
+      if (!info.hasAudio || (info.durationUs ?? 0) <= 0) {
+        throw UnsupportedMediaFailure(name);
+      }
+      return MediaAsset(
+        id: mediaId,
+        kind: MediaKind.audio,
+        path: mediaPath,
+        durationUs: info.durationUs,
+        displayName: name,
+      );
+    } on Object {
+      if (target.existsSync()) await target.delete();
       rethrow;
     }
   }

@@ -142,6 +142,7 @@ class AspectRatioGlyph extends StatelessWidget {
 }
 
 /// A color option: a rounded square of [color], outlined when selected.
+/// A null [color] is the "none" option, crossed out.
 class ColorSwatchButton extends StatelessWidget {
   const new({
     required this.color,
@@ -151,7 +152,7 @@ class ColorSwatchButton extends StatelessWidget {
     super.key,
   });
 
-  final Color color;
+  final Color? color;
   final String semanticLabel;
   final bool selected;
   final VoidCallback? onTap;
@@ -180,9 +181,85 @@ class ColorSwatchButton extends StatelessWidget {
             width: _size,
             height: _size,
             decoration: BoxDecoration(
-              color: color,
+              color: color ?? colors.surfaceRaised,
               borderRadius: BorderRadius.circular(
                 AppRadius.control - AppSizes.strokeWidth * 2,
+              ),
+            ),
+            child: color == null
+                ? CustomPaint(painter: _NonePainter(colors.textSecondary))
+                : null,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NonePainter extends CustomPainter {
+  const new(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final inset = size.width * 0.25;
+    canvas.drawLine(
+      Offset(inset, size.height - inset),
+      Offset(size.width - inset, inset),
+      Paint()
+        ..color = color
+        ..strokeWidth = AppSizes.strokeWidth
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_NonePainter old) => old.color != color;
+}
+
+/// A compact choice among several short labels, in a wrapping row.
+class OptionChip extends StatelessWidget {
+  const new({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    super.key,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Pressable(
+      onPressed: onTap,
+      semanticLabel: label,
+      selected: selected,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: AppSizes.minTouchTarget),
+        child: Center(
+          widthFactor: 1,
+          child: AnimatedContainer(
+            duration: AppMotion.of(context, AppMotion.fast),
+            curve: AppMotion.curve,
+            height: AppSizes.buttonHeightSmall,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: colors.surfaceRaised,
+              borderRadius: BorderRadius.circular(AppRadius.control),
+              border: Border.all(
+                color: selected ? colors.accent : colors.surfaceRaised,
+                width: AppSizes.strokeWidth,
+              ),
+            ),
+            child: Text(
+              label,
+              style: AppTypography.body.copyWith(
+                color: selected ? colors.accent : colors.textPrimary,
               ),
             ),
           ),

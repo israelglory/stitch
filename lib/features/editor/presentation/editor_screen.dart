@@ -6,11 +6,13 @@ import 'package:go_router/go_router.dart';
 import 'package:stitch/app/failure_messages.dart';
 import 'package:stitch/app/router.dart';
 import 'package:stitch/design/design.dart';
+import 'package:stitch/features/captions/presentation/caption_progress.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/presentation/editor_toolbar.dart';
 import 'package:stitch/features/editor/presentation/preview.dart';
 import 'package:stitch/features/editor/presentation/sheets/tool_sheets.dart';
 import 'package:stitch/features/editor/presentation/timeline_view.dart';
+import 'package:stitch/features/export/presentation/export_sheet.dart';
 import 'package:stitch/features/media/domain/library_item.dart';
 import 'package:stitch/features/projects/presentation/import_progress_sheet.dart';
 import 'package:stitch/l10n/generated/app_localizations.dart';
@@ -71,6 +73,30 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     await runWithImportProgress(context, () => _controller.addMedia(items));
   }
 
+  /// The export sheet, then the export screen with what was chosen.
+  Future<void> _export() async {
+    final options = await showExportSheet(context, widget.projectId);
+    if (options == null || !mounted) return;
+    await context.push(
+      AppRoutes.editorExport(widget.projectId),
+      extra: options,
+    );
+  }
+
+  /// Picks a file to stand in for the first missing one.
+  Future<void> _relink() async {
+    final mediaId = _controller.relinkableMedia;
+    if (mediaId == null) return;
+    final item = await context.push<LibraryItem>(
+      AppRoutes.editorReplace(widget.projectId),
+    );
+    if (item == null || !mounted) return;
+    await runWithImportProgress(
+      context,
+      () => _controller.relinkMedia(mediaId, item),
+    );
+  }
+
   void _openTransition(String clipId) {
     final l10n = AppLocalizations.of(context);
     unawaited(
@@ -128,12 +154,12 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                   onPressed: state.canRedo ? _controller.redo : null,
                 ),
                 const SizedBox(width: AppSpacing.xs),
-                // Export arrives in M10; shown so the bar has its final
-                // layout.
                 PrimaryButton(
                   label: l10n.export,
                   size: ButtonSize.small,
-                  onPressed: null,
+                  onPressed: state.timeline.videoClips.isEmpty
+                      ? null
+                      : () => unawaited(_export()),
                 ),
                 const SizedBox(width: AppSpacing.sm),
               ],
@@ -143,7 +169,13 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.screen,
                 ),
-                child: ErrorBanner(message: l10n.missingMediaNote),
+                child: ErrorBanner(
+                  message: l10n.missingMediaNote,
+                  retryLabel: l10n.relink,
+                  onRetry: _controller.relinkableMedia == null
+                      ? null
+                      : () => unawaited(_relink()),
+                ),
               ),
             Expanded(
               child: Padding(
@@ -174,6 +206,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                 ],
               ),
             ),
+            CaptionProgress(projectId: widget.projectId),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: _maxTimelineHeight),
               child: TimelineView(
@@ -186,14 +219,22 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
           ],
         ),
         AsyncError(:final error) => SafeArea(
-          child: Center(
-            child: EmptyState(
-              title: failureMessage(l10n, error) ?? l10n.failureGeneric,
-              message: l10n.editorLoadError,
-              actionLabel: l10n.backToProjects,
-              primaryAction: true,
-              onAction: () => context.go(AppRoutes.projects),
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              EmptyState(
+                title: failureMessage(l10n, error) ?? l10n.failureGeneric,
+                message: l10n.editorLoadError,
+                actionLabel: l10n.retry,
+                primaryAction: true,
+                onAction: () =>
+                    ref.invalidate(editorControllerProvider(widget.projectId)),
+              ),
+              AppTextButton(
+                label: l10n.backToProjects,
+                onPressed: () => context.go(AppRoutes.projects),
+              ),
+            ],
           ),
         ),
         _ => const _EditorSkeleton(),

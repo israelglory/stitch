@@ -25,7 +25,7 @@ class EngineHost(
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
   private var preview: PreviewPlayer? = null
   private var document: EngineDocument? = null
-  private val exports = mutableMapOf<String, Pair<Exporter, Exporter.Listener>>()
+  private val jobs = mutableMapOf<String, Pair<EngineJob, Exporter.Listener>>()
 
   private fun player(): PreviewPlayer = preview ?: PreviewPlayer(context, textures) { state ->
     scope.launch { runCatching { callbacks.onPlaybackState(state) } }
@@ -67,40 +67,68 @@ class EngineHost(
 
   override fun capabilities(): CapabilitiesMessage = Exporter.capabilities()
 
+  override suspend fun waveform(path: String, peaksPerSecond: Long): List<Double> =
+    bridged { Waveform.peaks(path, peaksPerSecond.toInt()) }
+
+  override fun setPreviewVolume(volume: Double) {
+    preview?.setVolume(volume)
+  }
+
   override fun startExport(request: ExportRequestMessage): String {
     val doc = document ?: throw FlutterError("bad_document", "No document to export")
+    ExportService.start(context, request.progressTitle)
+    return start(Exporter(context, doc, request), foreground = true)
+  }
+
+  override fun startSpeechAudio(documentJson: String, outputPath: String): String {
+    val doc = try {
+      EngineDocument.decode(documentJson)
+    } catch (e: Exception) {
+      throw FlutterError("bad_document", e.message)
+    }
+    return start(SpeechAudio(context, doc, outputPath))
+  }
+
+  /**
+   * Runs [job], reporting through the export callbacks under a new id.
+   * With [foreground], the export service shows its progress and stops
+   * with it.
+   */
+  private fun start(job: EngineJob, foreground: Boolean = false): String {
     val jobId = UUID.randomUUID().toString()
-    val exporter = Exporter(context, doc, request)
     val listener = object : Exporter.Listener {
       override fun onProgress(fraction: Double) {
+        if (foreground) ExportService.update(context, fraction)
         scope.launch { runCatching { callbacks.onExportProgress(jobId, fraction) } }
       }
 
       override fun onCompleted(path: String) {
-        exports.remove(jobId)
+        jobs.remove(jobId)
+        if (foreground) ExportService.stop(context)
         scope.launch { runCatching { callbacks.onExportCompleted(jobId, path) } }
       }
 
       override fun onFailed(error: EngineException) {
-        exports.remove(jobId)
+        jobs.remove(jobId)
+        if (foreground) ExportService.stop(context)
         scope.launch {
           runCatching { callbacks.onExportFailed(jobId, error.code, error.message ?: "") }
         }
       }
     }
-    exports[jobId] = exporter to listener
+    jobs[jobId] = job to listener
     // Start after returning the id, so Dart knows the job before any event.
-    scope.launch { exporter.start(listener) }
+    scope.launch { job.start(listener) }
     return jobId
   }
 
   override fun cancelExport(jobId: String) {
-    val (exporter, listener) = exports[jobId] ?: return
-    exporter.cancel(listener)
+    val (job, listener) = jobs[jobId] ?: return
+    job.cancel(listener)
   }
 
   fun dispose() {
-    exports.values.toList().forEach { (exporter, listener) -> exporter.cancel(listener) }
+    jobs.values.toList().forEach { (job, listener) -> job.cancel(listener) }
     preview?.dispose()
     preview = null
     scope.cancel()

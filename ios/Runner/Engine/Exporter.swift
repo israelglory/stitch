@@ -13,6 +13,7 @@ final class Exporter {
   private var reader: AVAssetReader?
   private var writer: AVAssetWriter?
   private var cancelled = false
+  private var interrupted = false
 
   init(doc: EngineDocument, request: ExportRequestMessage) {
     self.doc = doc
@@ -24,6 +25,16 @@ final class Exporter {
   /// data, which would leave the pumps waiting forever.
   func cancel() {
     queue.async { [self] in
+      cancelled = true
+      reader?.cancelReading()
+    }
+  }
+
+  /// Stops like [cancel], but [run] reports [EngineError.interrupted]: the
+  /// app ran out of background time.
+  func interrupt() {
+    queue.async { [self] in
+      interrupted = true
       cancelled = true
       reader?.cancelReading()
     }
@@ -64,7 +75,8 @@ final class Exporter {
       videoPair = (out, input)
     }
 
-    // Audio: everything mixed down, resampled to 48 kHz stereo.
+    // Audio: everything mixed down, resampled to 48 kHz stereo. Mixed in
+    // float so loud moments reach the limiter instead of clipping.
     let audioTracks = built.composition.tracks(withMediaType: .audio)
     var audioPair: (AVAssetReaderOutput, AVAssetWriterInput)?
     if !audioTracks.isEmpty {
@@ -74,8 +86,8 @@ final class Exporter {
           AVFormatIDKey: kAudioFormatLinearPCM,
           AVSampleRateKey: 48_000,
           AVNumberOfChannelsKey: 2,
-          AVLinearPCMBitDepthKey: 16,
-          AVLinearPCMIsFloatKey: false,
+          AVLinearPCMBitDepthKey: 32,
+          AVLinearPCMIsFloatKey: true,
           AVLinearPCMIsBigEndianKey: false,
           AVLinearPCMIsNonInterleaved: false,
         ])
@@ -104,6 +116,7 @@ final class Exporter {
     writer.startSession(atSourceTime: .zero)
 
     let durationSeconds = duration.seconds
+    let limiter = Limiter(channels: 2, sampleRate: 48_000)
     await withTaskGroup(of: Void.self) { group in
       for (isVideo, pair) in [(true, videoPair), (false, audioPair)] {
         guard let (out, input) = pair else { continue }
@@ -111,7 +124,8 @@ final class Exporter {
           await Self.pump(
             output: out, input: input, queue: queue,
             onSample: isVideo
-              ? { time in progress(min(1, time.seconds / durationSeconds)) } : nil)
+              ? { time in progress(min(1, time.seconds / durationSeconds)) } : nil,
+            transform: isVideo ? nil : { Self.limited($0, by: limiter) })
         }
       }
     }
@@ -119,7 +133,7 @@ final class Exporter {
     if cancelled || reader.status == .cancelled {
       writer.cancelWriting()
       try? FileManager.default.removeItem(at: temp)
-      throw EngineError.cancelled
+      throw queue.sync { interrupted } ? EngineError.interrupted : EngineError.cancelled
     }
     if reader.status == .failed {
       writer.cancelWriting()
@@ -146,7 +160,7 @@ final class Exporter {
   /// Copies samples until the reader runs dry, then marks the input done.
   private static func pump(
     output: AVAssetReaderOutput, input: AVAssetWriterInput, queue: DispatchQueue,
-    onSample: ((CMTime) -> Void)?
+    onSample: ((CMTime) -> Void)?, transform: ((CMSampleBuffer) -> CMSampleBuffer)? = nil
   ) async {
     let pipe = Pipe(output: output, input: input)
     await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in
@@ -160,7 +174,7 @@ final class Exporter {
             return
           }
           onSample?(CMSampleBufferGetPresentationTimeStamp(sample))
-          if !pipe.input.append(sample) {
+          if !pipe.input.append(transform?(sample) ?? sample) {
             finished = true
             pipe.input.markAsFinished()
             done.resume()
@@ -169,6 +183,37 @@ final class Exporter {
         }
       }
     }
+  }
+
+  /// [sample] (interleaved float PCM) through [limiter]. Works on a copy:
+  /// the reader's buffers are not ours to change.
+  static func limited(_ sample: CMSampleBuffer, by limiter: Limiter) -> CMSampleBuffer {
+    let frames = CMSampleBufferGetNumSamples(sample)
+    guard frames > 0, let block = CMSampleBufferGetDataBuffer(sample),
+      let format = CMSampleBufferGetFormatDescription(sample)
+    else { return sample }
+    var copy: CMBlockBuffer?
+    guard
+      CMBlockBufferCreateContiguous(
+        allocator: nil, sourceBuffer: block, blockAllocator: nil, customBlockSource: nil,
+        offsetToData: 0, dataLength: 0, flags: kCMBlockBufferAlwaysCopyDataFlag,
+        blockBufferOut: &copy) == noErr, let copy
+    else { return sample }
+    var length = 0
+    var pointer: UnsafeMutablePointer<Int8>?
+    CMBlockBufferGetDataPointer(
+      copy, atOffset: 0, lengthAtOffsetOut: &length, totalLengthOut: nil,
+      dataPointerOut: &pointer)
+    guard let pointer, length >= frames * 2 * MemoryLayout<Float>.size else { return sample }
+    pointer.withMemoryRebound(to: Float.self, capacity: length / MemoryLayout<Float>.size) {
+      limiter.process($0, frames: frames)
+    }
+    var out: CMSampleBuffer?
+    CMAudioSampleBufferCreateReadyWithPacketDescriptions(
+      allocator: nil, dataBuffer: copy, formatDescription: format, sampleCount: frames,
+      presentationTimeStamp: CMSampleBufferGetPresentationTimeStamp(sample),
+      packetDescriptions: nil, sampleBufferOut: &out)
+    return out ?? sample
   }
 
   private func videoSettings() -> [String: Any] {

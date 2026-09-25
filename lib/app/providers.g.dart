@@ -153,6 +153,52 @@ final class IdGeneratorProvider
 
 String _$idGeneratorHash() => r'33d878f6e343af1c672e0184b3b113cc4ea75cb3';
 
+/// Free space, the photo library, sharing, and links. Tests override it.
+
+@ProviderFor(systemServices)
+final systemServicesProvider = SystemServicesProvider._();
+
+/// Free space, the photo library, sharing, and links. Tests override it.
+
+final class SystemServicesProvider
+    extends $FunctionalProvider<SystemServices, SystemServices, SystemServices>
+    with $Provider<SystemServices> {
+  /// Free space, the photo library, sharing, and links. Tests override it.
+  SystemServicesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'systemServicesProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$systemServicesHash();
+
+  @$internal
+  @override
+  $ProviderElement<SystemServices> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  SystemServices create(Ref ref) {
+    return systemServices(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SystemServices value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SystemServices>(value),
+    );
+  }
+}
+
+String _$systemServicesHash() => r'1f5a14782719bd40398621dd2028fd96a6e17118';
+
 @ProviderFor(clock)
 final clockProvider = ClockProvider._();
 

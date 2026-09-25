@@ -24,6 +24,8 @@ final class PreviewPlayer: NSObject, FlutterTexture, @unchecked Sendable {
   private var interruptionObserver: NSObjectProtocol?
   private var buildTask: Task<Void, Never>?
   private var durationUs: Int64 = 0
+  /// Version of the document on screen (see `EngineDocument.version`).
+  private var shownVersion: Int64 = 0
 
   private var seeking = false
   private var pendingSeek: (us: Int64, exact: Bool)?
@@ -87,7 +89,7 @@ final class PreviewPlayer: NSObject, FlutterTexture, @unchecked Sendable {
       do {
         let built = try await CompositionBuilder.build(doc, forExport: false)
         guard let self, !Task.isCancelled else { return }
-        self.install(built, at: keepPosition)
+        self.install(built, at: keepPosition, version: Int64(doc.version))
       } catch {
         NSLog("Stitch: preview build failed: \(error)")
       }
@@ -95,7 +97,7 @@ final class PreviewPlayer: NSObject, FlutterTexture, @unchecked Sendable {
   }
 
   @MainActor
-  private func install(_ built: BuiltComposition, at position: CMTime) {
+  private func install(_ built: BuiltComposition, at position: CMTime, version: Int64) {
     let item = AVPlayerItem(asset: built.composition)
     item.videoComposition = built.videoComposition
     item.audioMix = built.audioMix
@@ -120,6 +122,7 @@ final class PreviewPlayer: NSObject, FlutterTexture, @unchecked Sendable {
     let target = min(position, built.duration)
     player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
       guard let self else { return }
+      self.shownVersion = version
       if self.wantsPlay { self.player.play() }
       self.publish()
     }
@@ -135,6 +138,11 @@ final class PreviewPlayer: NSObject, FlutterTexture, @unchecked Sendable {
     }
     player.play()
     publish()
+  }
+
+  /// 0 to 1; muted while a voiceover records.
+  func setVolume(_ volume: Double) {
+    player.volume = Float(min(max(volume, 0), 1))
   }
 
   func pause() {
@@ -172,7 +180,8 @@ final class PreviewPlayer: NSObject, FlutterTexture, @unchecked Sendable {
         positionUs: min(player.currentTime().microseconds, durationUs),
         durationUs: durationUs,
         isPlaying: player.rate != 0 || (wantsPlay && buffering),
-        isBuffering: buffering))
+        isBuffering: buffering,
+        documentVersion: shownVersion))
   }
 
   /// Stops playback and frees decoders. The texture stays registered so

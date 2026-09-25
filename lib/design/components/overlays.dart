@@ -149,6 +149,7 @@ Future<bool> showConfirmDialog({
   required String title,
   required String message,
   required String confirmLabel,
+  String? cancelLabel,
   bool destructive = false,
 }) async {
   final colors = context.colors;
@@ -166,6 +167,7 @@ Future<bool> showConfirmDialog({
       title: title,
       message: message,
       confirmLabel: confirmLabel,
+      cancelLabel: cancelLabel,
       destructive: destructive,
       onCancel: () => Navigator.of(context).pop(false),
       onConfirm: () => Navigator.of(context).pop(true),
@@ -182,6 +184,7 @@ class ConfirmDialog extends StatelessWidget {
     required this.confirmLabel,
     required this.onCancel,
     required this.onConfirm,
+    this.cancelLabel,
     this.destructive = false,
     super.key,
   });
@@ -189,6 +192,9 @@ class ConfirmDialog extends StatelessWidget {
   final String title;
   final String message;
   final String confirmLabel;
+
+  /// Defaults to "Cancel".
+  final String? cancelLabel;
   final bool destructive;
   final VoidCallback onCancel;
   final VoidCallback onConfirm;
@@ -204,7 +210,7 @@ class ConfirmDialog extends StatelessWidget {
         MediaQuery.textScalerOf(context).scale(1) > _stackButtonsAtScale;
 
     final cancel = SecondaryButton(
-      label: l10n.cancel,
+      label: cancelLabel ?? l10n.cancel,
       onPressed: onCancel,
       expand: true,
     );

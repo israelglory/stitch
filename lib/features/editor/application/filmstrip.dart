@@ -42,6 +42,9 @@ class Filmstrip {
     });
   }
 
+  /// Forgets frames made earlier (their files were deleted).
+  void forget() => _frames.clear();
+
   Future<void> _send() async {
     _flush = null;
     final batch = Map.of(_pending);

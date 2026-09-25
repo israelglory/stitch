@@ -21,10 +21,13 @@ That writes `lib/engine/pigeon/engine_api.g.dart`, `ios/Runner/Engine/EngineApi.
 - `createProxy(path, out)` writes a 720p copy for preview.
 - `capabilities` reports HEVC support and whether 4K is available.
 - `startExport(request)` and `cancelExport(id)`.
+- `startSpeechAudio(json, out)` renders a document's sound for speech recognition (see Speech audio). It reports through the export callbacks and is cancelled with `cancelExport`.
 - `release` frees decoders when leaving the editor.
+- `waveform(path, peaksPerSecond)` returns loudness peaks for the timeline.
+- `setPreviewVolume(v)` mutes the preview while a voiceover records.
 
 **Callbacks (native to Dart):**
-- `onPlaybackState`, about 30 times a second while playing and on every change.
+- `onPlaybackState`, about 30 times a second while playing and on every change. It carries the version of the document on screen.
 - `onExportProgress`, `onExportCompleted`, and `onExportFailed(code, message)`.
 
 Error codes are stable. Dart maps them to failure types: `missing_file`, `unsupported_media`, `bad_document`, `export_failed`, and `cancelled`.
@@ -35,14 +38,84 @@ Error codes are stable. Dart maps them to failure types: `missing_file`, `unsupp
 
 ```json
 {
+  "version": 12,
   "canvas": {"width": 1080, "height": 1920, "frameRate": 30},
   "background": {"type": "solid", "color": 4278190080},
-  "media": {"<mediaId>": {"path": "/abs/path.mov", "kind": "video", "proxyPath": "/abs/proxy.mp4"}},
-  "composition": { ... ResolvedComposition.toJson() ... }
+  "media": {"<mediaId>": {"path": "/abs/path.mov", "kind": "video", "durationUs": 3000000,
+                          "hasAudio": true, "proxyPath": "/abs/proxy.mp4"}},
+  "composition": { ... ResolvedComposition.toJson() ... },
+  "overlays": [{"id": "...", "startUs": 0, "endUs": 3000000, "images": ["/abs/0.png"],
+                "width": 420, "height": 115, "x": 0.5, "y": 0.5, "scale": 1, "rotationDeg": 0,
+                "animationIn": {"type": "fade", "durationUs": 400000},
+                "animationOut": {"type": "none", "durationUs": 0}}]
 }
 ```
 
-The composition is the timeline resolved to absolute microseconds (see `docs/timeline.md`), so the engine does no layout math.
+- The composition is the timeline resolved to absolute microseconds (see `docs/timeline.md`), so the engine does no layout math.
+- `version` numbers documents. The engines report the version on screen in their playback state, so the editor knows when a change is visible.
+
+## Text
+
+Text is drawn once, in Dart, and placed by the engines as images, so it looks the same on both platforms, in preview, and in export. Neither engine lays out text or needs the fonts.
+
+- `OverlayTextLayout` (`lib/design/content/overlay_text.dart`) lays out and paints a text item: the box, the outline, then the text. Fonts are Inter and five display faces under the SIL Open Font License.
+- `PngTextRasterizer` draws each text item to a PNG at twice the canvas resolution, cached on disk by content (`cache/text`, 50 MB, pruned at startup).
+  - A typewriter animation gets up to 24 frames, from the first letter to all.
+  - The document's `overlays` hold the image paths, the item's size on the canvas, its place (center, scale, rotation), and its animations.
+- Animations: each lasts up to 0.4 s and at most a third of the item; a typewriter lasts up to 1 s and at most half the item. Each is driven by a phase, rising over the entrance and falling over the exit, eased out (`1 - (1 - p)^3`).
+  - Fade changes opacity.
+  - Slide up and slide down travel 5 percent of the canvas height.
+  - Scale grows from 60 percent.
+  - Typewriter reveals letters at an even pace.
+  - The math is in `text_motion.dart`, `TextMotion.swift`, and `TextMotion.kt`.
+- While a text item is selected, the editor draws it itself over the preview (`TextOverlayLayer`, with the same painter), and it is left out of the document. Typing and dragging are then instant.
+  - After deselecting, the editor keeps drawing it until the engine reports a document that includes it, so it never blinks.
+- iOS draws overlays in the compositor after the clips and transitions. Android draws them in each clip's `ClipEffect`, with premultiplied alpha blending.
+
+## Sound
+
+- Everything is mixed at 48 kHz stereo; speed changes keep pitch.
+- **Limiter:** a look-ahead peak limiter (`Limiter.swift`, `Limiter.kt`) keeps the mix under -1 dBFS instead of clipping. It looks 5 ms ahead and recovers over about 100 ms.
+  - **Android:** `LimitingAudioMixer` wraps Media3's mixer. It mixes in float, where the default mixes to 16 bits and would clip the sum first, then limits. It covers preview and export.
+  - **Android items above full volume:** an item that can go above 100 percent also passes through the limiter at full scale in its `GainProcessor`, because Media3 hands each item to the mix as 16-bit audio.
+  - **iOS:** the export reads the mix as float and limits it before encoding. AVFoundation's preview mix has no place for one, so iOS preview is not limited. Volumes above 100 percent work in both (tested).
+  - Tests on both platforms export two copies of a loud tone at 200 percent: no clipped samples. The tests fail when the limiter is off.
+- **Waveforms:** the engines return the peak of every 1/20 s of a file (`waveform`). `WaveformCache` keeps them in memory and on disk (`cache/waveforms`, 20 MB), keyed by file, size, and modification time. `waveformSlice` cuts each timeline item's part out, following its trim, speed, and loop.
+  - Reading a waveform decodes the whole file. That is quick on phones, but on the Android emulator's software decoder a 45 s AAC track takes about 15 s. The disk cache means it happens once per file.
+
+## Speech audio
+
+Captions need the timeline's sound as speech recognition takes it: 16 kHz mono float PCM, raw and little endian. Both engines produce it from a document Dart passes in, not the previewed one, so it can leave out music or mute the clips (see [captions.md](captions.md)).
+
+- The file lines up with the timeline: sample 0 is time 0. A document with no sound gives an empty file.
+- **iOS (`SpeechAudio.swift`):**
+  - AVAssetReader reads the composition's audio mix and converts it to 16 kHz mono float itself; no video is decoded.
+  - Samples are written at their presentation times, with silence filling any gap.
+- **Android (`SpeechAudio.kt`):**
+  - `CompositionBuilder.build(audioOnly = true)` makes a composition of sound only. Clips become audio items with their fades and ramps; photos and silent clips become gaps.
+  - A `Transformer` runs it with the limiting mixer. At the end of the chain, `SpeechCapture` copies the 48 kHz mix: channels averaged, filtered by `Decimator` (a 63-tap windowed sinc at 7.2 kHz), every third sample kept.
+  - The encoded AAC is thrown away.
+
+## Device features
+
+`DeviceHostApi` (in the same Pigeon file) is implemented by `DeviceHost.swift` and `DeviceHost.kt`, behind the Dart `AudioDevice` and `SystemServices`:
+
+- **Picking audio files:** the system document picker; the file is copied into the app, then moved into the project.
+- **Trying sounds before adding them:** `AVAudioPlayer` on iOS, ExoPlayer on Android, reporting position to the mini player.
+- **Microphone permission:** asked for when first recording.
+  - Android can ask again after one refusal; the app remembers whether it asked, to tell "not asked" from "refused for good".
+  - After a refusal for good, the app points to Settings.
+- **Recording:** AAC in M4A, 48 kHz mono, with levels about 20 times a second.
+  - A call or another app taking the audio stops the recording and keeps what was recorded.
+  - The preview plays muted while recording, so the user can narrate over the video.
+- **Free space** (`freeSpace`) for the nearest existing folder. It is checked before each import copy, each export, and each model download (`InsufficientStorageFailure`).
+- **Saving exports** (`saveVideoToGallery`):
+  - iOS adds to Photos with add-only access, asked for at that moment (`NSPhotoLibraryAddUsageDescription`).
+  - Android 10 and later insert into `Movies/Stitch` through MediaStore, with no permission. Android 8 and 9 write there directly with `WRITE_EXTERNAL_STORAGE` (declared up to API 28 only) and scan the file.
+  - A refusal comes back as `denied`, or `permanentlyDenied` (then the app points to Settings).
+- **Sharing** (`shareFile`): `UIActivityViewController` on iOS; on Android a chooser with a `FileProvider` URI. Only the `exports/` cache folder is shared (`res/xml/shared_files.xml`).
+- **Links, the screen, and the version:** `openUrl`, `setKeepScreenOn` (on during an export), and `appVersion`.
+- **Notifications** (`requestNotifications`): Android 13 and later ask once, when the first export starts, for its progress notification. An export runs either way.
 
 ## Transitions
 
@@ -89,6 +162,7 @@ During a transition, `Transitions` mixes the two canvases.
 - This path is used so bitrate, frame rate, and codec can be set exactly.
 - Video is H.264 High, or HEVC. Audio is AAC, 48 kHz stereo, 192 kbps.
 - The file is written to `*.part.mp4`, then renamed. A cancelled or failed export leaves no file behind.
+- **In the background:** the export asks for background time (`beginBackgroundTask`). If iOS takes the time away, the export stops as `interrupted` and the app offers Retry. The screen stays on while exporting.
 
 **Probe, thumbnails, and proxies:** in `MediaTools.swift`. Filmstrip file names use a hash that stays stable across launches, so frames are cached on disk.
 
@@ -123,11 +197,13 @@ During the transition into its clip, the effect also draws the outgoing clip and
 - Rendering is capped at 1280 px on the long side.
 - Scrubbing seeks use the player's scrubbing mode. Audio focus is handled, so calls pause the preview.
 - Pausing seeks exactly to the paused position, so the frame shown matches the playhead even when video fell behind the audio clock.
+- A transition frame drawn without its outgoing clip (the decoder fell behind, as on a busy emulator) is reported by `FrameMisses`. While paused, the player seeks to the same position after 500 ms to draw it again, at most 5 times per seek.
 
 **Export (`Exporter`):** a `Transformer`.
 - Video is H.264 or HEVC at the requested bitrate. The frame rate is capped at the requested rate: frames are dropped above it and never duplicated below it.
 - Audio is AAC at 192 kbps, resampled to 48 kHz.
 - The file is written to `*.part.mp4`, then renamed. A cancelled or failed export leaves no file behind.
+- **In the background:** `ExportService`, a foreground service, keeps the app running with a progress notification (type `mediaProcessing` on Android 15 and later, `dataSync` before). It starts and stops with the export; the notification text comes from Dart (`progressTitle`).
 
 **Probe, thumbnails, and proxies:** in `MediaTools.kt`.
 - `MediaExtractor` reads durations, rotation, frame rate, and HDR transfer. `ExifInterface` reads photo orientation.
@@ -163,8 +239,13 @@ During the transition into its clip, the effect also draws the outgoing clip and
   - a video transition drawing both clips, in export and preview
   - the blurred background
   - letterbox bars taking the background color
-  - clip fades and the crossfade under a transition, measured from the exported sound The corpus is packaged as test assets. Run the tests with `cd android && ./gradlew :app:connectedDebugAndroidTest`.
-- **End to end:** `integration_test/editor_flow_test.dart` covers the whole path. It picks from Photos, creates a project, previews, plays, exports, and then probes the export.
+  - clip fades and the crossfade under a transition, measured from the exported sound
+  - the limiter, text overlays, and waveforms
+  - speech audio, and the decimator's filtering
+
+  The corpus is packaged as test assets. Run the tests with `cd android && ./gradlew :app:connectedDebugAndroidTest`.
+- **End to end:** `integration_test/export_test.dart` exports through the export sheet and checks the saved file. `integration_test/editor_flow_test.dart` covers the whole path. It picks from Photos, creates a project, previews, plays, exports, and then probes the export. `integration_test/captions_test.dart` makes captions from `speech.mp4` with the real model.
+- **Both platforms:** speech audio is 16 kHz, lined up with the timeline, and empty without sound.
 
 ## Xcode project
 
@@ -172,7 +253,7 @@ During the transition into its clip, the effect also draws the outgoing clip and
 
 ## Deferred
 
-- The audio limiter moves to M8: `AVAudioMix` has no limiter stage.
+- iOS preview has no limiter (see Sound); exports are limited on both platforms.
 - Transition `params` (the model's extra settings) are not used yet; every transition has fixed looks.
 - On Android, an HDR clip leaving through a transition is drawn without tone mapping for those frames.
-- Text and captions are drawn from M8 and M9.
+- Captions are drawn as overlays like text; see [captions.md](captions.md).

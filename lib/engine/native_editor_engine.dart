@@ -6,7 +6,7 @@ import 'package:stitch/engine/editor_engine.dart';
 import 'package:stitch/engine/pigeon/engine_api.g.dart';
 
 /// [EditorEngine] backed by the native engine (AVFoundation on iOS; Media3
-/// on Android from M6) through Pigeon.
+/// on Android) through Pigeon.
 class NativeEditorEngine implements EditorEngine, EngineFlutterApi {
   new({EngineHostApi? host}) : _host = host ?? EngineHostApi() {
     EngineFlutterApi.setUp(this);
@@ -87,20 +87,38 @@ class NativeEditorEngine implements EditorEngine, EngineFlutterApi {
   });
 
   @override
-  ExportJob export(ExportSettings settings) {
+  Future<List<double>> waveform(String path, {required int peaksPerSecond}) =>
+      _guard(() => _host.waveform(path, peaksPerSecond));
+
+  @override
+  Future<void> setPreviewVolume(double volume) =>
+      _guard(() => _host.setPreviewVolume(volume));
+
+  @override
+  ExportJob export(ExportSettings settings) => _startJob(
+    () => _host.startExport(
+      ExportRequestMessage(
+        outputPath: settings.outputPath,
+        width: settings.width,
+        height: settings.height,
+        frameRate: settings.frameRate,
+        videoBitrate: settings.bitrate,
+        hevc: settings.codec == VideoCodec.hevc,
+        progressTitle: settings.progressTitle,
+      ),
+    ),
+  );
+
+  @override
+  ExportJob speechAudio(String documentJson, String outputPath) =>
+      _startJob(() => _host.startSpeechAudio(documentJson, outputPath));
+
+  /// A job reporting through the export callbacks, started by [start].
+  ExportJob _startJob(Future<String> Function() start) {
     final job = _NativeExportJob(_host);
     unawaited(() async {
       try {
-        final id = await _host.startExport(
-          ExportRequestMessage(
-            outputPath: settings.outputPath,
-            width: settings.width,
-            height: settings.height,
-            frameRate: settings.frameRate,
-            videoBitrate: settings.bitrate,
-            hevc: settings.codec == VideoCodec.hevc,
-          ),
-        );
+        final id = await start();
         _jobs[id] = job;
         await job.attach(id);
         for (final event in _early.remove(id) ?? const <Object>[]) {
@@ -125,6 +143,7 @@ class NativeEditorEngine implements EditorEngine, EngineFlutterApi {
       durationUs: state.durationUs,
       isPlaying: state.isPlaying,
       isBuffering: state.isBuffering,
+      documentVersion: state.documentVersion,
     );
     _state.add(_current);
   }

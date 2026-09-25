@@ -171,7 +171,7 @@ class MediaLabel extends StatelessWidget {
       child: Text(
         text,
         style: AppTypography.caption.tabular.semibold.copyWith(
-          color: colors.textPrimary,
+          color: colors.onOverlay,
         ),
       ),
     );
@@ -293,7 +293,7 @@ class _OrderBadge extends StatelessWidget {
         shape: BoxShape.circle,
         color: selected ? colors.accent : colors.overlay,
         border: Border.all(
-          color: selected ? colors.accent : colors.textPrimary,
+          color: selected ? colors.accent : colors.onOverlay,
           width: AppSizes.strokeWidth,
         ),
       ),

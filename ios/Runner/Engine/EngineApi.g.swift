@@ -188,6 +188,20 @@ private func nilOrValue<T>(_ value: Any?) -> T? {
 }
 
 
+enum MicrophonePermission: Int, CaseIterable {
+  case granted = 0
+  case undetermined = 1
+  case denied = 2
+  case permanentlyDenied = 3
+}
+
+/// How saving to the photo library went.
+enum GallerySaveResult: Int, CaseIterable {
+  case saved = 0
+  case denied = 1
+  case permanentlyDenied = 2
+}
+
 /// What a media file contains, from the file itself.
 ///
 /// Generated class from Pigeon that represents data sent in messages.
@@ -311,6 +325,9 @@ struct ExportRequestMessage: Hashable, CustomStringConvertible {
   var frameRate: Int64
   var videoBitrate: Int64
   var hevc: Bool
+  /// Shown with the progress where the system shows it (Android's export
+  /// notification).
+  var progressTitle: String
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -321,6 +338,7 @@ struct ExportRequestMessage: Hashable, CustomStringConvertible {
     let frameRate = pigeonVar_list[3] as! Int64
     let videoBitrate = pigeonVar_list[4] as! Int64
     let hevc = pigeonVar_list[5] as! Bool
+    let progressTitle = pigeonVar_list[6] as! String
 
     return ExportRequestMessage(
       outputPath: outputPath,
@@ -328,7 +346,8 @@ struct ExportRequestMessage: Hashable, CustomStringConvertible {
       height: height,
       frameRate: frameRate,
       videoBitrate: videoBitrate,
-      hevc: hevc
+      hevc: hevc,
+      progressTitle: progressTitle
     )
   }
   func toList() -> [Any?] {
@@ -339,13 +358,14 @@ struct ExportRequestMessage: Hashable, CustomStringConvertible {
       frameRate,
       videoBitrate,
       hevc,
+      progressTitle,
     ]
   }
   static func == (lhs: ExportRequestMessage, rhs: ExportRequestMessage) -> Bool {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return EngineApiPigeonInternal.deepEquals(lhs.outputPath, rhs.outputPath) && EngineApiPigeonInternal.deepEquals(lhs.width, rhs.width) && EngineApiPigeonInternal.deepEquals(lhs.height, rhs.height) && EngineApiPigeonInternal.deepEquals(lhs.frameRate, rhs.frameRate) && EngineApiPigeonInternal.deepEquals(lhs.videoBitrate, rhs.videoBitrate) && EngineApiPigeonInternal.deepEquals(lhs.hevc, rhs.hevc)
+    return EngineApiPigeonInternal.deepEquals(lhs.outputPath, rhs.outputPath) && EngineApiPigeonInternal.deepEquals(lhs.width, rhs.width) && EngineApiPigeonInternal.deepEquals(lhs.height, rhs.height) && EngineApiPigeonInternal.deepEquals(lhs.frameRate, rhs.frameRate) && EngineApiPigeonInternal.deepEquals(lhs.videoBitrate, rhs.videoBitrate) && EngineApiPigeonInternal.deepEquals(lhs.hevc, rhs.hevc) && EngineApiPigeonInternal.deepEquals(lhs.progressTitle, rhs.progressTitle)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -356,10 +376,11 @@ struct ExportRequestMessage: Hashable, CustomStringConvertible {
     EngineApiPigeonInternal.deepHash(value: frameRate, hasher: &hasher)
     EngineApiPigeonInternal.deepHash(value: videoBitrate, hasher: &hasher)
     EngineApiPigeonInternal.deepHash(value: hevc, hasher: &hasher)
+    EngineApiPigeonInternal.deepHash(value: progressTitle, hasher: &hasher)
   }
 
   public var description: String {
-    return "ExportRequestMessage(outputPath: \(String(describing: outputPath)), width: \(String(describing: width)), height: \(String(describing: height)), frameRate: \(String(describing: frameRate)), videoBitrate: \(String(describing: videoBitrate)), hevc: \(String(describing: hevc)))"
+    return "ExportRequestMessage(outputPath: \(String(describing: outputPath)), width: \(String(describing: width)), height: \(String(describing: height)), frameRate: \(String(describing: frameRate)), videoBitrate: \(String(describing: videoBitrate)), hevc: \(String(describing: hevc)), progressTitle: \(String(describing: progressTitle)))"
   }
 }
 
@@ -369,6 +390,8 @@ struct PlaybackStateMessage: Hashable, CustomStringConvertible {
   var durationUs: Int64
   var isPlaying: Bool
   var isBuffering: Bool
+  /// The `version` of the document the preview shows.
+  var documentVersion: Int64
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -377,12 +400,14 @@ struct PlaybackStateMessage: Hashable, CustomStringConvertible {
     let durationUs = pigeonVar_list[1] as! Int64
     let isPlaying = pigeonVar_list[2] as! Bool
     let isBuffering = pigeonVar_list[3] as! Bool
+    let documentVersion = pigeonVar_list[4] as! Int64
 
     return PlaybackStateMessage(
       positionUs: positionUs,
       durationUs: durationUs,
       isPlaying: isPlaying,
-      isBuffering: isBuffering
+      isBuffering: isBuffering,
+      documentVersion: documentVersion
     )
   }
   func toList() -> [Any?] {
@@ -391,13 +416,14 @@ struct PlaybackStateMessage: Hashable, CustomStringConvertible {
       durationUs,
       isPlaying,
       isBuffering,
+      documentVersion,
     ]
   }
   static func == (lhs: PlaybackStateMessage, rhs: PlaybackStateMessage) -> Bool {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return EngineApiPigeonInternal.deepEquals(lhs.positionUs, rhs.positionUs) && EngineApiPigeonInternal.deepEquals(lhs.durationUs, rhs.durationUs) && EngineApiPigeonInternal.deepEquals(lhs.isPlaying, rhs.isPlaying) && EngineApiPigeonInternal.deepEquals(lhs.isBuffering, rhs.isBuffering)
+    return EngineApiPigeonInternal.deepEquals(lhs.positionUs, rhs.positionUs) && EngineApiPigeonInternal.deepEquals(lhs.durationUs, rhs.durationUs) && EngineApiPigeonInternal.deepEquals(lhs.isPlaying, rhs.isPlaying) && EngineApiPigeonInternal.deepEquals(lhs.isBuffering, rhs.isBuffering) && EngineApiPigeonInternal.deepEquals(lhs.documentVersion, rhs.documentVersion)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -406,10 +432,144 @@ struct PlaybackStateMessage: Hashable, CustomStringConvertible {
     EngineApiPigeonInternal.deepHash(value: durationUs, hasher: &hasher)
     EngineApiPigeonInternal.deepHash(value: isPlaying, hasher: &hasher)
     EngineApiPigeonInternal.deepHash(value: isBuffering, hasher: &hasher)
+    EngineApiPigeonInternal.deepHash(value: documentVersion, hasher: &hasher)
   }
 
   public var description: String {
-    return "PlaybackStateMessage(positionUs: \(String(describing: positionUs)), durationUs: \(String(describing: durationUs)), isPlaying: \(String(describing: isPlaying)), isBuffering: \(String(describing: isBuffering)))"
+    return "PlaybackStateMessage(positionUs: \(String(describing: positionUs)), durationUs: \(String(describing: durationUs)), isPlaying: \(String(describing: isPlaying)), isBuffering: \(String(describing: isBuffering)), documentVersion: \(String(describing: documentVersion)))"
+  }
+}
+
+/// A file the user picked, copied into the app.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PickedFileMessage: Hashable, CustomStringConvertible {
+  var path: String
+  /// The name the user knows it by, without the extension.
+  var name: String
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PickedFileMessage? {
+    let path = pigeonVar_list[0] as! String
+    let name = pigeonVar_list[1] as! String
+
+    return PickedFileMessage(
+      path: path,
+      name: name
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      path,
+      name,
+    ]
+  }
+  static func == (lhs: PickedFileMessage, rhs: PickedFileMessage) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return EngineApiPigeonInternal.deepEquals(lhs.path, rhs.path) && EngineApiPigeonInternal.deepEquals(lhs.name, rhs.name)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("PickedFileMessage")
+    EngineApiPigeonInternal.deepHash(value: path, hasher: &hasher)
+    EngineApiPigeonInternal.deepHash(value: name, hasher: &hasher)
+  }
+
+  public var description: String {
+    return "PickedFileMessage(path: \(String(describing: path)), name: \(String(describing: name)))"
+  }
+}
+
+/// Generated class from Pigeon that represents data sent in messages.
+struct AudioPreviewStateMessage: Hashable, CustomStringConvertible {
+  var path: String
+  var positionUs: Int64
+  var durationUs: Int64
+  var isPlaying: Bool
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> AudioPreviewStateMessage? {
+    let path = pigeonVar_list[0] as! String
+    let positionUs = pigeonVar_list[1] as! Int64
+    let durationUs = pigeonVar_list[2] as! Int64
+    let isPlaying = pigeonVar_list[3] as! Bool
+
+    return AudioPreviewStateMessage(
+      path: path,
+      positionUs: positionUs,
+      durationUs: durationUs,
+      isPlaying: isPlaying
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      path,
+      positionUs,
+      durationUs,
+      isPlaying,
+    ]
+  }
+  static func == (lhs: AudioPreviewStateMessage, rhs: AudioPreviewStateMessage) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return EngineApiPigeonInternal.deepEquals(lhs.path, rhs.path) && EngineApiPigeonInternal.deepEquals(lhs.positionUs, rhs.positionUs) && EngineApiPigeonInternal.deepEquals(lhs.durationUs, rhs.durationUs) && EngineApiPigeonInternal.deepEquals(lhs.isPlaying, rhs.isPlaying)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("AudioPreviewStateMessage")
+    EngineApiPigeonInternal.deepHash(value: path, hasher: &hasher)
+    EngineApiPigeonInternal.deepHash(value: positionUs, hasher: &hasher)
+    EngineApiPigeonInternal.deepHash(value: durationUs, hasher: &hasher)
+    EngineApiPigeonInternal.deepHash(value: isPlaying, hasher: &hasher)
+  }
+
+  public var description: String {
+    return "AudioPreviewStateMessage(path: \(String(describing: path)), positionUs: \(String(describing: positionUs)), durationUs: \(String(describing: durationUs)), isPlaying: \(String(describing: isPlaying)))"
+  }
+}
+
+/// Generated class from Pigeon that represents data sent in messages.
+struct RecordingMessage: Hashable, CustomStringConvertible {
+  var path: String
+  var durationUs: Int64
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> RecordingMessage? {
+    let path = pigeonVar_list[0] as! String
+    let durationUs = pigeonVar_list[1] as! Int64
+
+    return RecordingMessage(
+      path: path,
+      durationUs: durationUs
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      path,
+      durationUs,
+    ]
+  }
+  static func == (lhs: RecordingMessage, rhs: RecordingMessage) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return EngineApiPigeonInternal.deepEquals(lhs.path, rhs.path) && EngineApiPigeonInternal.deepEquals(lhs.durationUs, rhs.durationUs)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("RecordingMessage")
+    EngineApiPigeonInternal.deepHash(value: path, hasher: &hasher)
+    EngineApiPigeonInternal.deepHash(value: durationUs, hasher: &hasher)
+  }
+
+  public var description: String {
+    return "RecordingMessage(path: \(String(describing: path)), durationUs: \(String(describing: durationUs)))"
   }
 }
 
@@ -417,13 +577,31 @@ private class EngineApiPigeonCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
     case 129:
-      return MediaInfoMessage.fromList(self.readValue() as! [Any?])
+      let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
+      if let enumResultAsInt = enumResultAsInt {
+        return MicrophonePermission(rawValue: enumResultAsInt)
+      }
+      return nil
     case 130:
-      return CapabilitiesMessage.fromList(self.readValue() as! [Any?])
+      let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
+      if let enumResultAsInt = enumResultAsInt {
+        return GallerySaveResult(rawValue: enumResultAsInt)
+      }
+      return nil
     case 131:
-      return ExportRequestMessage.fromList(self.readValue() as! [Any?])
+      return MediaInfoMessage.fromList(self.readValue() as! [Any?])
     case 132:
+      return CapabilitiesMessage.fromList(self.readValue() as! [Any?])
+    case 133:
+      return ExportRequestMessage.fromList(self.readValue() as! [Any?])
+    case 134:
       return PlaybackStateMessage.fromList(self.readValue() as! [Any?])
+    case 135:
+      return PickedFileMessage.fromList(self.readValue() as! [Any?])
+    case 136:
+      return AudioPreviewStateMessage.fromList(self.readValue() as! [Any?])
+    case 137:
+      return RecordingMessage.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
     }
@@ -432,17 +610,32 @@ private class EngineApiPigeonCodecReader: FlutterStandardReader {
 
 private class EngineApiPigeonCodecWriter: FlutterStandardWriter {
   override func writeValue(_ value: Any) {
-    if let value = value as? MediaInfoMessage {
+    if let value = value as? MicrophonePermission {
       super.writeByte(129)
-      super.writeValue(value.toList())
-    } else if let value = value as? CapabilitiesMessage {
+      super.writeValue(value.rawValue)
+    } else if let value = value as? GallerySaveResult {
       super.writeByte(130)
-      super.writeValue(value.toList())
-    } else if let value = value as? ExportRequestMessage {
+      super.writeValue(value.rawValue)
+    } else if let value = value as? MediaInfoMessage {
       super.writeByte(131)
       super.writeValue(value.toList())
-    } else if let value = value as? PlaybackStateMessage {
+    } else if let value = value as? CapabilitiesMessage {
       super.writeByte(132)
+      super.writeValue(value.toList())
+    } else if let value = value as? ExportRequestMessage {
+      super.writeByte(133)
+      super.writeValue(value.toList())
+    } else if let value = value as? PlaybackStateMessage {
+      super.writeByte(134)
+      super.writeValue(value.toList())
+    } else if let value = value as? PickedFileMessage {
+      super.writeByte(135)
+      super.writeValue(value.toList())
+    } else if let value = value as? AudioPreviewStateMessage {
+      super.writeByte(136)
+      super.writeValue(value.toList())
+    } else if let value = value as? RecordingMessage {
+      super.writeByte(137)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -487,7 +680,18 @@ protocol EngineHostApi {
   /// Starts exporting the current document; progress arrives through
   /// [EngineFlutterApi]. Returns a job id.
   func startExport(request: ExportRequestMessage) throws -> String
+  /// Stops an export or speech audio job.
   func cancelExport(jobId: String) throws
+  /// Renders the sound of [documentJson] (not the previewed document) for
+  /// speech recognition: 16 kHz mono float PCM, raw and little endian, at
+  /// [outputPath]. Reports like an export and is cancelled the same way.
+  /// A document with no sound gives an empty file.
+  func startSpeechAudio(documentJson: String, outputPath: String) throws -> String
+  /// Loudness of [path]'s sound: the peak (0 to 1) of every
+  /// 1 / [peaksPerSecond] of a second.
+  func waveform(path: String, peaksPerSecond: Int64) async throws -> [Double]
+  /// Volume of the preview, 0 to 1 (muted while recording a voiceover).
+  func setPreviewVolume(volume: Double) throws
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -671,6 +875,7 @@ class EngineHostApiSetup {
     } else {
       startExportChannel.setMessageHandler(nil)
     }
+    /// Stops an export or speech audio job.
     let cancelExportChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.EngineHostApi.cancelExport\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       cancelExportChannel.setMessageHandler { message, reply in
@@ -685,6 +890,449 @@ class EngineHostApiSetup {
       }
     } else {
       cancelExportChannel.setMessageHandler(nil)
+    }
+    /// Renders the sound of [documentJson] (not the previewed document) for
+    /// speech recognition: 16 kHz mono float PCM, raw and little endian, at
+    /// [outputPath]. Reports like an export and is cancelled the same way.
+    /// A document with no sound gives an empty file.
+    let startSpeechAudioChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.EngineHostApi.startSpeechAudio\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      startSpeechAudioChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let documentJsonArg = args[0] as! String
+        let outputPathArg = args[1] as! String
+        do {
+          let result = try api.startSpeechAudio(documentJson: documentJsonArg, outputPath: outputPathArg)
+          reply(wrapResult(result))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      startSpeechAudioChannel.setMessageHandler(nil)
+    }
+    /// Loudness of [path]'s sound: the peak (0 to 1) of every
+    /// 1 / [peaksPerSecond] of a second.
+    let waveformChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.EngineHostApi.waveform\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      waveformChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let pathArg = args[0] as! String
+        let peaksPerSecondArg = args[1] as! Int64
+        Task { @MainActor in
+          do {
+            let result = try await api.waveform(path: pathArg, peaksPerSecond: peaksPerSecondArg)
+            reply(wrapResult(result))
+          } catch {
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      waveformChannel.setMessageHandler(nil)
+    }
+    /// Volume of the preview, 0 to 1 (muted while recording a voiceover).
+    let setPreviewVolumeChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.EngineHostApi.setPreviewVolume\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      setPreviewVolumeChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let volumeArg = args[0] as! Double
+        do {
+          try api.setPreviewVolume(volume: volumeArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      setPreviewVolumeChannel.setMessageHandler(nil)
+    }
+  }
+}
+/// Device features used by the editor.
+///
+/// Generated protocol from Pigeon that represents a handler of messages from Flutter.
+protocol DeviceHostApi {
+  /// Lets the user pick an audio file and copies it into [outDir]. Null
+  /// when they cancel.
+  func pickAudioFile(outDir: String) async throws -> PickedFileMessage?
+  /// Plays [path] on its own (to try music before adding it). State
+  /// arrives through [DeviceFlutterApi.onAudioPreviewState].
+  func startAudioPreview(path: String) throws
+  func stopAudioPreview() throws
+  func microphonePermission() throws -> MicrophonePermission
+  /// Asks for the microphone if it has not been asked yet.
+  func requestMicrophone() async throws -> MicrophonePermission
+  /// Opens this app's page in the system settings.
+  func openAppSettings() throws
+  /// Records the microphone to [outPath] (AAC in M4A, 48 kHz). Levels
+  /// arrive through [DeviceFlutterApi.onRecordingLevel].
+  func startRecording(outPath: String) throws
+  /// Stops and returns the recording.
+  func stopRecording() async throws -> RecordingMessage
+  /// Stops and deletes the recording.
+  func cancelRecording() throws
+  /// Bytes free for new files on the volume holding [path].
+  func freeSpace(path: String) throws -> Int64
+  /// Copies the video at [path] into the photo library: Photos on iOS
+  /// (add-only access, asked for now if needed), Movies/Stitch on Android.
+  func saveVideoToGallery(path: String) async throws -> GallerySaveResult
+  /// Opens the system share sheet for the file at [path].
+  func shareFile(path: String, mimeType: String) throws
+  /// Opens [url] in the browser.
+  func openUrl(url: String) throws
+  /// Keeps the screen on, during an export.
+  func setKeepScreenOn(on: Bool) throws
+  /// The app's version, like "0.1.0 (1)".
+  func appVersion() throws -> String
+  /// Asks to show notifications, for export progress (Android 13 and
+  /// later; elsewhere always true). True when allowed.
+  func requestNotifications() async throws -> Bool
+}
+
+/// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
+class DeviceHostApiSetup {
+  static var codec: FlutterStandardMessageCodec { EngineApiPigeonCodec.shared }
+  /// Sets up an instance of `DeviceHostApi` to handle messages through the `binaryMessenger`.
+  static func setUp(binaryMessenger: FlutterBinaryMessenger, api: DeviceHostApi?, messageChannelSuffix: String = "") {
+    let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
+    /// Lets the user pick an audio file and copies it into [outDir]. Null
+    /// when they cancel.
+    let pickAudioFileChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.pickAudioFile\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      pickAudioFileChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let outDirArg = args[0] as! String
+        Task { @MainActor in
+          do {
+            let result = try await api.pickAudioFile(outDir: outDirArg)
+            reply(wrapResult(result))
+          } catch {
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      pickAudioFileChannel.setMessageHandler(nil)
+    }
+    /// Plays [path] on its own (to try music before adding it). State
+    /// arrives through [DeviceFlutterApi.onAudioPreviewState].
+    let startAudioPreviewChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.startAudioPreview\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      startAudioPreviewChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let pathArg = args[0] as! String
+        do {
+          try api.startAudioPreview(path: pathArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      startAudioPreviewChannel.setMessageHandler(nil)
+    }
+    let stopAudioPreviewChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.stopAudioPreview\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      stopAudioPreviewChannel.setMessageHandler { _, reply in
+        do {
+          try api.stopAudioPreview()
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      stopAudioPreviewChannel.setMessageHandler(nil)
+    }
+    let microphonePermissionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.microphonePermission\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      microphonePermissionChannel.setMessageHandler { _, reply in
+        do {
+          let result = try api.microphonePermission()
+          reply(wrapResult(result))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      microphonePermissionChannel.setMessageHandler(nil)
+    }
+    /// Asks for the microphone if it has not been asked yet.
+    let requestMicrophoneChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.requestMicrophone\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      requestMicrophoneChannel.setMessageHandler { _, reply in
+        Task { @MainActor in
+          do {
+            let result = try await api.requestMicrophone()
+            reply(wrapResult(result))
+          } catch {
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      requestMicrophoneChannel.setMessageHandler(nil)
+    }
+    /// Opens this app's page in the system settings.
+    let openAppSettingsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.openAppSettings\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      openAppSettingsChannel.setMessageHandler { _, reply in
+        do {
+          try api.openAppSettings()
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      openAppSettingsChannel.setMessageHandler(nil)
+    }
+    /// Records the microphone to [outPath] (AAC in M4A, 48 kHz). Levels
+    /// arrive through [DeviceFlutterApi.onRecordingLevel].
+    let startRecordingChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.startRecording\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      startRecordingChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let outPathArg = args[0] as! String
+        do {
+          try api.startRecording(outPath: outPathArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      startRecordingChannel.setMessageHandler(nil)
+    }
+    /// Stops and returns the recording.
+    let stopRecordingChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.stopRecording\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      stopRecordingChannel.setMessageHandler { _, reply in
+        Task { @MainActor in
+          do {
+            let result = try await api.stopRecording()
+            reply(wrapResult(result))
+          } catch {
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      stopRecordingChannel.setMessageHandler(nil)
+    }
+    /// Stops and deletes the recording.
+    let cancelRecordingChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.cancelRecording\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      cancelRecordingChannel.setMessageHandler { _, reply in
+        do {
+          try api.cancelRecording()
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      cancelRecordingChannel.setMessageHandler(nil)
+    }
+    /// Bytes free for new files on the volume holding [path].
+    let freeSpaceChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.freeSpace\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      freeSpaceChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let pathArg = args[0] as! String
+        do {
+          let result = try api.freeSpace(path: pathArg)
+          reply(wrapResult(result))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      freeSpaceChannel.setMessageHandler(nil)
+    }
+    /// Copies the video at [path] into the photo library: Photos on iOS
+    /// (add-only access, asked for now if needed), Movies/Stitch on Android.
+    let saveVideoToGalleryChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.saveVideoToGallery\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      saveVideoToGalleryChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let pathArg = args[0] as! String
+        Task { @MainActor in
+          do {
+            let result = try await api.saveVideoToGallery(path: pathArg)
+            reply(wrapResult(result))
+          } catch {
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      saveVideoToGalleryChannel.setMessageHandler(nil)
+    }
+    /// Opens the system share sheet for the file at [path].
+    let shareFileChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.shareFile\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      shareFileChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let pathArg = args[0] as! String
+        let mimeTypeArg = args[1] as! String
+        do {
+          try api.shareFile(path: pathArg, mimeType: mimeTypeArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      shareFileChannel.setMessageHandler(nil)
+    }
+    /// Opens [url] in the browser.
+    let openUrlChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.openUrl\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      openUrlChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let urlArg = args[0] as! String
+        do {
+          try api.openUrl(url: urlArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      openUrlChannel.setMessageHandler(nil)
+    }
+    /// Keeps the screen on, during an export.
+    let setKeepScreenOnChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.setKeepScreenOn\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      setKeepScreenOnChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let onArg = args[0] as! Bool
+        do {
+          try api.setKeepScreenOn(on: onArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      setKeepScreenOnChannel.setMessageHandler(nil)
+    }
+    /// The app's version, like "0.1.0 (1)".
+    let appVersionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.appVersion\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      appVersionChannel.setMessageHandler { _, reply in
+        do {
+          let result = try api.appVersion()
+          reply(wrapResult(result))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      appVersionChannel.setMessageHandler(nil)
+    }
+    /// Asks to show notifications, for export progress (Android 13 and
+    /// later; elsewhere always true). True when allowed.
+    let requestNotificationsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.requestNotifications\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      requestNotificationsChannel.setMessageHandler { _, reply in
+        Task { @MainActor in
+          do {
+            let result = try await api.requestNotifications()
+            reply(wrapResult(result))
+          } catch {
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      requestNotificationsChannel.setMessageHandler(nil)
+    }
+  }
+}
+
+/// Generated protocol from Pigeon that represents Flutter messages that can be called from Swift.
+protocol DeviceFlutterApiProtocol {
+  @MainActor func onAudioPreviewState(state stateArg: AudioPreviewStateMessage) async throws
+  /// Microphone level, 0 to 1, about 20 times a second while recording.
+  @MainActor func onRecordingLevel(level levelArg: Double) async throws
+  /// Recording stopped on its own (a call, another app, an error). The
+  /// file so far is kept at [path], or null when there is none.
+  @MainActor func onRecordingInterrupted(path pathArg: String?, durationUs durationUsArg: Int64) async throws
+}
+class DeviceFlutterApi: DeviceFlutterApiProtocol {
+  private let binaryMessenger: FlutterBinaryMessenger
+  private let messageChannelSuffix: String
+  init(binaryMessenger: FlutterBinaryMessenger, messageChannelSuffix: String = "") {
+    self.binaryMessenger = binaryMessenger
+    self.messageChannelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
+  }
+  var codec: EngineApiPigeonCodec {
+    return EngineApiPigeonCodec.shared
+  }
+  @MainActor func onAudioPreviewState(state stateArg: AudioPreviewStateMessage) async throws {
+    return try await withCheckedThrowingContinuation { continuation in
+      let channelName: String = "dev.flutter.pigeon.stitch.DeviceFlutterApi.onAudioPreviewState\(messageChannelSuffix)"
+      let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+      channel.sendMessage([stateArg] as [Any?]) { response in
+        guard let listResponse = response as? [Any?] else {
+          continuation.resume(throwing: createConnectionError(withChannelName: channelName))
+          return
+        }
+        if listResponse.count > 1 {
+          let code: String = listResponse[0] as! String
+          let message: String? = nilOrValue(listResponse[1])
+          let details: String? = nilOrValue(listResponse[2])
+          continuation.resume(throwing: PigeonError(code: code, message: message, details: details))
+        } else {
+          continuation.resume()
+        }
+      }
+    }
+  }
+  /// Microphone level, 0 to 1, about 20 times a second while recording.
+  @MainActor func onRecordingLevel(level levelArg: Double) async throws {
+    return try await withCheckedThrowingContinuation { continuation in
+      let channelName: String = "dev.flutter.pigeon.stitch.DeviceFlutterApi.onRecordingLevel\(messageChannelSuffix)"
+      let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+      channel.sendMessage([levelArg] as [Any?]) { response in
+        guard let listResponse = response as? [Any?] else {
+          continuation.resume(throwing: createConnectionError(withChannelName: channelName))
+          return
+        }
+        if listResponse.count > 1 {
+          let code: String = listResponse[0] as! String
+          let message: String? = nilOrValue(listResponse[1])
+          let details: String? = nilOrValue(listResponse[2])
+          continuation.resume(throwing: PigeonError(code: code, message: message, details: details))
+        } else {
+          continuation.resume()
+        }
+      }
+    }
+  }
+  /// Recording stopped on its own (a call, another app, an error). The
+  /// file so far is kept at [path], or null when there is none.
+  @MainActor func onRecordingInterrupted(path pathArg: String?, durationUs durationUsArg: Int64) async throws {
+    return try await withCheckedThrowingContinuation { continuation in
+      let channelName: String = "dev.flutter.pigeon.stitch.DeviceFlutterApi.onRecordingInterrupted\(messageChannelSuffix)"
+      let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+      channel.sendMessage([pathArg, durationUsArg] as [Any?]) { response in
+        guard let listResponse = response as? [Any?] else {
+          continuation.resume(throwing: createConnectionError(withChannelName: channelName))
+          return
+        }
+        if listResponse.count > 1 {
+          let code: String = listResponse[0] as! String
+          let message: String? = nilOrValue(listResponse[1])
+          let details: String? = nilOrValue(listResponse[2])
+          continuation.resume(throwing: PigeonError(code: code, message: message, details: details))
+        } else {
+          continuation.resume()
+        }
+      }
     }
   }
 }

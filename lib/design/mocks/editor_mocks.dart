@@ -266,7 +266,7 @@ class CaptionsMock extends StatelessWidget {
                   caption,
                   textAlign: TextAlign.center,
                   style: AppTypography.caption.semibold.copyWith(
-                    color: colors.textPrimary,
+                    color: colors.onOverlay,
                   ),
                 ),
               ),

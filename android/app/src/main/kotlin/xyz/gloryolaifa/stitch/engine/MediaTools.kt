@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
@@ -28,6 +29,7 @@ import java.io.FileOutputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -304,4 +306,107 @@ object ProxyMaker {
   private const val PROXY_SHORT_SIDE = 720
   private const val MIN_PROXY_TIMEOUT_MS = 30_000L
   private const val PROXY_TIMEOUT_FACTOR = 3
+}
+
+/** Loudness over time for the timeline's audio tiles. */
+object Waveform {
+  private const val WAIT_US = 5_000L
+
+  /**
+   * The peak, 0 to 1, of every 1 / [peaksPerSecond] of a second of
+   * [path]'s sound; empty when it has none.
+   */
+  suspend fun peaks(path: String, peaksPerSecond: Int): List<Double> = withContext(Dispatchers.IO) {
+    if (!File(path).exists()) throw EngineException.missingFile(path)
+    val extractor = MediaExtractor()
+    try {
+      extractor.setDataSource(path)
+      val track = (0 until extractor.trackCount).firstOrNull {
+        extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("audio/") == true
+      } ?: return@withContext emptyList()
+      if (peaksPerSecond <= 0) return@withContext emptyList()
+      extractor.selectTrack(track)
+      val format = extractor.getTrackFormat(track)
+      val codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
+      codec.configure(format, null, null, 0)
+      codec.start()
+      val peaks = ArrayList<Double>()
+      try {
+        var sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+        var channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+        var bucket = max(1, sampleRate / peaksPerSecond)
+        var current = 0
+        var filled = 0
+        var scratch = ShortArray(0)
+        val info = MediaCodec.BufferInfo()
+        var inputDone = false
+        var outputDone = false
+        // Feed every free input and drain every ready output before waiting:
+        // one packet at a time runs at about twice real time.
+        while (!outputDone) {
+          var progressed = false
+          while (!inputDone) {
+            val input = codec.dequeueInputBuffer(0)
+            if (input < 0) break
+            val size = extractor.readSampleData(codec.getInputBuffer(input)!!, 0)
+            if (size < 0) {
+              codec.queueInputBuffer(input, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+              inputDone = true
+            } else {
+              codec.queueInputBuffer(input, 0, size, extractor.sampleTime, 0)
+              extractor.advance()
+            }
+            progressed = true
+          }
+          while (true) {
+            val o = codec.dequeueOutputBuffer(info, if (progressed) 0 else WAIT_US)
+            if (o == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+              sampleRate = codec.outputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+              channels = codec.outputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+              bucket = max(1, sampleRate / peaksPerSecond)
+              continue
+            }
+            if (o < 0) break
+            progressed = true
+            // Read in bulk: element by element is slow on large files.
+            val view = codec.getOutputBuffer(o)!!.order(java.nio.ByteOrder.nativeOrder()).asShortBuffer()
+            val count = view.remaining()
+            if (scratch.size < count) scratch = ShortArray(count)
+            view.get(scratch, 0, count)
+            var k = 0
+            while (k + channels <= count) {
+              for (c in 0 until channels) {
+                val v = scratch[k + c].toInt()
+                val a = if (v < 0) -v else v
+                if (a > current) current = a
+              }
+              k += channels
+              filled++
+              if (filled == bucket) {
+                peaks += min(1.0, current / 32767.0)
+                current = 0
+                filled = 0
+              }
+            }
+            codec.releaseOutputBuffer(o, false)
+            if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
+              outputDone = true
+              break
+            }
+          }
+        }
+        if (filled > 0) peaks += min(1.0, current / 32767.0)
+      } finally {
+        runCatching { codec.stop() }
+        codec.release()
+      }
+      peaks
+    } catch (e: EngineException) {
+      throw e
+    } catch (e: Exception) {
+      throw EngineException.unsupported(path)
+    } finally {
+      extractor.release()
+    }
+  }
 }

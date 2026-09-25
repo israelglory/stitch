@@ -374,3 +374,40 @@ class BackgroundSheet extends ConsumerWidget {
     );
   }
 }
+
+/// Volume of the videos' own sound against added audio (music, effects,
+/// voiceovers).
+class BalanceSheet extends StatelessWidget {
+  const new({required this.projectId, super.key});
+
+  final String projectId;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _EditSlider(
+          projectId: projectId,
+          label: l10n.originalSoundLevel,
+          min: 0,
+          max: TimelineLimits.maxVolume,
+          format: _percentText,
+          value: (s) => s.timeline.audioMix.originalLevel,
+          apply: (b, v) => b.setAudioMix(originalLevel: v),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _EditSlider(
+          projectId: projectId,
+          label: l10n.addedAudioLevel,
+          min: 0,
+          max: TimelineLimits.maxVolume,
+          format: _percentText,
+          value: (s) => s.timeline.audioMix.addedLevel,
+          apply: (b, v) => b.setAudioMix(addedLevel: v),
+        ),
+      ],
+    );
+  }
+}

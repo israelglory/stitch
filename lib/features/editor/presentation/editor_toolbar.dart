@@ -6,35 +6,53 @@ import 'package:go_router/go_router.dart';
 import 'package:stitch/app/providers.dart';
 import 'package:stitch/app/router.dart';
 import 'package:stitch/design/design.dart';
+import 'package:stitch/features/audio/presentation/voiceover_sheet.dart';
+import 'package:stitch/features/captions/presentation/caption_editor_sheet.dart';
+import 'package:stitch/features/captions/presentation/captions_sheet.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/editor_state.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
 import 'package:stitch/features/editor/presentation/sheets/tool_sheets.dart';
 import 'package:stitch/features/media/domain/library_item.dart';
 import 'package:stitch/features/projects/presentation/import_progress_sheet.dart';
+import 'package:stitch/features/text/presentation/text_editor_sheet.dart';
 import 'package:stitch/features/timeline/domain/audio_ops.dart';
 import 'package:stitch/features/timeline/domain/caption_ops.dart';
 import 'package:stitch/features/timeline/domain/text_ops.dart';
 import 'package:stitch/features/timeline/domain/video_ops.dart';
 import 'package:stitch/l10n/generated/app_localizations.dart';
 
-/// Tools for the current selection. Only tools that work are shown; text,
-/// audio library, and captions tools arrive with their features.
-class EditorToolbar extends ConsumerWidget {
+/// Tools for the current selection. Only tools that work are shown.
+class EditorToolbar extends ConsumerStatefulWidget {
   const new({required this.projectId, super.key});
 
   final String projectId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EditorToolbar> createState() => _EditorToolbarState();
+}
+
+class _EditorToolbarState extends ConsumerState<EditorToolbar> {
+  /// The audio tools replace the main ones until Back.
+  bool _audioMenu = false;
+
+  String get projectId => widget.projectId;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final state = ref.watch(editorControllerProvider(projectId)).value;
     if (state == null) return const SizedBox.shrink();
     final controller = ref.read(editorControllerProvider(projectId).notifier);
     final selection = state.selection;
     void deselect() => controller.select(const NoSelection());
+    int playhead() => ref.read(playbackControllerProvider).positionUs;
 
     return switch (selection) {
+      NoSelection() when _audioMenu => _AudioMenu(
+        projectId: projectId,
+        onBack: () => setState(() => _audioMenu = false),
+      ),
       NoSelection() => ContextToolbar(
         items: [
           ToolbarItem(
@@ -43,14 +61,32 @@ class EditorToolbar extends ConsumerWidget {
             onPressed: state.timeline.videoClips.isEmpty
                 ? null
                 : () {
-                    final position = ref
-                        .read(playbackControllerProvider)
-                        .positionUs;
-                    final span = state.layout.spanAt(position);
+                    final span = state.layout.spanAt(playhead());
                     if (span != null) {
                       controller.select(ClipSelected(span.clip.id));
                     }
                   },
+          ),
+          ToolbarItem(
+            icon: AppIcons.audio,
+            label: l10n.toolAudio,
+            onPressed: () => setState(() => _audioMenu = true),
+          ),
+          ToolbarItem(
+            icon: AppIcons.text,
+            label: l10n.toolText,
+            onPressed: state.timeline.videoClips.isEmpty
+                ? null
+                : () => showTextEditor(context, projectId),
+          ),
+          ToolbarItem(
+            icon: AppIcons.captions,
+            label: l10n.toolCaptions,
+            onPressed: state.timeline.videoClips.isEmpty
+                ? null
+                : () => state.timeline.captionTrack.segments.isEmpty
+                      ? showCaptionsSheet(context, projectId)
+                      : showCaptionEditor(context, projectId),
           ),
           ToolbarItem(
             icon: AppIcons.aspectRatio,
@@ -82,29 +118,156 @@ class EditorToolbar extends ConsumerWidget {
         audioId: id,
         onBack: deselect,
       ),
-      TextSelected(:final id) => ContextToolbar(
+      TextSelected(:final id) => _TextTools(
+        projectId: projectId,
+        textId: id,
         onBack: deselect,
-        items: [
-          ToolbarItem(
-            icon: AppIcons.delete,
-            label: l10n.delete,
-            destructive: true,
-            onPressed: () => controller.apply((t) => t.deleteText(id)),
-          ),
-        ],
       ),
-      CaptionSelected(:final id) => ContextToolbar(
+      CaptionSelected(:final id) => _CaptionTools(
+        projectId: projectId,
+        captionId: id,
         onBack: deselect,
-        items: [
-          ToolbarItem(
-            icon: AppIcons.delete,
-            label: l10n.delete,
-            destructive: true,
-            onPressed: () => controller.apply((t) => t.deleteCaption(id)),
-          ),
-        ],
       ),
     };
+  }
+}
+
+/// Music, sound effects, voiceover, extract audio, and the balance
+/// between original and added sound.
+class _AudioMenu extends ConsumerWidget {
+  const new({required this.projectId, required this.onBack});
+
+  final String projectId;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final state = ref.watch(editorControllerProvider(projectId)).requireValue;
+    final controller = ref.read(editorControllerProvider(projectId).notifier);
+    // Extract audio works on the clip under the playhead.
+    final clip = ref.watch(
+      playbackControllerProvider.select(
+        (p) => state.layout.spanAt(p.positionUs)?.clip,
+      ),
+    );
+    final canExtract =
+        clip != null &&
+        !clip.isPhoto &&
+        (state.project.media[clip.mediaId]?.hasAudio ?? true) &&
+        state.timeline.canExtractAudio(clip.id);
+
+    return ContextToolbar(
+      onBack: onBack,
+      items: [
+        ToolbarItem(
+          icon: AppIcons.audio,
+          label: l10n.toolMusic,
+          onPressed: () => context.push(AppRoutes.editorMusic(projectId)),
+        ),
+        ToolbarItem(
+          icon: AppIcons.soundEffects,
+          label: l10n.toolSoundEffects,
+          onPressed: () => context.push(AppRoutes.editorEffects(projectId)),
+        ),
+        ToolbarItem(
+          icon: AppIcons.microphone,
+          label: l10n.toolVoiceover,
+          onPressed: () => showVoiceoverSheet(context, projectId),
+        ),
+        ToolbarItem(
+          icon: AppIcons.extractAudio,
+          label: l10n.toolExtractAudio,
+          onPressed: canExtract
+              ? () {
+                  final newId = ref.read(idGeneratorProvider).next();
+                  final name = l10n.extractedAudioName;
+                  controller
+                    ..apply(
+                      (t) => t.extractAudio(clip.id, newId: newId, name: name),
+                    )
+                    ..select(AudioSelected(newId));
+                }
+              : null,
+        ),
+        ToolbarItem(
+          icon: AppIcons.volume,
+          label: l10n.toolOriginalSound,
+          onPressed: () => showToolSheet(
+            context,
+            title: l10n.balanceTitle,
+            child: BalanceSheet(projectId: projectId),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Edit, duplicate, split, and delete a text item.
+class _TextTools extends ConsumerWidget {
+  const new({
+    required this.projectId,
+    required this.textId,
+    required this.onBack,
+  });
+
+  final String projectId;
+  final String textId;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final state = ref.watch(editorControllerProvider(projectId)).requireValue;
+    final controller = ref.read(editorControllerProvider(projectId).notifier);
+    if (state.timeline.textById(textId) == null) return const SizedBox.shrink();
+    final canSplit = ref.watch(
+      playbackControllerProvider.select(
+        (p) => state.timeline.canSplitText(textId, p.positionUs),
+      ),
+    );
+
+    return ContextToolbar(
+      onBack: onBack,
+      items: [
+        ToolbarItem(
+          icon: AppIcons.rename,
+          label: l10n.toolEdit,
+          onPressed: () => showTextEditor(context, projectId, textId: textId),
+        ),
+        ToolbarItem(
+          icon: AppIcons.split,
+          label: l10n.toolSplit,
+          onPressed: canSplit
+              ? () {
+                  unawaited(AppHaptics.split());
+                  final at = ref.read(playbackControllerProvider).positionUs;
+                  final newId = ref.read(idGeneratorProvider).next();
+                  controller.apply(
+                    (t) => t.splitText(textId, at, newId: newId),
+                  );
+                }
+              : null,
+        ),
+        ToolbarItem(
+          icon: AppIcons.duplicate,
+          label: l10n.duplicate,
+          onPressed: () {
+            final newId = ref.read(idGeneratorProvider).next();
+            controller
+              ..apply((t) => t.duplicateText(textId, newId: newId))
+              ..select(TextSelected(newId));
+          },
+        ),
+        ToolbarItem(
+          icon: AppIcons.delete,
+          label: l10n.delete,
+          destructive: true,
+          onPressed: () => controller.apply((t) => t.deleteText(textId)),
+        ),
+      ],
+    );
   }
 }
 
@@ -314,6 +477,79 @@ class _AudioTools extends ConsumerWidget {
           label: l10n.delete,
           destructive: true,
           onPressed: () => controller.apply((t) => t.deleteAudio(audioId)),
+        ),
+      ],
+    );
+  }
+}
+
+/// A selected caption: edit its text, style the track, split it at the
+/// playhead, or delete it.
+class _CaptionTools extends ConsumerWidget {
+  const new({
+    required this.projectId,
+    required this.captionId,
+    required this.onBack,
+  });
+
+  final String projectId;
+  final String captionId;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final state = ref.watch(editorControllerProvider(projectId)).value;
+    final caption = state?.timeline.captionById(captionId);
+    if (state == null || caption == null) return const SizedBox.shrink();
+    final controller = ref.read(editorControllerProvider(projectId).notifier);
+    final playhead = ref.watch(
+      playbackControllerProvider.select((p) => p.positionUs),
+    );
+    // Split before the first word that starts at or after the playhead.
+    final start = state.layout.startOf(caption.anchor);
+    final splitAt = caption.words.indexWhere(
+      (w) => start + w.startOffsetUs >= playhead,
+    );
+    final canSplit =
+        splitAt > 0 && state.timeline.canSplitCaption(captionId, splitAt);
+    return ContextToolbar(
+      onBack: onBack,
+      items: [
+        ToolbarItem(
+          icon: AppIcons.edit,
+          label: l10n.toolEdit,
+          onPressed: () =>
+              showCaptionEditor(context, projectId, captionId: captionId),
+        ),
+        ToolbarItem(
+          icon: AppIcons.text,
+          label: l10n.toolStyle,
+          onPressed: () => showCaptionEditor(
+            context,
+            projectId,
+            captionId: captionId,
+            style: true,
+          ),
+        ),
+        ToolbarItem(
+          icon: AppIcons.split,
+          label: l10n.toolSplit,
+          onPressed: canSplit
+              ? () {
+                  final newId = ref.read(idGeneratorProvider).next();
+                  controller.apply(
+                    (t) => t.splitCaption(captionId, splitAt, newId: newId),
+                  );
+                  unawaited(AppHaptics.split());
+                }
+              : null,
+        ),
+        ToolbarItem(
+          icon: AppIcons.delete,
+          label: l10n.delete,
+          destructive: true,
+          onPressed: () => controller.apply((t) => t.deleteCaption(captionId)),
         ),
       ],
     );

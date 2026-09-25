@@ -111,6 +111,11 @@ int _deepHash(Object? value) {
   return value.hashCode;
 }
 
+enum MicrophonePermission { granted, undetermined, denied, permanentlyDenied }
+
+/// How saving to the photo library went.
+enum GallerySaveResult { saved, denied, permanentlyDenied }
+
 /// What a media file contains, from the file itself.
 class MediaInfoMessage {
   MediaInfoMessage({
@@ -256,6 +261,7 @@ class ExportRequestMessage {
     required this.frameRate,
     required this.videoBitrate,
     required this.hevc,
+    required this.progressTitle,
   });
 
   String outputPath;
@@ -270,8 +276,20 @@ class ExportRequestMessage {
 
   bool hevc;
 
+  /// Shown with the progress where the system shows it (Android's export
+  /// notification).
+  String progressTitle;
+
   List<Object?> _toList() {
-    return <Object?>[outputPath, width, height, frameRate, videoBitrate, hevc];
+    return <Object?>[
+      outputPath,
+      width,
+      height,
+      frameRate,
+      videoBitrate,
+      hevc,
+      progressTitle,
+    ];
   }
 
   Object encode() {
@@ -287,6 +305,7 @@ class ExportRequestMessage {
       frameRate: result[3]! as int,
       videoBitrate: result[4]! as int,
       hevc: result[5]! as bool,
+      progressTitle: result[6]! as String,
     );
   }
 
@@ -304,7 +323,8 @@ class ExportRequestMessage {
         _deepEquals(height, other.height) &&
         _deepEquals(frameRate, other.frameRate) &&
         _deepEquals(videoBitrate, other.videoBitrate) &&
-        _deepEquals(hevc, other.hevc);
+        _deepEquals(hevc, other.hevc) &&
+        _deepEquals(progressTitle, other.progressTitle);
   }
 
   @override
@@ -313,7 +333,7 @@ class ExportRequestMessage {
 
   @override
   String toString() {
-    return 'ExportRequestMessage(outputPath: $outputPath, width: $width, height: $height, frameRate: $frameRate, videoBitrate: $videoBitrate, hevc: $hevc)';
+    return 'ExportRequestMessage(outputPath: $outputPath, width: $width, height: $height, frameRate: $frameRate, videoBitrate: $videoBitrate, hevc: $hevc, progressTitle: $progressTitle)';
   }
 }
 
@@ -323,6 +343,7 @@ class PlaybackStateMessage {
     required this.durationUs,
     required this.isPlaying,
     required this.isBuffering,
+    required this.documentVersion,
   });
 
   int positionUs;
@@ -333,8 +354,17 @@ class PlaybackStateMessage {
 
   bool isBuffering;
 
+  /// The `version` of the document the preview shows.
+  int documentVersion;
+
   List<Object?> _toList() {
-    return <Object?>[positionUs, durationUs, isPlaying, isBuffering];
+    return <Object?>[
+      positionUs,
+      durationUs,
+      isPlaying,
+      isBuffering,
+      documentVersion,
+    ];
   }
 
   Object encode() {
@@ -348,6 +378,7 @@ class PlaybackStateMessage {
       durationUs: result[1]! as int,
       isPlaying: result[2]! as bool,
       isBuffering: result[3]! as bool,
+      documentVersion: result[4]! as int,
     );
   }
 
@@ -363,7 +394,8 @@ class PlaybackStateMessage {
     return _deepEquals(positionUs, other.positionUs) &&
         _deepEquals(durationUs, other.durationUs) &&
         _deepEquals(isPlaying, other.isPlaying) &&
-        _deepEquals(isBuffering, other.isBuffering);
+        _deepEquals(isBuffering, other.isBuffering) &&
+        _deepEquals(documentVersion, other.documentVersion);
   }
 
   @override
@@ -372,7 +404,160 @@ class PlaybackStateMessage {
 
   @override
   String toString() {
-    return 'PlaybackStateMessage(positionUs: $positionUs, durationUs: $durationUs, isPlaying: $isPlaying, isBuffering: $isBuffering)';
+    return 'PlaybackStateMessage(positionUs: $positionUs, durationUs: $durationUs, isPlaying: $isPlaying, isBuffering: $isBuffering, documentVersion: $documentVersion)';
+  }
+}
+
+/// A file the user picked, copied into the app.
+class PickedFileMessage {
+  PickedFileMessage({required this.path, required this.name});
+
+  String path;
+
+  /// The name the user knows it by, without the extension.
+  String name;
+
+  List<Object?> _toList() {
+    return <Object?>[path, name];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static PickedFileMessage decode(Object result) {
+    result as List<Object?>;
+    return PickedFileMessage(
+      path: result[0]! as String,
+      name: result[1]! as String,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! PickedFileMessage || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(path, other.path) && _deepEquals(name, other.name);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'PickedFileMessage(path: $path, name: $name)';
+  }
+}
+
+class AudioPreviewStateMessage {
+  AudioPreviewStateMessage({
+    required this.path,
+    required this.positionUs,
+    required this.durationUs,
+    required this.isPlaying,
+  });
+
+  String path;
+
+  int positionUs;
+
+  int durationUs;
+
+  bool isPlaying;
+
+  List<Object?> _toList() {
+    return <Object?>[path, positionUs, durationUs, isPlaying];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static AudioPreviewStateMessage decode(Object result) {
+    result as List<Object?>;
+    return AudioPreviewStateMessage(
+      path: result[0]! as String,
+      positionUs: result[1]! as int,
+      durationUs: result[2]! as int,
+      isPlaying: result[3]! as bool,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! AudioPreviewStateMessage ||
+        other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(path, other.path) &&
+        _deepEquals(positionUs, other.positionUs) &&
+        _deepEquals(durationUs, other.durationUs) &&
+        _deepEquals(isPlaying, other.isPlaying);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'AudioPreviewStateMessage(path: $path, positionUs: $positionUs, durationUs: $durationUs, isPlaying: $isPlaying)';
+  }
+}
+
+class RecordingMessage {
+  RecordingMessage({required this.path, required this.durationUs});
+
+  String path;
+
+  int durationUs;
+
+  List<Object?> _toList() {
+    return <Object?>[path, durationUs];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static RecordingMessage decode(Object result) {
+    result as List<Object?>;
+    return RecordingMessage(
+      path: result[0]! as String,
+      durationUs: result[1]! as int,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! RecordingMessage || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(path, other.path) &&
+        _deepEquals(durationUs, other.durationUs);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'RecordingMessage(path: $path, durationUs: $durationUs)';
   }
 }
 
@@ -383,17 +568,32 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    } else if (value is MediaInfoMessage) {
+    } else if (value is MicrophonePermission) {
       buffer.putUint8(129);
-      writeValue(buffer, value.encode());
-    } else if (value is CapabilitiesMessage) {
+      writeValue(buffer, value.index);
+    } else if (value is GallerySaveResult) {
       buffer.putUint8(130);
-      writeValue(buffer, value.encode());
-    } else if (value is ExportRequestMessage) {
+      writeValue(buffer, value.index);
+    } else if (value is MediaInfoMessage) {
       buffer.putUint8(131);
       writeValue(buffer, value.encode());
-    } else if (value is PlaybackStateMessage) {
+    } else if (value is CapabilitiesMessage) {
       buffer.putUint8(132);
+      writeValue(buffer, value.encode());
+    } else if (value is ExportRequestMessage) {
+      buffer.putUint8(133);
+      writeValue(buffer, value.encode());
+    } else if (value is PlaybackStateMessage) {
+      buffer.putUint8(134);
+      writeValue(buffer, value.encode());
+    } else if (value is PickedFileMessage) {
+      buffer.putUint8(135);
+      writeValue(buffer, value.encode());
+    } else if (value is AudioPreviewStateMessage) {
+      buffer.putUint8(136);
+      writeValue(buffer, value.encode());
+    } else if (value is RecordingMessage) {
+      buffer.putUint8(137);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -404,13 +604,25 @@ class _PigeonCodec extends StandardMessageCodec {
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
       case 129:
-        return MediaInfoMessage.decode(readValue(buffer)!);
+        final value = readValue(buffer) as int?;
+        return value == null ? null : MicrophonePermission.values[value];
       case 130:
-        return CapabilitiesMessage.decode(readValue(buffer)!);
+        final value = readValue(buffer) as int?;
+        return value == null ? null : GallerySaveResult.values[value];
       case 131:
-        return ExportRequestMessage.decode(readValue(buffer)!);
+        return MediaInfoMessage.decode(readValue(buffer)!);
       case 132:
+        return CapabilitiesMessage.decode(readValue(buffer)!);
+      case 133:
+        return ExportRequestMessage.decode(readValue(buffer)!);
+      case 134:
         return PlaybackStateMessage.decode(readValue(buffer)!);
+      case 135:
+        return PickedFileMessage.decode(readValue(buffer)!);
+      case 136:
+        return AudioPreviewStateMessage.decode(readValue(buffer)!);
+      case 137:
+        return RecordingMessage.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -663,6 +875,7 @@ class EngineHostApi {
     return pigeonVar_replyValue! as String;
   }
 
+  /// Stops an export or speech audio job.
   Future<void> cancelExport(String jobId) async {
     final pigeonVar_channelName =
         'dev.flutter.pigeon.stitch.EngineHostApi.cancelExport$pigeonVar_messageChannelSuffix';
@@ -681,6 +894,528 @@ class EngineHostApi {
       pigeonVar_channelName,
       isNullValid: true,
     );
+  }
+
+  /// Renders the sound of [documentJson] (not the previewed document) for
+  /// speech recognition: 16 kHz mono float PCM, raw and little endian, at
+  /// [outputPath]. Reports like an export and is cancelled the same way.
+  /// A document with no sound gives an empty file.
+  Future<String> startSpeechAudio(
+    String documentJson,
+    String outputPath,
+  ) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.EngineHostApi.startSpeechAudio$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[documentJson, outputPath],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as String;
+  }
+
+  /// Loudness of [path]'s sound: the peak (0 to 1) of every
+  /// 1 / [peaksPerSecond] of a second.
+  Future<List<double>> waveform(String path, int peaksPerSecond) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.EngineHostApi.waveform$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[path, peaksPerSecond],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return (pigeonVar_replyValue! as List<Object?>).cast<double>();
+  }
+
+  /// Volume of the preview, 0 to 1 (muted while recording a voiceover).
+  Future<void> setPreviewVolume(double volume) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.EngineHostApi.setPreviewVolume$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[volume],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+}
+
+/// Device features used by the editor.
+class DeviceHostApi {
+  /// Constructor for [DeviceHostApi]. The [binaryMessenger] named argument is
+  /// available for dependency injection. If it is left null, the default
+  /// BinaryMessenger will be used which routes to the host platform.
+  DeviceHostApi({
+    BinaryMessenger? binaryMessenger,
+    String messageChannelSuffix = '',
+  }) : pigeonVar_binaryMessenger = binaryMessenger,
+       pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty
+           ? '.$messageChannelSuffix'
+           : '';
+
+  final BinaryMessenger? pigeonVar_binaryMessenger;
+  static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
+
+  final String pigeonVar_messageChannelSuffix;
+
+  /// Lets the user pick an audio file and copies it into [outDir]. Null
+  /// when they cancel.
+  Future<PickedFileMessage?> pickAudioFile(String outDir) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.pickAudioFile$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[outDir],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+    return pigeonVar_replyValue as PickedFileMessage?;
+  }
+
+  /// Plays [path] on its own (to try music before adding it). State
+  /// arrives through [DeviceFlutterApi.onAudioPreviewState].
+  Future<void> startAudioPreview(String path) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.startAudioPreview$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[path],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  Future<void> stopAudioPreview() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.stopAudioPreview$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  Future<MicrophonePermission> microphonePermission() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.microphonePermission$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as MicrophonePermission;
+  }
+
+  /// Asks for the microphone if it has not been asked yet.
+  Future<MicrophonePermission> requestMicrophone() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.requestMicrophone$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as MicrophonePermission;
+  }
+
+  /// Opens this app's page in the system settings.
+  Future<void> openAppSettings() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.openAppSettings$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  /// Records the microphone to [outPath] (AAC in M4A, 48 kHz). Levels
+  /// arrive through [DeviceFlutterApi.onRecordingLevel].
+  Future<void> startRecording(String outPath) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.startRecording$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[outPath],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  /// Stops and returns the recording.
+  Future<RecordingMessage> stopRecording() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.stopRecording$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as RecordingMessage;
+  }
+
+  /// Stops and deletes the recording.
+  Future<void> cancelRecording() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.cancelRecording$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  /// Bytes free for new files on the volume holding [path].
+  Future<int> freeSpace(String path) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.freeSpace$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[path],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as int;
+  }
+
+  /// Copies the video at [path] into the photo library: Photos on iOS
+  /// (add-only access, asked for now if needed), Movies/Stitch on Android.
+  Future<GallerySaveResult> saveVideoToGallery(String path) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.saveVideoToGallery$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[path],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as GallerySaveResult;
+  }
+
+  /// Opens the system share sheet for the file at [path].
+  Future<void> shareFile(String path, String mimeType) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.shareFile$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[path, mimeType],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  /// Opens [url] in the browser.
+  Future<void> openUrl(String url) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.openUrl$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[url],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  /// Keeps the screen on, during an export.
+  Future<void> setKeepScreenOn(bool on) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.setKeepScreenOn$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[on],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  /// The app's version, like "0.1.0 (1)".
+  Future<String> appVersion() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.appVersion$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as String;
+  }
+
+  /// Asks to show notifications, for export progress (Android 13 and
+  /// later; elsewhere always true). True when allowed.
+  Future<bool> requestNotifications() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.requestNotifications$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as bool;
+  }
+}
+
+abstract class DeviceFlutterApi {
+  static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
+
+  void onAudioPreviewState(AudioPreviewStateMessage state);
+
+  /// Microphone level, 0 to 1, about 20 times a second while recording.
+  void onRecordingLevel(double level);
+
+  /// Recording stopped on its own (a call, another app, an error). The
+  /// file so far is kept at [path], or null when there is none.
+  void onRecordingInterrupted(String? path, int durationUs);
+
+  static void setUp(
+    DeviceFlutterApi? api, {
+    BinaryMessenger? binaryMessenger,
+    String messageChannelSuffix = '',
+  }) {
+    messageChannelSuffix = messageChannelSuffix.isNotEmpty
+        ? '.$messageChannelSuffix'
+        : '';
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+        'dev.flutter.pigeon.stitch.DeviceFlutterApi.onAudioPreviewState$messageChannelSuffix',
+        pigeonChannelCodec,
+        binaryMessenger: binaryMessenger,
+      );
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          final List<Object?> args = message! as List<Object?>;
+          final AudioPreviewStateMessage arg_state =
+              args[0]! as AudioPreviewStateMessage;
+          try {
+            api.onAudioPreviewState(arg_state);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          } catch (e) {
+            return wrapResponse(
+              error: PlatformException(code: 'error', message: e.toString()),
+            );
+          }
+        });
+      }
+    }
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+        'dev.flutter.pigeon.stitch.DeviceFlutterApi.onRecordingLevel$messageChannelSuffix',
+        pigeonChannelCodec,
+        binaryMessenger: binaryMessenger,
+      );
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          final List<Object?> args = message! as List<Object?>;
+          final double arg_level = args[0]! as double;
+          try {
+            api.onRecordingLevel(arg_level);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          } catch (e) {
+            return wrapResponse(
+              error: PlatformException(code: 'error', message: e.toString()),
+            );
+          }
+        });
+      }
+    }
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+        'dev.flutter.pigeon.stitch.DeviceFlutterApi.onRecordingInterrupted$messageChannelSuffix',
+        pigeonChannelCodec,
+        binaryMessenger: binaryMessenger,
+      );
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          final List<Object?> args = message! as List<Object?>;
+          final String? arg_path = args[0] as String?;
+          final int arg_durationUs = args[1]! as int;
+          try {
+            api.onRecordingInterrupted(arg_path, arg_durationUs);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          } catch (e) {
+            return wrapResponse(
+              error: PlatformException(code: 'error', message: e.toString()),
+            );
+          }
+        });
+      }
+    }
   }
 }
 

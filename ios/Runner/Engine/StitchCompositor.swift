@@ -27,7 +27,9 @@ final class StitchCompositor: NSObject, AVVideoCompositing {
   }()
   private let queue = DispatchQueue(label: "stitch.compositor", qos: .userInitiated)
   private let outputColorSpace = CGColorSpace(name: CGColorSpace.itur_709)!
-  private var photoCache = PhotoCache()
+  private var photoCache = PhotoCache(limit: 8)
+  /// Room for a few typewriter overlays' frames at once.
+  private var overlayCache = PhotoCache(limit: 64)
   private lazy var transitions = Transitions(
     device: Self.device, context: context, colorSpace: outputColorSpace)
 
@@ -55,7 +57,10 @@ final class StitchCompositor: NSObject, AVVideoCompositing {
         return
       }
       let timeUs = request.compositionTime.microseconds
-      let image = compose(instruction, at: timeUs, request: request)
+      let canvas = CGRect(origin: .zero, size: instruction.canvasSize)
+      let image = drawOverlays(
+        instruction.overlays, at: timeUs, over: compose(instruction, at: timeUs, request: request),
+        canvas: canvas)
       let renderSize = request.renderContext.size
       let scale = CGAffineTransform(
         scaleX: renderSize.width / instruction.canvasSize.width,
@@ -103,6 +108,48 @@ final class StitchCompositor: NSObject, AVVideoCompositing {
         "CIDissolveTransition", parameters: [kCIInputTargetImageKey: images[1], "inputTime": progress])
     }
     return last
+  }
+
+  /// Draws the overlays showing at [timeUs] over [image], in order.
+  private func drawOverlays(
+    _ overlays: [EngineDocument.Overlay], at timeUs: Int64, over image: CIImage, canvas: CGRect
+  ) -> CIImage {
+    var result = image
+    for overlay in overlays where timeUs >= overlay.startUs && timeUs < overlay.endUs {
+      let motion = TextMotion.at(overlay, tUs: timeUs - overlay.startUs)
+      guard motion.alpha > 0.001,
+        let index = TextMotion.frame(reveal: motion.reveal, count: overlay.images.count),
+        let picture = overlayCache.image(at: overlay.images[index])
+      else { continue }
+      let extent = picture.extent
+      guard extent.width > 0, extent.height > 0 else { continue }
+      let scale = overlay.scale * motion.scale
+      // Canvas pixels have y up here; the document's y runs down.
+      let center = CGPoint(
+        x: overlay.x * canvas.width, y: (1 - overlay.y - motion.dy) * canvas.height)
+      let transform = CGAffineTransform(translationX: -extent.midX, y: -extent.midY)
+        .concatenating(
+          CGAffineTransform(
+            scaleX: overlay.width * scale / extent.width,
+            y: overlay.height * scale / extent.height))
+        .concatenating(CGAffineTransform(rotationAngle: -overlay.rotationDeg * .pi / 180))
+        .concatenating(CGAffineTransform(translationX: center.x, y: center.y))
+      var placed = picture.transformed(by: transform, highQualityDownsample: true)
+      if motion.alpha < 0.999 {
+        // Premultiplied: scale color and alpha together.
+        let a = CGFloat(motion.alpha)
+        placed = placed.applyingFilter(
+          "CIColorMatrix",
+          parameters: [
+            "inputRVector": CIVector(x: a, y: 0, z: 0, w: 0),
+            "inputGVector": CIVector(x: 0, y: a, z: 0, w: 0),
+            "inputBVector": CIVector(x: 0, y: 0, z: a, w: 0),
+            "inputAVector": CIVector(x: 0, y: 0, z: 0, w: a),
+          ])
+      }
+      result = placed.composited(over: result)
+    }
+    return result.cropped(to: canvas)
   }
 
   /// The source frame for a layer, upright, with its origin at zero.
@@ -188,7 +235,9 @@ final class StitchCompositor: NSObject, AVVideoCompositing {
 private struct PhotoCache {
   private var images: [String: CIImage] = [:]
   private var order: [String] = []
-  private let limit = 8
+  let limit: Int
+
+  init(limit: Int) { self.limit = limit }
 
   mutating func image(at path: String) -> CIImage? {
     if let cached = images[path] { return cached }

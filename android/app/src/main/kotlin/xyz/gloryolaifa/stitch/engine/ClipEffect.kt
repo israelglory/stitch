@@ -18,8 +18,17 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-/** The canvas a clip is drawn on: output size and background. */
-data class CanvasLook(val width: Int, val height: Int, val background: EngineDocument.Background)
+/**
+ * The canvas a clip is drawn on: output size and background.
+ * [documentWidth] is the document's canvas width, which overlay sizes are
+ * measured in; the output can be smaller (preview) or larger (export).
+ */
+data class CanvasLook(
+  val width: Int,
+  val height: Int,
+  val background: EngineDocument.Background,
+  val documentWidth: Int = width,
+)
 
 /** The clip a transition leaves, as the incoming clip's effect draws it. */
 data class Outgoing(
@@ -32,7 +41,22 @@ data class Outgoing(
   val framing: EngineDocument.Framing,
   /** How long to wait for a frame of it; see [OutgoingFrames.open]. */
   val timeoutMs: Long,
+  /** Report frames drawn without it (preview), so a paused preview redraws. */
+  val reportMisses: Boolean = false,
 )
+
+/**
+ * Tells the preview that a frame was drawn without the outgoing clip of a
+ * transition: its decoder was still starting. Paused, the preview draws
+ * nothing more on its own, so it redraws once the decoder has caught up.
+ */
+object FrameMisses {
+  @Volatile var listener: (() -> Unit)? = null
+
+  fun report() {
+    listener?.invoke()
+  }
+}
 
 /** A transition into the clip, in sequence time. */
 data class Incoming(
@@ -55,9 +79,11 @@ class ClipEffect(
   private val look: CanvasLook,
   private val framing: EngineDocument.Framing,
   private val incoming: Incoming?,
+  /** Every overlay of the document; those showing are drawn on top. */
+  private val overlays: List<EngineDocument.Overlay> = emptyList(),
 ) : GlEffect {
   override fun toGlShaderProgram(context: Context, useHdr: Boolean): GlShaderProgram =
-    ClipProgram(look, framing, incoming, useHdr)
+    ClipProgram(look, framing, incoming, overlays, useHdr)
 
   override fun isNoOp(inputWidth: Int, inputHeight: Int) = false
 }
@@ -67,6 +93,7 @@ private class ClipProgram(
   private val look: CanvasLook,
   private val framing: EngineDocument.Framing,
   private val incoming: Incoming?,
+  private val overlays: List<EngineDocument.Overlay>,
   useHdr: Boolean,
 ) : BaseGlShaderProgram(useHdr, /* texturePoolCapacity= */ 1) {
   private val blur = look.background.type == "blur"
@@ -98,6 +125,9 @@ private class ClipProgram(
         val sourceUs = transition.from.sourceStartUs +
           ((presentationTimeUs - transition.startUs) * transition.from.speed).toLong()
         from = outgoing(transition)?.frameAt(sourceUs)
+        if (from == null && transition.from.path != null && transition.from.reportMisses) {
+          FrameMisses.report()
+        }
       }
 
       val toBlurTex = if (blur) {
@@ -156,9 +186,52 @@ private class ClipProgram(
       }
       program.bindAttributesAndUniforms()
       GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+      drawOverlays(presentationTimeUs)
       GlUtil.checkGlError()
     } catch (e: GlUtil.GlException) {
       throw VideoFrameProcessingException(e, presentationTimeUs)
+    }
+  }
+
+  /** Draws the overlays showing at [timeUs], in order, over the frame. */
+  private fun drawOverlays(timeUs: Long) {
+    val showing = overlays.filter { timeUs >= it.startUs && timeUs < it.endUs }
+    if (showing.isEmpty()) return
+    val program = program("overlay") { GlProgram(VERTEX, OVERLAY_FRAGMENT) }
+    GLES20.glEnable(GLES20.GL_BLEND)
+    // Images are premultiplied.
+    GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+    try {
+      for (overlay in showing) {
+        val motion = TextMotion.at(overlay, timeUs - overlay.startUs)
+        if (motion.alpha < 0.001) continue
+        val index = TextMotion.frame(motion.reveal, overlay.images.size) ?: continue
+        val texture = overlayTextures.get(overlay.images[index]) ?: continue
+        program.use()
+        program.setSamplerTexIdUniform("uImage", texture, 0)
+        program.setFloatsUniform("uPlace", overlayPlacement(look, overlay, motion))
+        program.setFloatUniform("uAlpha", motion.alpha.toFloat())
+        program.bindAttributesAndUniforms()
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+      }
+    } finally {
+      GLES20.glDisable(GLES20.GL_BLEND)
+    }
+  }
+
+  /** Overlay images by path. Typewriter frames change every frame, so few are kept. */
+  private val overlayTextures = object : android.util.LruCache<String, Int>(OVERLAY_TEXTURES) {
+    override fun create(key: String): Int? {
+      val bitmap = android.graphics.BitmapFactory.decodeFile(key) ?: return null
+      return try {
+        GlUtil.createTexture(bitmap)
+      } finally {
+        bitmap.recycle()
+      }
+    }
+
+    override fun entryRemoved(evicted: Boolean, key: String, oldValue: Int, newValue: Int?) {
+      runCatching { GlUtil.deleteTexture(oldValue) }
     }
   }
 
@@ -245,6 +318,7 @@ private class ClipProgram(
   override fun release() {
     super.release()
     outgoing?.release()
+    overlayTextures.evictAll()
     toBlur?.release()
     fromBlur?.release()
     programs.values.forEach { runCatching { it.delete() } }
@@ -255,6 +329,7 @@ private class ClipProgram(
 
     /** Long side of the blur textures; the blur radius scales with it. */
     const val BLUR_LONG_SIDE = 96
+    const val OVERLAY_TEXTURES = 8
 
     fun blurSize(look: CanvasLook): Size {
       val scale = BLUR_LONG_SIDE.toFloat() / max(look.width, look.height)
@@ -310,6 +385,48 @@ fun placement(
   m.getValues(v)
   return floatArrayOf(v[0], v[3], v[6], v[1], v[4], v[7], v[2], v[5], v[8])
 }
+
+/**
+ * Maps canvas coordinates (0 to 1, y up) to [overlay]'s image coordinates
+ * (0 to 1, y up) as it shows with [motion]. Matches `drawOverlays` in
+ * StitchCompositor.swift. Column-major mat3.
+ */
+fun overlayPlacement(look: CanvasLook, overlay: EngineDocument.Overlay, motion: TextMotion): FloatArray {
+  val cw = look.width.toFloat()
+  val ch = look.height.toFloat()
+  // Overlay sizes are in document canvas pixels; the output may be smaller.
+  val unit = cw / look.documentWidth
+  val scale = (overlay.scale * motion.scale).toFloat() * unit
+  val place = Matrix().apply {
+    setTranslate(-0.5f, -0.5f)
+    postScale(overlay.width.toFloat() * scale, overlay.height.toFloat() * scale)
+    postRotate(-overlay.rotationDeg.toFloat())
+    postTranslate(overlay.x.toFloat() * cw, (1 - overlay.y - motion.dy).toFloat() * ch)
+  }
+  val inverse = Matrix()
+  place.invert(inverse)
+  val m = Matrix().apply {
+    setScale(cw, ch)
+    postConcat(inverse)
+  }
+  val v = FloatArray(9)
+  m.getValues(v)
+  return floatArrayOf(v[0], v[3], v[6], v[1], v[4], v[7], v[2], v[5], v[8])
+}
+
+private const val OVERLAY_FRAGMENT = """
+precision highp float;
+varying vec2 vUv;
+uniform sampler2D uImage;
+uniform mat3 uPlace;
+uniform float uAlpha;
+void main() {
+  vec2 p = (uPlace * vec3(vUv, 1.0)).xy;
+  if (p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0) discard;
+  // Bitmap rows start at the top.
+  gl_FragColor = texture2D(uImage, vec2(p.x, 1.0 - p.y)) * uAlpha;
+}
+"""
 
 private const val VERTEX = """
 attribute vec4 aFramePosition;

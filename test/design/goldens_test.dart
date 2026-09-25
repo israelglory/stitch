@@ -65,6 +65,7 @@ void main() {
     'timeline': TimelineSpecimen.new,
     'headers': HeaderSpecimen.new,
     'choices': ChoicesSpecimen.new,
+    'audio': AudioSpecimen.new,
     'transition_previews': () =>
         const TransitionPreviewSpecimen(animate: false),
     'mocks': MocksSpecimen.new,

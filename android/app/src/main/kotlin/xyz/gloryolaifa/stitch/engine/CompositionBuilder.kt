@@ -34,23 +34,30 @@ import kotlin.math.min
 object CompositionBuilder {
   data class Built(val composition: Composition, val durationUs: Long)
 
-  /** [outputEffects] apply to the mixed result (export frame rate, resampling). */
+  /**
+   * [outputEffects] apply to the mixed result (export frame rate,
+   * resampling). [audioOnly] leaves the picture out: clips play only their
+   * sound, so no video is decoded (for speech recognition).
+   */
   fun build(
     doc: EngineDocument,
     forExport: Boolean,
     outputSize: Size? = null,
     outputEffects: Effects = Effects.EMPTY,
+    audioOnly: Boolean = false,
   ): Built {
     val comp = doc.composition
     val size = outputSize ?: Size(doc.canvas.width, doc.canvas.height)
-    val look = CanvasLook(size.width, size.height, doc.background)
+    val look = CanvasLook(size.width, size.height, doc.background, doc.canvas.width)
     val clipsById = comp.clips.associateBy { it.clipId }
     val incoming = comp.transitions.associateBy { it.toClipId }
     val outgoing = comp.transitions.associateBy { it.fromClipId }
     val sequences = mutableListOf<EditedMediaItemSequence>()
 
     // Video, with each clip's own sound.
-    if (comp.clips.isNotEmpty()) {
+    if (audioOnly) {
+      clipSound(doc, comp, outgoing, incoming)?.let { sequences += it }
+    } else if (comp.clips.isNotEmpty()) {
       val video = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_VIDEO, C.TRACK_TYPE_AUDIO))
       var cursor = 0L
       for (clip in comp.clips) {
@@ -108,7 +115,8 @@ object CompositionBuilder {
     // Audio items, one sequence each.
     for (item in comp.audio) {
       val media = doc.media[item.mediaId] ?: continue
-      if (!File(media.path).exists()) continue
+      // An audio-only item without sound fails the whole export.
+      if (!File(media.path).exists() || !hasAudioTrack(media.path)) continue
       val builder = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO))
       if (item.startUs > 0) builder.addGap(item.startUs)
       val passSourceUs = item.sourceOutUs - item.sourceInUs
@@ -146,6 +154,57 @@ object CompositionBuilder {
       .experimentalSetForceAudioTrack(true)
       .build()
     return Built(composition, comp.durationUs)
+  }
+
+  /**
+   * The clips' own sound without their picture, timed like the video
+   * sequence: photos and clips without sound become gaps. Null when no
+   * clip has sound.
+   */
+  private fun clipSound(
+    doc: EngineDocument,
+    comp: EngineDocument.Composition,
+    outgoing: Map<String, EngineDocument.Transition>,
+    incoming: Map<String, EngineDocument.Transition>,
+  ): EditedMediaItemSequence? {
+    val builder = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO))
+    var cursor = 0L
+    var audible = false
+    for (clip in comp.clips) {
+      val start = max(cursor, clip.startUs)
+      val end = outgoing[clip.clipId]?.startUs ?: clip.endUs
+      if (clip.startUs > cursor) builder.addGap(clip.startUs - cursor)
+      if (end <= start) continue
+      val media = doc.media[clip.mediaId]
+      val path = media?.let { sourcePath(it, forExport = true) }
+      if (clip.kind != "video" || media == null || path == null || !media.hasAudio ||
+        !hasAudioTrack(path)
+      ) {
+        builder.addGap(end - start)
+      } else {
+        val timelineUs = end - clip.startUs
+        builder.addItem(
+          audioItem(
+            path = path,
+            mediaDurationUs = media.durationUs,
+            sourceInUs = clip.sourceInUs,
+            sourceOutUs = min(clip.sourceOutUs, clip.sourceInUs + (timelineUs * clip.speed).toLong()),
+            speed = clip.speed,
+            gain = Gain(
+              volume = clip.volume.toFloat(),
+              clipDurationUs = clip.endUs - clip.startUs,
+              fadeInUs = clip.audioFadeInUs,
+              fadeOutUs = clip.audioFadeOutUs,
+              itemDurationUs = timelineUs,
+              rampInUs = incoming[clip.clipId]?.durationUs ?: 0,
+            ),
+          ),
+        )
+        audible = true
+      }
+      cursor = end
+    }
+    return if (audible) builder.build() else null
   }
 
   private val audioTracks = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
@@ -196,6 +255,7 @@ object CompositionBuilder {
       speed = from.speed,
       framing = from.framing,
       timeoutMs = if (forExport) EXPORT_FRAME_TIMEOUT_MS else PREVIEW_FRAME_TIMEOUT_MS,
+      reportMisses = !forExport,
     ),
   )
 
@@ -216,7 +276,7 @@ object CompositionBuilder {
     val media = doc.media[clip.mediaId] ?: return null
     val path = sourcePath(media, forExport) ?: return null
     val timelineUs = endUs - clip.startUs
-    val effects = listOf(ClipEffect(look, clip.framing, incoming))
+    val effects = listOf(ClipEffect(look, clip.framing, incoming, doc.overlays))
 
     if (clip.kind == "photo") {
       val item = MediaItem.Builder()

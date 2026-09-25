@@ -60,6 +60,7 @@ final class EditorState {
     required this.history,
     this.selection = const NoSelection(),
     this.missingMedia = const {},
+    this.liveTexts = const {},
   });
 
   /// Project snapshots. Every edit, including canvas and background
@@ -69,6 +70,11 @@ final class EditorState {
 
   /// Media whose imported file is gone (shown as missing clips).
   final Set<String> missingMedia;
+
+  /// Text items the editor draws over the preview itself instead of the
+  /// engine: the selected one, so editing is instant, and any just
+  /// deselected until the engine shows them.
+  final Set<String> liveTexts;
 
   Project get project => history.present;
   Timeline get timeline => project.timeline;
@@ -83,9 +89,11 @@ final class EditorState {
     EditHistory<Project>? history,
     Selection? selection,
     Set<String>? missingMedia,
+    Set<String>? liveTexts,
   }) => EditorState(
     history: history ?? this.history,
     selection: selection ?? this.selection,
     missingMedia: missingMedia ?? this.missingMedia,
+    liveTexts: liveTexts ?? this.liveTexts,
   );
 }

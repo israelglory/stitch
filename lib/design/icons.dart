@@ -28,6 +28,7 @@ abstract final class AppIcons {
   static const redo = IconData(58016, fontFamily: _f); // redo-2
   static const play = IconData(57660, fontFamily: _f);
   static const pause = IconData(57646, fontFamily: _f);
+  static const stop = IconData(57703, fontFamily: _f); // square
   static const fullscreen = IconData(57619, fontFamily: _f); // maximize-2
   static const exitFullscreen = IconData(57627, fontFamily: _f); // minimize-2
 
@@ -57,6 +58,7 @@ abstract final class AppIcons {
 
   // Media and files.
   static const folder = IconData(57927, fontFamily: _f); // folder-open
+  static const audioFile = IconData(58718, fontFamily: _f); // file-music
   static const image = IconData(57590, fontFamily: _f);
   static const video = IconData(57765, fontFamily: _f);
   static const film = IconData(57552, fontFamily: _f);

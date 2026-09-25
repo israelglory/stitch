@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:stitch/core/errors/failure.dart';
 import 'package:stitch/engine/editor_engine.dart';
@@ -27,6 +29,27 @@ class FakeEditorEngine implements EditorEngine {
 
   /// Paths passed to [createProxy], for assertions.
   final proxies = <String>[];
+
+  /// Answers [waveform]; by default, a gentle wave for any file.
+  List<double> Function(String path, int peaksPerSecond)? waveformHandler;
+
+  /// Last volume set with [setPreviewVolume].
+  double previewVolume = 1;
+
+  /// Settings of the last [export], for assertions.
+  ExportSettings? lastExport;
+
+  /// Makes the next [export] fail with this.
+  Object? exportFailure;
+
+  /// Time between an export's ten progress steps.
+  Duration exportStep = const Duration(milliseconds: 50);
+
+  /// Documents passed to [speechAudio], for assertions.
+  final speechDocuments = <String>[];
+
+  /// What [speechAudio] writes: 16 kHz mono samples. Empty by default.
+  Float32List speechSamples = Float32List(0);
 
   final _state = StreamController<PlaybackState>.broadcast();
   PlaybackState _current = PlaybackState.idle;
@@ -56,6 +79,7 @@ class FakeEditorEngine implements EditorEngine {
   @override
   Future<void> setDocument(String documentJson) async {
     lastDocument = documentJson;
+    var version = _current.documentVersion;
     try {
       final json = jsonDecode(documentJson);
       final composition = json is Map<String, dynamic>
@@ -65,13 +89,18 @@ class FakeEditorEngine implements EditorEngine {
           composition['durationUs'] is int) {
         durationUs = composition['durationUs'] as int;
       }
+      if (json is Map<String, dynamic> && json['version'] is int) {
+        version = json['version'] as int;
+      }
     } on FormatException {
       // Tests may pass arbitrary payloads; keep the configured duration.
     }
+    // The fake shows every document at once.
     _emit(
       _current.copyWith(
         durationUs: durationUs,
         positionUs: _current.positionUs.clamp(0, durationUs),
+        documentVersion: version,
       ),
     );
   }
@@ -110,7 +139,31 @@ class FakeEditorEngine implements EditorEngine {
   }
 
   @override
-  ExportJob export(ExportSettings settings) => _FakeExportJob(settings);
+  ExportJob export(ExportSettings settings) {
+    lastExport = settings;
+    final failure = exportFailure;
+    exportFailure = null;
+    return _FakeExportJob(
+      settings.outputPath,
+      step: exportStep,
+      failure: failure,
+      write: () => File(settings.outputPath)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(const [0, 0, 0, 24]),
+    );
+  }
+
+  @override
+  ExportJob speechAudio(String documentJson, String outputPath) {
+    speechDocuments.add(documentJson);
+    final samples = speechSamples;
+    return _FakeExportJob(
+      outputPath,
+      write: () => File(outputPath)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(samples.buffer.asUint8List()),
+    );
+  }
 
   @override
   Future<MediaInfo> probe(String path) async {
@@ -136,6 +189,19 @@ class FakeEditorEngine implements EditorEngine {
   Future<EngineCapabilities> capabilities() async => EngineCapabilities.basic;
 
   @override
+  Future<List<double>> waveform(
+    String path, {
+    required int peaksPerSecond,
+  }) async =>
+      waveformHandler?.call(path, peaksPerSecond) ??
+      [for (var i = 0; i < peaksPerSecond * 4; i++) 0.3 + 0.2 * (i % 5) / 4];
+
+  @override
+  Future<void> setPreviewVolume(double volume) async {
+    previewVolume = volume;
+  }
+
+  @override
   Future<void> release() async {
     _timer?.cancel();
     _emit(PlaybackState.idle);
@@ -155,11 +221,19 @@ class FakeEditorEngine implements EditorEngine {
 }
 
 class _FakeExportJob implements ExportJob {
-  new(this._settings) {
+  new(
+    this._outputPath, {
+    this._write,
+    this._failure,
+    this._step = const Duration(milliseconds: 50),
+  }) {
     unawaited(_run());
   }
 
-  final ExportSettings _settings;
+  final String _outputPath;
+  final void Function()? _write;
+  final Object? _failure;
+  final Duration _step;
   final _events = StreamController<ExportEvent>();
   bool _cancelled = false;
 
@@ -168,11 +242,17 @@ class _FakeExportJob implements ExportJob {
 
   Future<void> _run() async {
     for (var step = 1; step <= 10; step++) {
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(_step);
       if (_cancelled) return;
       _events.add(ExportProgress(step / 10));
     }
-    _events.add(ExportCompleted(_settings.outputPath));
+    if (_failure case final failure?) {
+      _events.addError(failure);
+      await _events.close();
+      return;
+    }
+    _write?.call();
+    _events.add(ExportCompleted(_outputPath));
     await _events.close();
   }
 

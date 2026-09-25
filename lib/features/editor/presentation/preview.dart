@@ -7,20 +7,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stitch/core/time/time.dart';
 import 'package:stitch/design/design.dart';
 import 'package:stitch/engine/engine_provider.dart';
+import 'package:stitch/features/captions/presentation/caption_preview_layer.dart';
 import 'package:stitch/features/editor/application/current_clip.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
 import 'package:stitch/features/editor/presentation/editor_media.dart';
 import 'package:stitch/features/projects/domain/project.dart';
+import 'package:stitch/features/text/presentation/text_overlay_layer.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
 import 'package:stitch/l10n/generated/app_localizations.dart';
 
 /// Blur applied to the "blurred copy" canvas background.
 const double _backgroundBlur = 24;
 
-/// The video canvas at the project's aspect ratio. With the fake engine
-/// it shows the poster of the clip under the playhead; the native engines
-/// render real frames here (M5, M6). Tapping toggles playback.
+/// The video canvas at the project's aspect ratio. The native engines
+/// render the composition here; with the fake engine it shows the poster
+/// of the clip under the playhead. Text being edited is drawn on top by
+/// [TextOverlayLayer], which also handles taps on the canvas; tapping
+/// elsewhere toggles playback.
 class EditorPreview extends ConsumerWidget {
   const new({required this.projectId, super.key});
 
@@ -51,14 +55,26 @@ class EditorPreview extends ConsumerWidget {
           child: AspectRatio(
             aspectRatio: project.canvas.aspectRatio,
             child: ClipRect(
-              // The native engine renders the full composition; the fake
-              // engine has no frames, so show the clip's poster.
-              child: texture != null
-                  ? Texture(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // The native engine renders the full composition; the
+                  // fake engine has no frames, so show the clip's poster.
+                  if (texture != null)
+                    Texture(
                       textureId: texture,
                       filterQuality: FilterQuality.medium,
                     )
-                  : _Canvas(project: project, clip: clip),
+                  else
+                    _Canvas(project: project, clip: clip),
+                  if (texture == null)
+                    CaptionPreviewLayer(projectId: projectId),
+                  TextOverlayLayer(
+                    projectId: projectId,
+                    drawAll: texture == null,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

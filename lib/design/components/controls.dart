@@ -221,12 +221,17 @@ class ListRow extends StatelessWidget {
     this.showChevron = false,
     this.destructive = false,
     this.onTap,
+    this.inset = true,
     super.key,
   });
 
   final String title;
   final String? subtitle;
   final IconData? leadingIcon;
+
+  /// Pads to the screen edge. False inside something already padded (a
+  /// sheet), so the row lines up with what is around it.
+  final bool inset;
 
   /// Short trailing text, such as a current setting or a size.
   final String? value;
@@ -243,8 +248,8 @@ class ListRow extends StatelessWidget {
     final titleColor = destructive ? colors.destructive : colors.textPrimary;
     final row = Container(
       constraints: const BoxConstraints(minHeight: AppSizes.listRowHeight),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screen,
+      padding: EdgeInsets.symmetric(
+        horizontal: inset ? AppSpacing.screen : 0,
         vertical: AppSpacing.md,
       ),
       child: Row(
@@ -307,13 +312,81 @@ class ListRow extends StatelessWidget {
   }
 }
 
+/// A row that turns an option on or off, with a square check box at the
+/// end (no pill switches: nothing is fully rounded but icon buttons).
+class CheckRow extends StatelessWidget {
+  const new({
+    required this.title,
+    required this.checked,
+    required this.onChanged,
+    this.subtitle,
+    this.inset = true,
+    super.key,
+  });
+
+  final String title;
+  final String? subtitle;
+  final bool checked;
+
+  /// Null disables the row.
+  final ValueChanged<bool>? onChanged;
+
+  /// See [ListRow.inset].
+  final bool inset;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final enabled = onChanged != null;
+    final box = AnimatedContainer(
+      duration: AppMotion.of(context, AppMotion.fast),
+      curve: AppMotion.curve,
+      width: AppSizes.inlineIcon,
+      height: AppSizes.inlineIcon,
+      decoration: BoxDecoration(
+        color: checked ? colors.accent : null,
+        borderRadius: BorderRadius.circular(AppRadius.small),
+        border: checked
+            ? null
+            : Border.all(
+                color: colors.textTertiary,
+                width: AppSizes.strokeWidth,
+              ),
+      ),
+      child: checked
+          ? Icon(
+              AppIcons.check,
+              size: AppSizes.microIcon,
+              color: colors.onAccent,
+            )
+          : null,
+    );
+    return Semantics(
+      checked: checked,
+      enabled: enabled,
+      child: Opacity(
+        opacity: enabled ? 1 : kDisabledOpacity,
+        child: ListRow(
+          title: title,
+          subtitle: subtitle,
+          inset: inset,
+          trailing: ExcludeSemantics(child: box),
+          onTap: enabled ? () => onChanged!(!checked) : null,
+        ),
+      ),
+    );
+  }
+}
+
 /// Single-line or multi-line text input.
 class AppTextField extends StatelessWidget {
   const new({
     required this.controller,
+    this.focusNode,
     this.hint,
     this.autofocus = false,
     this.maxLines = 1,
+    this.minLines,
     this.textInputAction,
     this.onSubmitted,
     this.onChanged,
@@ -322,9 +395,13 @@ class AppTextField extends StatelessWidget {
   });
 
   final TextEditingController controller;
+  final FocusNode? focusNode;
   final String? hint;
   final bool autofocus;
   final int? maxLines;
+
+  /// Grows from this many lines up to [maxLines]; null keeps [maxLines].
+  final int? minLines;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onSubmitted;
   final ValueChanged<String>? onChanged;
@@ -338,12 +415,16 @@ class AppTextField extends StatelessWidget {
       borderSide: BorderSide(color: color),
     );
     return Semantics(
+      // Its own node, so it never merges with a control beside it.
+      container: true,
       label: semanticLabel,
       textField: true,
       child: TextField(
         controller: controller,
+        focusNode: focusNode,
         autofocus: autofocus,
         maxLines: maxLines,
+        minLines: minLines,
         textInputAction: textInputAction,
         onSubmitted: onSubmitted,
         onChanged: onChanged,

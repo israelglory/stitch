@@ -7,6 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stitch/app/providers.dart';
 import 'package:stitch/core/time/time.dart';
 import 'package:stitch/design/design.dart';
+import 'package:stitch/features/audio/application/audio_providers.dart';
+import 'package:stitch/features/audio/application/waveforms.dart';
+import 'package:stitch/features/audio/domain/waveform_slice.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/editor_state.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
@@ -793,6 +796,29 @@ class _ContentState extends ConsumerState<_Content> {
           () {
             final start = layout.startOf(item.anchor);
             final end = audioEndUs(item, layout);
+            final media = state.project.media[item.mediaId];
+            final peaks = media == null
+                ? null
+                : ref
+                      .watch(
+                        waveformProvider(
+                          ref
+                              .read(projectStoreProvider)
+                              .resolve(state.project.id, media.path),
+                        ),
+                      )
+                      .value;
+            final waveform = peaks == null
+                ? null
+                : waveformSlice(
+                    peaks,
+                    peaksPerSecond: waveformPeaksPerSecond,
+                    sourceInUs: item.sourceInUs,
+                    sourceOutUs: item.sourceOutUs,
+                    speed: item.speed,
+                    loop: item.loop,
+                    durationUs: end - start,
+                  );
             return _laneItem(
               id: item.id,
               top: top,
@@ -817,6 +843,7 @@ class _ContentState extends ConsumerState<_Content> {
                     },
                     label: item.name,
                     width: width,
+                    waveform: waveform,
                     fadeInPx: _px(item.fadeInUs),
                     fadeOutPx: _px(item.fadeOutUs),
                     overflowStartPx: end > layout.durationUs

@@ -18,6 +18,7 @@
 //   flutter test integration_test -d emulator-5554 \
 //     --dart-define=STITCH_TEST_MEDIA=$D
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,16 +27,20 @@ import 'package:integration_test/integration_test.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:stitch/app/bootstrap.dart';
 import 'package:stitch/app/providers.dart';
-import 'package:stitch/design/design.dart';
+import 'package:stitch/design/design.dart' hide AudioKind;
 import 'package:stitch/engine/editor_engine.dart';
 import 'package:stitch/engine/engine_provider.dart';
 import 'package:stitch/engine/native_editor_engine.dart';
+import 'package:stitch/features/audio/application/bundled_files.dart';
+import 'package:stitch/features/audio/data/bundled_audio.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
+import 'package:stitch/features/editor/application/editor_state.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
 import 'package:stitch/features/editor/presentation/editor_screen.dart';
 import 'package:stitch/features/editor/presentation/preview.dart';
 import 'package:stitch/features/timeline/domain/composition.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
+import 'package:stitch/features/timeline/domain/text_ops.dart';
 import 'package:stitch/features/timeline/domain/transition_ops.dart';
 
 import 'support/folder_library.dart';
@@ -174,6 +179,55 @@ void main() {
         .transitions
         .single;
     expect(edited.layout.durationUs, durationUs - slide.durationUs);
+    // Text with a white box, drawn by the engine from its image once it is
+    // no longer selected, and music under the video.
+    final controller = container.read(
+      editorControllerProvider(editorScreen.projectId).notifier,
+    );
+    final textId = controller.addText('Stitch', atUs: 0);
+    controller
+      ..apply(
+        (t) => t.updateText(
+          textId,
+          (x) => x.copyWith(
+            style: const TextStyleSpec(
+              color: 0xFF000000,
+              backgroundColor: 0xFFFFFFFF,
+              size: 0.08,
+            ),
+          ),
+        ),
+      )
+      ..select(const NoSelection());
+    final music = await bundledSoundFile(
+      bundledMusic.first,
+      container.read(cacheRootProvider),
+    );
+    await controller.addAudioFile(
+      music,
+      name: bundledMusic.first.title,
+      kind: AudioKind.music,
+      atUs: 0,
+    );
+    controller.select(const NoSelection());
+    // The editor draws the text until the engine shows it.
+    final shown = DateTime.now().add(const Duration(seconds: 20));
+    while (container
+            .read(editorControllerProvider(editorScreen.projectId))
+            .requireValue
+            .liveTexts
+            .isNotEmpty &&
+        DateTime.now().isBefore(shown)) {
+      await wait(tester, const Duration(milliseconds: 100));
+    }
+    expect(
+      container
+          .read(editorControllerProvider(editorScreen.projectId))
+          .requireValue
+          .liveTexts,
+      isEmpty,
+    );
+
     final playback = container.read(playbackControllerProvider.notifier);
     await playback.pause();
     await wait(tester, const Duration(milliseconds: 500));
@@ -210,6 +264,33 @@ void main() {
     expect(events.last, isA<ExportCompleted>());
     expect(events.whereType<ExportProgress>(), isNotEmpty);
     final info = await engine.probe(out);
+    expect(info.hasAudio, isTrue);
+    // The text box is in the video: white across the middle of a frame.
+    final frame = (await engine.thumbnails(
+      out,
+      const [200000],
+      maxSize: 480,
+      outDir: '${tmp.path}/frames',
+    )).single!;
+    final codec = await ui.instantiateImageCodec(
+      await File(frame).readAsBytes(),
+    );
+    final image = (await codec.getNextFrame()).image;
+    final rgba = (await image.toByteData())!;
+    var white = 0;
+    const samples = 20;
+    for (var i = 0; i < samples; i++) {
+      final x = image.width ~/ 2 - image.width ~/ 12 + i * image.width ~/ 120;
+      final y = image.height ~/ 2;
+      final o = (y * image.width + x) * 4;
+      final (r, g, b) = (
+        rgba.getUint8(o),
+        rgba.getUint8(o + 1),
+        rgba.getUint8(o + 2),
+      );
+      if (r > 200 && g > 200 && b > 200) white++;
+    }
+    expect(white, greaterThan(samples ~/ 3), reason: 'text box in the export');
     expect(
       (info.durationUs! - edited.layout.durationUs).abs(),
       lessThan(100000),

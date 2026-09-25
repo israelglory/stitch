@@ -13,7 +13,33 @@ data class EngineDocument(
   val background: Background,
   val media: Map<String, Media>,
   val composition: Composition,
+  /** Images placed on top of the video: text drawn by the Dart side. */
+  val overlays: List<Overlay> = emptyList(),
+  /** Numbers documents, so Dart can tell when the preview shows one. */
+  val version: Int = 0,
 ) {
+  /** How an overlay enters or leaves (see [TextMotion]). */
+  data class Animation(val type: String, val durationUs: Long)
+
+  data class Overlay(
+    val id: String,
+    val startUs: Long,
+    val endUs: Long,
+    /** One image, or a typewriter's frames from the first letter to all. */
+    val images: List<String>,
+    /** Size on the canvas at scale 1, in canvas pixels. */
+    val width: Double,
+    val height: Double,
+    /** Center, as fractions of the canvas, y down. */
+    val x: Double,
+    val y: Double,
+    val scale: Double,
+    /** Clockwise. */
+    val rotationDeg: Double,
+    val animationIn: Animation,
+    val animationOut: Animation,
+  )
+
   data class Canvas(val width: Int, val height: Int, val frameRate: Int)
 
   /** [type] is "solid" or "blur"; [color] is ARGB for "solid". */
@@ -118,6 +144,30 @@ data class EngineDocument(
             )
           },
         ),
+        overlays = root.optJSONArray("overlays").objects().map(::overlay),
+        version = root.optInt("version", 0),
+      )
+    }
+
+    private fun overlay(o: JSONObject): Overlay {
+      fun animation(a: JSONObject?) = Animation(
+        a?.optString("type", "none") ?: "none",
+        a?.optLong("durationUs", 0) ?: 0,
+      )
+      val images = o.getJSONArray("images")
+      return Overlay(
+        id = o.getString("id"),
+        startUs = o.getLong("startUs"),
+        endUs = o.getLong("endUs"),
+        images = (0 until images.length()).map { images.getString(it) },
+        width = o.getDouble("width"),
+        height = o.getDouble("height"),
+        x = o.getDouble("x"),
+        y = o.getDouble("y"),
+        scale = o.getDouble("scale"),
+        rotationDeg = o.getDouble("rotationDeg"),
+        animationIn = animation(o.optJSONObject("animationIn")),
+        animationOut = animation(o.optJSONObject("animationOut")),
       )
     }
 

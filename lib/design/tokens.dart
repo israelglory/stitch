@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 /// Design tokens. The only place raw colors, sizes, and durations may be
 /// written. A test fails the build if feature code hardcodes values.
 ///
-/// Colors are a theme extension so a light palette can be added later with
-/// the same names; read them with `context.colors`.
+/// Colors are a theme extension with a dark and a light palette under the
+/// same names; read them with `context.colors`.
 @immutable
 class AppColors extends ThemeExtension<AppColors> {
   const new({
@@ -21,6 +21,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.success,
     required this.scrim,
     required this.overlay,
+    required this.onOverlay,
     required this.shadow,
     required this.laneText,
     required this.laneCaptions,
@@ -42,7 +43,32 @@ class AppColors extends ThemeExtension<AppColors> {
     success: Color(0xFF3DB47A),
     scrim: Color(0x99000000),
     overlay: Color(0x8C000000),
+    onOverlay: Color(0xFFFFFFFF),
     shadow: Color(0x66000000),
+    laneText: Color(0xFFD9A441),
+    laneCaptions: Color(0xFF4FB3B0),
+    laneAudio: Color(0xFF6CC08B),
+    laneVoiceover: Color(0xFFC98A5B),
+  );
+
+  /// The same roles on light surfaces. The accent is a shade deeper, so
+  /// white labels on it stay readable.
+  static const light = AppColors(
+    background: Color(0xFFF6F6F7),
+    surface: Color(0xFFFFFFFF),
+    surfaceRaised: Color(0xFFEDEDF0),
+    border: Color(0xFFDDDDE2),
+    textPrimary: Color(0xFF111114),
+    textSecondary: Color(0xFF5B5B64),
+    textTertiary: Color(0xFF8C8C95),
+    accent: Color(0xFF2F6FE8),
+    onAccent: Color(0xFFFFFFFF),
+    destructive: Color(0xFFD5353B),
+    success: Color(0xFF218456),
+    scrim: Color(0x66000000),
+    overlay: Color(0x8C000000),
+    onOverlay: Color(0xFFFFFFFF),
+    shadow: Color(0x24000000),
     laneText: Color(0xFFD9A441),
     laneCaptions: Color(0xFF4FB3B0),
     laneAudio: Color(0xFF6CC08B),
@@ -71,6 +97,10 @@ class AppColors extends ThemeExtension<AppColors> {
   /// they stay legible on any frame.
   final Color overlay;
 
+  /// Text and marks on [overlay]: light in both themes, since it sits on
+  /// media.
+  final Color onOverlay;
+
   /// The single shadow, used by bottom sheets only.
   final Color shadow;
 
@@ -95,6 +125,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? success,
     Color? scrim,
     Color? overlay,
+    Color? onOverlay,
     Color? shadow,
     Color? laneText,
     Color? laneCaptions,
@@ -114,6 +145,7 @@ class AppColors extends ThemeExtension<AppColors> {
     success: success ?? this.success,
     scrim: scrim ?? this.scrim,
     overlay: overlay ?? this.overlay,
+    onOverlay: onOverlay ?? this.onOverlay,
     shadow: shadow ?? this.shadow,
     laneText: laneText ?? this.laneText,
     laneCaptions: laneCaptions ?? this.laneCaptions,
@@ -138,6 +170,7 @@ class AppColors extends ThemeExtension<AppColors> {
       success: Color.lerp(success, other.success, t)!,
       scrim: Color.lerp(scrim, other.scrim, t)!,
       overlay: Color.lerp(overlay, other.overlay, t)!,
+      onOverlay: Color.lerp(onOverlay, other.onOverlay, t)!,
       shadow: Color.lerp(shadow, other.shadow, t)!,
       laneText: Color.lerp(laneText, other.laneText, t)!,
       laneCaptions: Color.lerp(laneCaptions, other.laneCaptions, t)!,
@@ -211,6 +244,25 @@ abstract final class AppSizes {
   static const double sliderTrack = 4;
   static const double progressTrack = 4;
   static const double orderBadge = 24;
+
+  /// The voiceover record button, the one round control besides icon
+  /// buttons.
+  static const double recordButton = 72;
+
+  /// Height of the live recording level meter.
+  static const double levelMeter = 48;
+
+  /// Width of a caption's time in the caption editor.
+  static const double captionTime = 56;
+
+  /// Width of a loading value at the end of a list row.
+  static const double skeletonValue = 48;
+
+  /// The export progress ring.
+  static const double exportRing = 96;
+
+  /// Play mark over the exported video.
+  static const double exportPlayIcon = 48;
 
   // Timeline.
   static const double rulerHeight = 24;

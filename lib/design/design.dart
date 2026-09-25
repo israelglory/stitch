@@ -1,6 +1,7 @@
 /// The design system. Feature code imports this file only.
 library;
 
+export 'components/audio.dart';
 export 'components/buttons.dart';
 export 'components/choices.dart';
 export 'components/controls.dart';
@@ -12,6 +13,7 @@ export 'components/pressable.dart';
 export 'components/progress.dart';
 export 'components/toolbar.dart';
 export 'components/transition_preview.dart';
+export 'content/overlay_text.dart';
 export 'haptics.dart';
 export 'icons.dart';
 export 'timeline/timeline_chrome.dart';

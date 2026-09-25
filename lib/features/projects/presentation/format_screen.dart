@@ -10,6 +10,7 @@ import 'package:stitch/features/media/application/library_controller.dart';
 import 'package:stitch/features/projects/application/import_controller.dart';
 import 'package:stitch/features/projects/domain/project.dart';
 import 'package:stitch/features/projects/presentation/import_progress_sheet.dart';
+import 'package:stitch/features/settings/application/settings_controller.dart';
 import 'package:stitch/l10n/generated/app_localizations.dart';
 
 /// Aspect ratios in the order shown, with their width over height (null
@@ -66,7 +67,8 @@ class FormatScreen extends ConsumerStatefulWidget {
 }
 
 class _FormatScreenState extends ConsumerState<FormatScreen> {
-  AspectPreset _preset = AspectPreset.portrait9x16;
+  /// Starts on the default format from Settings.
+  late AspectPreset _preset = ref.read(settingsControllerProvider).aspect;
   bool _creating = false;
 
   Future<void> _create() async {

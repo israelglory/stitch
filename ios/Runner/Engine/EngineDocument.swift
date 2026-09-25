@@ -88,10 +88,53 @@ struct EngineDocument: Decodable {
     }
   }
 
+  /// How an overlay enters or leaves (see TextMotion.swift).
+  struct Animation: Decodable {
+    let type: String
+    let durationUs: Int64
+  }
+
+  /// An image placed on top of the video: text drawn by the Dart side.
+  struct Overlay: Decodable {
+    let id: String
+    let startUs: Int64
+    let endUs: Int64
+    /// One image, or a typewriter's frames from the first letter to all.
+    let images: [String]
+    /// Size on the canvas at scale 1, in canvas pixels.
+    let width: Double
+    let height: Double
+    /// Center, as fractions of the canvas, y down.
+    let x: Double
+    let y: Double
+    let scale: Double
+    /// Clockwise.
+    let rotationDeg: Double
+    let animationIn: Animation
+    let animationOut: Animation
+  }
+
+  /// Numbers documents, so Dart can tell when the preview shows one.
+  let version: Int
   let canvas: Canvas
   let background: Background
   let media: [String: Media]
   let composition: Composition
+  let overlays: [Overlay]
+
+  enum CodingKeys: String, CodingKey {
+    case version, canvas, background, media, composition, overlays
+  }
+
+  init(from decoder: Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    version = try c.decodeIfPresent(Int.self, forKey: .version) ?? 0
+    canvas = try c.decode(Canvas.self, forKey: .canvas)
+    background = try c.decode(Background.self, forKey: .background)
+    media = try c.decode([String: Media].self, forKey: .media)
+    composition = try c.decode(Composition.self, forKey: .composition)
+    overlays = try c.decodeIfPresent([Overlay].self, forKey: .overlays) ?? []
+  }
 
   static func decode(_ json: String) throws -> EngineDocument {
     try JSONDecoder().decode(EngineDocument.self, from: Data(json.utf8))
@@ -121,6 +164,8 @@ enum EngineError: Error {
   case unsupportedMedia(String)
   case exportFailed(String)
   case cancelled
+  /// The app went to the background and ran out of time.
+  case interrupted
 
   var code: String {
     switch self {
@@ -129,6 +174,7 @@ enum EngineError: Error {
     case .unsupportedMedia: return "unsupported_media"
     case .exportFailed: return "export_failed"
     case .cancelled: return "cancelled"
+    case .interrupted: return "interrupted"
     }
   }
 
@@ -138,6 +184,7 @@ enum EngineError: Error {
       .exportFailed(let m):
       return m
     case .cancelled: return "Cancelled"
+    case .interrupted: return "Stopped in the background"
     }
   }
 }

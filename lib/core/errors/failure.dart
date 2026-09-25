@@ -83,6 +83,27 @@ final class DownloadFailure extends Failure {
   const new({super.cause, super.stackTrace});
 }
 
+/// Captions could not be made.
+final class CaptionFailure extends Failure {
+  const new(this.problem, {super.cause, super.stackTrace});
+
+  final CaptionProblem problem;
+}
+
+enum CaptionProblem {
+  /// Speech recognition is not built for this device's processor.
+  unavailable,
+
+  /// The downloaded model could not be loaded; downloading it again helps.
+  modelDamaged,
+
+  /// Recognition ran but heard no speech.
+  noSpeech,
+
+  /// Recognition stopped with an error.
+  failed,
+}
+
 /// Anything not covered above. Should be rare; log it and fix the mapping.
 final class UnexpectedFailure extends Failure {
   const new({super.cause, super.stackTrace});

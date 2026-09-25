@@ -15,5 +15,8 @@ import UIKit
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "StitchEngine") {
       EngineHost.register(with: registrar)
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "StitchDevice") {
+      DeviceHost.register(with: registrar)
+    }
   }
 }

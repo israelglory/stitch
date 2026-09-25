@@ -14,6 +14,16 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
     'assets/fonts/Inter-SemiBold.ttf',
   ]);
   await _loadFont('Lucide', ['assets/fonts/Lucide.ttf']);
+  // Fonts for text in the video.
+  for (final (family, file) in [
+    ('Anton', 'Anton-Regular'),
+    ('BebasNeue', 'BebasNeue-Regular'),
+    ('DMSerifDisplay', 'DMSerifDisplay-Regular'),
+    ('Pacifico', 'Pacifico-Regular'),
+    ('SpaceMono', 'SpaceMono-Bold'),
+  ]) {
+    await _loadFont(family, ['assets/fonts/text/$file.ttf']);
+  }
 
   if (goldenFileComparator case final LocalFileComparator local) {
     goldenFileComparator = _TolerantComparator(

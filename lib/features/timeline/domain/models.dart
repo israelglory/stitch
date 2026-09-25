@@ -151,7 +151,11 @@ abstract class TextStyleSpec with _$TextStyleSpec {
     @Default(0.05) double size,
     @Default(0xFFFFFFFF) int color,
     int? strokeColor,
+
+    /// Stroke width as a fraction of the font size; 0 for none.
     @Default(0.0) double strokeWidth,
+
+    /// Fill of a rounded box behind the text, or null for none.
     int? backgroundColor,
     @Default(TextAlignment.center) TextAlignment alignment,
   }) = _TextStyleSpec;

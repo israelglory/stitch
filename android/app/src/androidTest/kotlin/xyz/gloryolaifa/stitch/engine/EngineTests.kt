@@ -236,7 +236,7 @@ class EngineTests {
       val exporter = Exporter(
         context,
         doc,
-        ExportRequestMessage(out, width, height, fps, 2_000_000, hevc),
+        ExportRequestMessage(out, width, height, fps, 2_000_000, hevc, "Exporting"),
       )
       exporter.start(object : Exporter.Listener {
         override fun onProgress(fraction: Double) {
@@ -826,6 +826,136 @@ class EngineTests {
     assertTrue("state $reached", (reached?.positionUs ?: 0) >= 1_000_000)
   }
 
+  // Sound: limiter, loudness, waveforms
+
+  @Test
+  fun limiterHoldsTheCeilingAndLeavesQuietSoundAlone() {
+    val rate = 48_000
+    fun sine(amplitude: Float) = FloatArray(rate * 2) {
+      amplitude * kotlin.math.sin(2 * Math.PI * 440 * (it / 2) / rate).toFloat()
+    }
+    val loud = sine(2f)
+    Limiter(2, rate).process(loud)
+    assertTrue(loud.maxOf { kotlin.math.abs(it) } <= Limiter.CEILING + 1e-4f)
+
+    val input = sine(0.5f)
+    val quiet = input.copyOf()
+    Limiter(2, rate).process(quiet)
+    val delay = (rate * Limiter.LOOKAHEAD_S).toInt() * 2
+    for (i in delay until quiet.size step 97) assertEquals(input[i - delay], quiet[i], 1e-6f)
+  }
+
+  /** A 2 s, 440 Hz stereo sine at 0.9 of full scale, as 16-bit WAV. */
+  private fun loudTone(): String {
+    val file = File(tempDir, "tone.wav")
+    val frames = 96_000
+    val data = java.nio.ByteBuffer.allocate(44 + frames * 4).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+    data.put("RIFF".toByteArray()).putInt(36 + frames * 4).put("WAVE".toByteArray())
+    data.put("fmt ".toByteArray()).putInt(16).putShort(1).putShort(2).putInt(48_000)
+      .putInt(48_000 * 4).putShort(4).putShort(16)
+    data.put("data".toByteArray()).putInt(frames * 4)
+    repeat(frames) {
+      val v = (0.9 * Short.MAX_VALUE * kotlin.math.sin(2 * Math.PI * 440 * it / 48_000)).toInt().toShort()
+      data.putShort(v).putShort(v)
+    }
+    file.writeBytes(data.array())
+    return file.path
+  }
+
+  /** Two copies of [path] at [volume] over a black photo, 2 s. */
+  private fun toneDocument(path: String, volume: Double, copies: Int = 2): EngineDocument {
+    val items = (0 until copies).joinToString(",") {
+      """{"id": "a$it", "mediaId": "t", "startUs": 0, "endUs": 2000000, "sourceInUs": 0,
+        "sourceOutUs": 2000000, "speed": 1, "loop": false, "volume": $volume,
+        "fadeInUs": 0, "fadeOutUs": 0}"""
+    }
+    return EngineDocument.decode(
+      """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190080},
+       "media": {"p": {"path": "${solidPhoto("black", Color.BLACK)}", "kind": "photo"},
+                 "t": {"path": "$path", "kind": "audio", "durationUs": 2000000}},
+       "composition": {"durationUs": 2000000, "clips": [
+         {"clipId": "c", "mediaId": "p", "kind": "photo", "startUs": 0, "endUs": 2000000,
+          "sourceInUs": 0, "sourceOutUs": 2000000, "speed": 1, "volume": 0,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}}],
+        "audio": [$items]}}
+      """,
+    )
+  }
+
+  @Test
+  fun loudMixIsLimitedNotClipped() = runBlocking<Unit> {
+    // Two copies of a loud tone at 200 percent: 3.6 times full scale.
+    val out = export(toneDocument(loudTone(), volume = 2.0), name = "loud.mp4")
+    val x = pcm(out).drop(9_600)
+    val clipped = x.count { kotlin.math.abs(it) >= 0.99f }
+    assertTrue("clipped samples: $clipped of ${x.size}", clipped.toDouble() / x.size < 0.001)
+    assertTrue("still loud", kotlin.math.sqrt(x.sumOf { (it * it).toDouble() } / x.size) > 0.4)
+  }
+
+  @Test
+  fun volumeAboveFullIsLouder() = runBlocking<Unit> {
+    val tone = loudTone()
+    // A quiet tone (0.9 at 25 percent), so doubling it stays clear of the limiter.
+    val normal = rms(export(toneDocument(tone, 0.25, copies = 1), name = "n.mp4"), 200_000, 1_800_000)
+    val doubled = rms(export(toneDocument(tone, 0.5, copies = 1), name = "d.mp4"), 200_000, 1_800_000)
+    assertEquals(2.0, doubled / normal, 0.2)
+  }
+
+  @Test
+  fun waveformHasPeaksOverTime() = runBlocking<Unit> {
+    val peaks = Waveform.peaks(media("music.mp3"), 20)
+    val seconds = MediaProbe.probe(media("music.mp3")).durationUs!! / 1e6
+    assertEquals(seconds * 20, peaks.size.toDouble(), 3.0)
+    assertTrue(peaks.max() > 0.1 && peaks.max() <= 1.0)
+    assertTrue(Waveform.peaks(media("no_audio.mp4"), 20).isEmpty())
+    // AAC in M4A, like the bundled music and recordings.
+    val m4a = Waveform.peaks(media("audio_44k.m4a"), 20)
+    val m4aSeconds = MediaProbe.probe(media("audio_44k.m4a")).durationUs!! / 1e6
+    assertEquals(m4aSeconds * 20, m4a.size.toDouble(), 3.0)
+    assertTrue("m4a peaks ${m4a.take(5)}", m4a.max() > 0.1)
+  }
+
+  // Text
+
+  @Test
+  fun overlaysArePlacedAndAnimated() = runBlocking<Unit> {
+    val blue = solidPhoto("blue", Color.BLUE)
+    // A 90 x 64 red block, drawn at twice its canvas size as Dart does.
+    val red = File(tempDir, "red.png").apply {
+      outputStream().use {
+        Bitmap.createBitmap(180, 128, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.RED) }
+          .compress(Bitmap.CompressFormat.PNG, 100, it)
+      }
+    }.path
+    val doc = EngineDocument.decode(
+      """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190080},
+       "media": {"p": {"path": "$blue", "kind": "photo"}},
+       "composition": {"durationUs": 2000000, "clips": [
+         {"clipId": "c", "mediaId": "p", "kind": "photo", "startUs": 0, "endUs": 2000000,
+          "sourceInUs": 0, "sourceOutUs": 2000000, "speed": 1, "volume": 0,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}}]},
+       "overlays": [{"id": "t", "startUs": 0, "endUs": 2000000, "images": ["$red"],
+         "width": 90, "height": 64, "x": 0.5, "y": 0.25, "scale": 1, "rotationDeg": 0,
+         "animationIn": {"type": "fade", "durationUs": 400000},
+         "animationOut": {"type": "none", "durationUs": 0}}]}
+      """,
+    )
+    val out = export(doc, name = "overlay.mp4")
+    val shown = frameAt(out, 1_000_000)
+    fun at(b: Bitmap, x: Float, y: Float) = b.getPixel((b.width * x).toInt(), (b.height * y).toInt())
+    val center = at(shown, 0.5f, 0.25f)
+    assertTrue("red at the overlay's center: ${Integer.toHexString(center)}", Color.red(center) > 200 && Color.blue(center) < 60)
+    // The block is 90 canvas pixels wide: 0.625 of the width is outside it.
+    val beside = at(shown, 0.7f, 0.25f)
+    assertTrue("blue beside it: ${Integer.toHexString(beside)}", Color.blue(beside) > 200)
+    val fading = at(frameAt(out, 0), 0.5f, 0.25f)
+    assertTrue("hidden as the fade starts: ${Integer.toHexString(fading)}", Color.blue(fading) > 200)
+  }
+
   // Thumbnails and proxies
 
   @Test
@@ -876,6 +1006,130 @@ class EngineTests {
     } finally {
       retriever.release()
     }
+  }
+
+  /** [path]'s decoded sound as floats, all channels interleaved. */
+  // Speech audio
+
+  /** A second of photo, then the speech clip from 1 s. Mirrors the Swift test. */
+  private fun speechDocument(photoOnly: Boolean = false): EngineDocument {
+    val speech = """, {"clipId": "s", "mediaId": "v", "kind": "video", "startUs": 1000000,
+      "endUs": 4900000, "sourceInUs": 0, "sourceOutUs": 3900000, "speed": 1, "volume": 1,
+      "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}}"""
+    return EngineDocument.decode(
+      """{"canvas": {"width": 360, "height": 640, "frameRate": 30},
+        "background": {"type": "solid", "color": 4278190080},
+        "media": {"p": {"path": "${media("still.jpg")}", "kind": "photo"},
+                  "v": {"path": "${media("speech.mp4")}", "kind": "video", "hasAudio": true,
+                        "durationUs": 3970000}},
+        "composition": {"durationUs": ${if (photoOnly) 1000000 else 4900000}, "clips": [
+          {"clipId": "p", "mediaId": "p", "kind": "photo", "startUs": 0, "endUs": 1000000,
+           "sourceInUs": 0, "sourceOutUs": 1000000, "speed": 1, "volume": 0,
+           "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}}
+          ${if (photoOnly) "" else speech}]}}""",
+    )
+  }
+
+  private suspend fun speechAudio(doc: EngineDocument, name: String): FloatArray {
+    val out = File(tempDir, name).path
+    val result = CompletableDeferred<String>()
+    var last = 0.0
+    withContext(Dispatchers.Main) {
+      SpeechAudio(context, doc, out).start(object : Exporter.Listener {
+        override fun onProgress(fraction: Double) {
+          last = fraction
+        }
+
+        override fun onCompleted(path: String) {
+          result.complete(path)
+        }
+
+        override fun onFailed(error: EngineException) {
+          result.completeExceptionally(error)
+        }
+      })
+    }
+    assertEquals(out, withTimeout(EXPORT_TIMEOUT_MS) { result.await() })
+    assertEquals(1.0, last, 0.0)
+    assertFalse(File("$out.part").exists())
+    assertFalse("the encoded copy is removed", File("$out.m4a").exists())
+    val bytes = java.nio.ByteBuffer.wrap(File(out).readBytes()).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+    return FloatArray(bytes.remaining() / 4) { bytes.float }
+  }
+
+  private fun rms(x: FloatArray, from: Int, to: Int): Double =
+    kotlin.math.sqrt((from until to).sumOf { (x[it] * x[it]).toDouble() } / (to - from))
+
+  @Test
+  fun speechAudioIsSixteenKilohertzMonoOnTheTimeline() = runBlocking<Unit> {
+    val x = speechAudio(speechDocument(), "speech.f32")
+    // The sound runs to the end of the speech (the photo second included).
+    assertTrue("length ${x.size / 16_000.0} s", x.size / 16_000.0 in 4.6..5.1)
+    // Silent over the photo; speech after (it starts about 0.15 s in).
+    assertTrue(rms(x, 0, 15_000) < 0.001)
+    assertTrue(rms(x, 20_000, 60_000) > 0.01)
+  }
+
+  @Test
+  fun speechAudioWithoutSoundIsEmpty() = runBlocking<Unit> {
+    assertEquals(0, speechAudio(speechDocument(photoOnly = true), "silent.f32").size)
+  }
+
+  @Test
+  fun decimatorPassesSpeechAndStopsAliases() {
+    fun through(hz: Double): Double {
+      val d = Decimator()
+      val out = (0 until 48_000).mapNotNull {
+        d.push(kotlin.math.sin(2 * Math.PI * hz * it / 48_000).toFloat())
+      }.drop(100)
+      return kotlin.math.sqrt(out.sumOf { (it * it).toDouble() } / out.size)
+    }
+    // A sine has an RMS of 0.707.
+    assertEquals(0.707, through(1_000.0), 0.02)
+    // 12 kHz would fold down to 4 kHz: it must be gone.
+    assertTrue(through(12_000.0) < 0.01)
+  }
+
+  private fun pcm(path: String): List<Float> {
+    val extractor = MediaExtractor().apply { setDataSource(path) }
+    val track = (0 until extractor.trackCount).first {
+      extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)!!.startsWith("audio/")
+    }
+    extractor.selectTrack(track)
+    val format = extractor.getTrackFormat(track)
+    val codec = android.media.MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
+    codec.configure(format, null, null, 0)
+    codec.start()
+    val info = android.media.MediaCodec.BufferInfo()
+    val out = ArrayList<Float>()
+    var inputDone = false
+    try {
+      while (true) {
+        if (!inputDone) {
+          val i = codec.dequeueInputBuffer(10_000)
+          if (i >= 0) {
+            val size = extractor.readSampleData(codec.getInputBuffer(i)!!, 0)
+            if (size < 0) {
+              codec.queueInputBuffer(i, 0, 0, 0, android.media.MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+              inputDone = true
+            } else {
+              codec.queueInputBuffer(i, 0, size, extractor.sampleTime, 0)
+              extractor.advance()
+            }
+          }
+        }
+        val o = codec.dequeueOutputBuffer(info, 10_000)
+        if (o < 0) continue
+        val samples = codec.getOutputBuffer(o)!!.order(java.nio.ByteOrder.nativeOrder()).asShortBuffer()
+        while (samples.hasRemaining()) out += samples.get() / 32768f
+        codec.releaseOutputBuffer(o, false)
+        if (info.flags and android.media.MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) break
+      }
+    } finally {
+      codec.release()
+      extractor.release()
+    }
+    return out
   }
 
   /** Loudness of [path]'s audio from [fromUs] to [toUs], 0 to 1. */

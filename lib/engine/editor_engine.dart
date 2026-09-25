@@ -36,6 +36,11 @@ abstract interface class EditorEngine {
   /// returned [ExportJob]; call [ExportJob.cancel] to stop it.
   ExportJob export(ExportSettings settings);
 
+  /// Renders the sound of [documentJson] (not the previewed document) for
+  /// speech recognition: 16 kHz mono float PCM, raw and little endian, at
+  /// [outputPath]. A document with no sound gives an empty file.
+  ExportJob speechAudio(String documentJson, String outputPath);
+
   /// Reads what a media file contains.
   Future<MediaInfo> probe(String path);
 
@@ -53,6 +58,13 @@ abstract interface class EditorEngine {
 
   /// What this device can encode.
   Future<EngineCapabilities> capabilities();
+
+  /// Loudness of [path]'s sound: the peak, 0 to 1, of every
+  /// 1 / [peaksPerSecond] of a second.
+  Future<List<double>> waveform(String path, {required int peaksPerSecond});
+
+  /// Volume of the preview, 0 to 1. Muted while recording a voiceover.
+  Future<void> setPreviewVolume(double volume);
 
   /// Releases decoders, textures, and audio sessions. Called when leaving
   /// the editor. The engine can be used again after a new [setDocument].
@@ -104,6 +116,7 @@ final class PlaybackState {
     required this.durationUs,
     required this.isPlaying,
     this.isBuffering = false,
+    this.documentVersion = 0,
   });
 
   static const idle = PlaybackState(
@@ -117,16 +130,21 @@ final class PlaybackState {
   final bool isPlaying;
   final bool isBuffering;
 
+  /// The `version` of the document the preview shows.
+  final int documentVersion;
+
   PlaybackState copyWith({
     int? positionUs,
     int? durationUs,
     bool? isPlaying,
     bool? isBuffering,
+    int? documentVersion,
   }) => PlaybackState(
     positionUs: positionUs ?? this.positionUs,
     durationUs: durationUs ?? this.durationUs,
     isPlaying: isPlaying ?? this.isPlaying,
     isBuffering: isBuffering ?? this.isBuffering,
+    documentVersion: documentVersion ?? this.documentVersion,
   );
 
   @override
@@ -135,16 +153,22 @@ final class PlaybackState {
       other.positionUs == positionUs &&
       other.durationUs == durationUs &&
       other.isPlaying == isPlaying &&
-      other.isBuffering == isBuffering;
+      other.isBuffering == isBuffering &&
+      other.documentVersion == documentVersion;
 
   @override
-  int get hashCode =>
-      Object.hash(positionUs, durationUs, isPlaying, isBuffering);
+  int get hashCode => Object.hash(
+    positionUs,
+    durationUs,
+    isPlaying,
+    isBuffering,
+    documentVersion,
+  );
 }
 
 enum VideoCodec { h264, hevc }
 
-/// Export parameters chosen in the export sheet. Refined in M10.
+/// Export parameters chosen in the export sheet.
 final class ExportSettings {
   const new({
     required this.outputPath,
@@ -153,6 +177,7 @@ final class ExportSettings {
     required this.frameRate,
     required this.bitrate,
     this.codec = VideoCodec.h264,
+    this.progressTitle = '',
   });
 
   final String outputPath;
@@ -165,6 +190,10 @@ final class ExportSettings {
   /// Target video bitrate in bits per second.
   final int bitrate;
   final VideoCodec codec;
+
+  /// Shown with the progress where the system shows it (Android's export
+  /// notification).
+  final String progressTitle;
 }
 
 /// Progress of a running export.
@@ -185,7 +214,7 @@ final class ExportCompleted extends ExportEvent {
   final String outputPath;
 }
 
-/// A running, cancellable export.
+/// A running, cancellable export (or speech audio).
 abstract interface class ExportJob {
   /// Emits progress, then exactly one [ExportCompleted], then closes. Errors
   /// are delivered as Failure subclasses.

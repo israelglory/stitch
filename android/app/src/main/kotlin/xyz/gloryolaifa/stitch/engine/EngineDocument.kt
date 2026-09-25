@@ -25,6 +25,7 @@ data class EngineDocument(
     val proxyPath: String?,
     /** Full source length; null for photos. */
     val durationUs: Long?,
+    val hasAudio: Boolean = true,
   )
 
   data class Framing(
@@ -96,6 +97,7 @@ data class EngineDocument(
             kind = m.getString("kind"),
             proxyPath = m.optString("proxyPath").ifEmpty { null },
             durationUs = if (m.has("durationUs")) m.getLong("durationUs") else null,
+            hasAudio = m.optBoolean("hasAudio", true),
           )
         },
         composition = Composition(

@@ -2,9 +2,10 @@ import AVFoundation
 import CoreImage
 import Metal
 
-/// Draws every output frame: the background, then each active clip turned
-/// upright, fitted or filled into the canvas, and framed, with transitions
-/// mixing two clips.
+/// Draws every output frame: each active clip turned upright, fitted or
+/// filled into the canvas, and framed, over its background. During a
+/// transition the two clips' canvases are mixed by the shader in
+/// Transitions.swift.
 ///
 /// Geometry is computed in canvas pixels (Core Image space, origin bottom
 /// left) and scaled to the render size at the end, so preview and every
@@ -27,6 +28,8 @@ final class StitchCompositor: NSObject, AVVideoCompositing {
   private let queue = DispatchQueue(label: "stitch.compositor", qos: .userInitiated)
   private let outputColorSpace = CGColorSpace(name: CGColorSpace.itur_709)!
   private var photoCache = PhotoCache()
+  private lazy var transitions = Transitions(
+    device: Self.device, context: context, colorSpace: outputColorSpace)
 
   let sourcePixelBufferAttributes: [String: any Sendable]? = [
     kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
@@ -75,35 +78,31 @@ final class StitchCompositor: NSObject, AVVideoCompositing {
     request: AVAsynchronousVideoCompositionRequest
   ) -> CIImage {
     let canvas = CGRect(origin: .zero, size: instruction.canvasSize)
-    let frames: [(CIImage?, CompositorLayer)] = instruction.layers.map { layer in
-      (source(for: layer, request: request), layer)
-    }
-
-    var result = background(instruction, topFrame: frames.last?.0, canvas: canvas)
-    let progress = transitionProgress(instruction.transition, at: timeUs)
-
-    for (index, (frame, layer)) in frames.enumerated() {
-      guard let frame else { continue }
-      var placed = place(frame, framing: layer.framing, in: canvas)
-      if let progress, frames.count == 2 {
-        let alpha = layerAlpha(
-          type: instruction.transition?.type ?? "crossfade",
-          isIncoming: index == 1, progress: progress)
-        placed = placed.applyingFilter(
-          "CIColorMatrix",
-          parameters: ["inputAVector": CIVector(x: 0, y: 0, z: 0, w: alpha)])
-      }
-      result = placed.composited(over: result)
-    }
-
-    if let progress, instruction.transition?.type == "fadeToBlack" {
-      // Dip through black: darkest at the midpoint.
-      let dim = 1 - abs(progress - 0.5) * 2
-      let black = CIImage(color: CIColor(red: 0, green: 0, blue: 0, alpha: dim))
+    // Each clip drawn on its own canvas: background, then the placed frame.
+    let images = instruction.layers.map { layer -> CIImage in
+      let frame = source(for: layer, request: request)
+      let back = background(instruction, frame: frame, canvas: canvas)
+      guard let frame else { return back }
+      return place(frame, framing: layer.framing, in: canvas).composited(over: back)
         .cropped(to: canvas)
-      result = black.composited(over: result)
     }
-    return result.cropped(to: canvas)
+    guard let last = images.last else {
+      return background(instruction, frame: nil, canvas: canvas)
+    }
+    if images.count == 2, let transition = instruction.transition,
+      let progress = transitionProgress(transition, at: timeUs)
+    {
+      if let mixed = transitions?.apply(
+        from: images[0], to: images[1], type: transition.type, progress: progress,
+        canvas: canvas)
+      {
+        return mixed
+      }
+      // No Metal: dissolve instead.
+      return images[0].applyingFilter(
+        "CIDissolveTransition", parameters: [kCIInputTargetImageKey: images[1], "inputTime": progress])
+    }
+    return last
   }
 
   /// The source frame for a layer, upright, with its origin at zero.
@@ -144,10 +143,11 @@ final class StitchCompositor: NSObject, AVVideoCompositing {
     return image.transformed(by: transform, highQualityDownsample: true)
   }
 
-  private func background(_ instruction: StitchInstruction, topFrame: CIImage?, canvas: CGRect)
+  /// The canvas behind [frame]: a blurred, filled copy of it, or the color.
+  private func background(_ instruction: StitchInstruction, frame: CIImage?, canvas: CGRect)
     -> CIImage
   {
-    if instruction.background.type == "blur", let frame = topFrame {
+    if instruction.background.type == "blur", let frame {
       let size = frame.extent.size
       let fill = max(canvas.width / size.width, canvas.height / size.height)
       let filled = frame.transformed(
@@ -171,16 +171,6 @@ final class StitchCompositor: NSObject, AVVideoCompositing {
     guard let t, t.durationUs > 0 else { return nil }
     let p = CGFloat(timeUs - t.startUs) / CGFloat(t.durationUs)
     return min(max(p, 0), 1)
-  }
-
-  /// Opacity of each clip during a transition. Every type crossfades until
-  /// the shader transitions land (M7); fade to black swaps at the midpoint
-  /// under the black dip.
-  private func layerAlpha(type: String, isIncoming: Bool, progress: CGFloat) -> CGFloat {
-    if type == "fadeToBlack" {
-      return isIncoming ? (progress >= 0.5 ? 1 : 0) : 1
-    }
-    return isIncoming ? progress : 1
   }
 
   static func orientation(forClockwiseDegrees degrees: Int) -> CGImagePropertyOrientation {

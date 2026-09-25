@@ -180,27 +180,42 @@ class EngineTests {
   }
 
   @Test
-  fun compositionHasTwoVideoSequencesAndOneForMusic() {
+  fun compositionIsOneVideoSequenceWithSoundUnderTransitions() {
     val built = CompositionBuilder.build(sampleDocument(), forExport = true)
     assertEquals(6_500_000L, built.durationUs)
+    // Video, the first clip's sound under the crossfade, and the music.
     assertEquals(3, built.composition.sequences.size)
-    // Every sequence spans the whole document, so none ends early.
-    for (sequence in built.composition.sequences.take(2)) {
-      val total = sequence.editedMediaItems.sumOf { it.presentationDurationUs }
-      assertEquals(6_500_000.0, total.toDouble(), 1_000.0)
-    }
+    val items = built.composition.sequences[0].editedMediaItems
+    // Clip 1 stops where the crossfade starts; clip 2 draws the rest of it.
+    assertEquals(
+      listOf(1_500_000.0, 2_000_000.0, 3_000_000.0),
+      items.map { it.presentationDurationUs.toDouble() },
+    )
+    val tail = built.composition.sequences[1].editedMediaItems
+    assertEquals(1_500_000.0, tail[0].presentationDurationUs.toDouble(), 1_000.0)
+    assertEquals(500_000.0, tail[1].presentationDurationUs.toDouble(), 1_000.0)
   }
 
   @Test
-  fun previewCompositionCutsAtTransitions() {
-    val built = CompositionBuilder.build(sampleDocument(), forExport = false)
-    // One video sequence, plus the music.
-    assertEquals(2, built.composition.sequences.size)
-    val items = built.composition.sequences[0].editedMediaItems
-    assertEquals(3, items.size)
-    // The crossfade from 1.5 s to 2 s becomes a cut at 1.75 s.
-    assertEquals(1_750_000.0, items[0].presentationDurationUs.toDouble(), 1_000.0)
-    assertEquals(6_500_000.0, items.sumOf { it.presentationDurationUs }.toDouble(), 1_000.0)
+  fun gainPlacesClipFadesAndCrossfades() {
+    // The part of a 2 s clip under a 0.5 s transition, with a 1 s fade out.
+    val tail = Gain(
+      volume = 1f,
+      clipDurationUs = 2_000_000,
+      fadeInUs = 0,
+      fadeOutUs = 1_000_000,
+      itemDurationUs = 500_000,
+      offsetUs = 1_500_000,
+      rampOutUs = 500_000,
+    )
+    assertEquals(0.5f, tail.at(0), 0.01f)
+    // Halfway: clip fade at 0.25, crossfade at 0.5.
+    assertEquals(0.125f, tail.at(250_000), 0.01f)
+    assertEquals(0f, tail.at(500_000), 0.0f)
+    val incoming = Gain(1f, 2_000_000, 0, 0, rampInUs = 500_000)
+    assertEquals(0f, incoming.at(0), 0.0f)
+    assertEquals(0.5f, incoming.at(250_000), 0.01f)
+    assertEquals(1f, incoming.at(1_000_000), 0.0f)
   }
 
   // Export
@@ -312,6 +327,249 @@ class EngineTests {
     assertEquals("at 0.5s", 1, clipShown(frameAt(out, 500_000)))
     assertEquals("at 2s", 2, clipShown(frameAt(out, 2_000_000)))
     assertEquals("at 3.5s", 2, clipShown(frameAt(out, 3_500_000)))
+  }
+
+  // Transitions
+
+  /** A solid [color] image the size of the test canvas. */
+  private fun solidPhoto(name: String, color: Int): String {
+    val file = File(tempDir, "$name.png")
+    val bitmap = Bitmap.createBitmap(360, 640, Bitmap.Config.ARGB_8888).apply { eraseColor(color) }
+    file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    return file.path
+  }
+
+  /**
+   * Two clips of 2.4 s with a 1.2 s [type] transition from 1.2 s to 2.4 s.
+   * [a] and [b] are media JSON entries.
+   */
+  private fun transitionDoc(
+    type: String,
+    a: String,
+    b: String,
+    kind: String,
+    background: String = "solid",
+  ): EngineDocument = EngineDocument.decode(
+    """
+    {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+     "background": {"type": "$background", "color": 4278190080},
+     "media": {"a": $a, "b": $b},
+     "composition": {"durationUs": 3600000, "clips": [
+       {"clipId": "c1", "mediaId": "a", "kind": "$kind", "startUs": 0, "endUs": 2400000,
+        "sourceInUs": 0, "sourceOutUs": 2400000, "speed": 1, "volume": 1,
+        "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}},
+       {"clipId": "c2", "mediaId": "b", "kind": "$kind", "startUs": 1200000, "endUs": 3600000,
+        "sourceInUs": 0, "sourceOutUs": 2400000, "speed": 1, "volume": 1,
+        "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}}],
+      "transitions": [{"type": "$type", "fromClipId": "c1", "toClipId": "c2",
+        "startUs": 1200000, "durationUs": 1200000}]}}
+    """,
+  )
+
+  @Test
+  fun transitionsMatchTheSharedTable() = runBlocking<Unit> {
+    val red = solidPhoto("red", Color.RED)
+    val blue = solidPhoto("blue", Color.BLUE)
+    val table = org.json.JSONObject(
+      InstrumentationRegistry.getInstrumentation().context.assets.open("transition_cases.json")
+        .bufferedReader().readText(),
+    ).getJSONArray("cases")
+    val cases = (0 until table.length()).map { table.getJSONObject(it) }
+    val failures = mutableListOf<String>()
+    for ((type, typeCases) in cases.groupBy { it.getString("type") }) {
+      val out = export(
+        transitionDoc(type, """{"path": "$red", "kind": "photo"}""", """{"path": "$blue", "kind": "photo"}""", "photo"),
+        name = "$type.mp4",
+      )
+      for ((progress, atProgress) in typeCases.groupBy { it.getDouble("progress") }) {
+        val frame = frameAt(out, 1_200_000 + (progress * 1_200_000).toLong())
+        for (case in atProgress) {
+          val x = case.getDouble("x")
+          val y = case.getDouble("y")
+          // Frame rows run top down; the table's y runs bottom up.
+          val pixel = frame.getPixel(
+            (x * frame.width).toInt(),
+            ((1 - y) * frame.height).toInt().coerceAtMost(frame.height - 1),
+          )
+          val r = Color.red(pixel) / 255.0
+          val b = Color.blue(pixel) / 255.0
+          val wantR = case.getDouble("from")
+          val wantB = case.getDouble("to")
+          if (kotlin.math.abs(r - wantR) > 0.12 || kotlin.math.abs(b - wantB) > 0.12) {
+            failures += "$type p=$progress x=$x: red %.2f (want %.2f), blue %.2f (want %.2f)"
+              .format(r, wantR, b, wantB)
+          }
+        }
+      }
+    }
+    assertTrue(failures.joinToString("\n"), failures.isEmpty())
+  }
+
+  /** Clip 1 (vertical bars) slides out left while clip 2 (horizontal bars) slides in. */
+  private fun videoSlide(proxy: String? = null): EngineDocument = EngineDocument.decode(
+    """
+    {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+     "background": {"type": "solid", "color": 4278190080},
+     "media": {"a": {"path": "${media("large_1440p.mp4")}", "kind": "video", "durationUs": 1000000
+                     ${proxy?.let { ", \"proxyPath\": \"$it\"" } ?: ""}},
+               "b": {"path": "${media("rotated_portrait.mp4")}", "kind": "video", "durationUs": 3000000}},
+     "composition": {"durationUs": 3600000, "clips": [
+       {"clipId": "c1", "mediaId": "a", "kind": "video", "startUs": 0, "endUs": 1000000,
+        "sourceInUs": 0, "sourceOutUs": 1000000, "speed": 1, "volume": 1,
+        "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fill")}},
+       {"clipId": "c2", "mediaId": "b", "kind": "video", "startUs": 600000, "endUs": 3600000,
+        "sourceInUs": 0, "sourceOutUs": 3000000, "speed": 1, "volume": 1,
+        "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fill")}}],
+      "transitions": [{"type": "slideLeft", "fromClipId": "c1", "toClipId": "c2",
+        "startUs": 600000, "durationUs": 400000}]}}
+    """,
+  )
+
+  /**
+   * Halfway through [videoSlide]: the left half shows clip 1's right half
+   * (a magenta bar at 75 percent across), the right half clip 2's left half
+   * (cyan along the top, red along the bottom).
+   */
+  private fun assertHalfwayThroughSlide(frame: Bitmap) {
+    fun at(x: Float, y: Float) = frame.getPixel((frame.width * x).toInt(), (frame.height * y).toInt())
+    val left = at(0.25f, 0.5f)
+    assertTrue(
+      "left half is clip 1's magenta: ${Integer.toHexString(left)}",
+      Color.red(left) > 150 && Color.blue(left) > 150 && Color.green(left) < 100,
+    )
+    val topRight = at(0.75f, 0.05f)
+    assertTrue(
+      "top right is clip 2's cyan: ${Integer.toHexString(topRight)}",
+      Color.red(topRight) < 100 && Color.green(topRight) > 150 && Color.blue(topRight) > 150,
+    )
+    val bottomRight = at(0.75f, 0.95f)
+    assertTrue(
+      "bottom right is clip 2's red: ${Integer.toHexString(bottomRight)}",
+      Color.red(bottomRight) > 150 && Color.green(bottomRight) < 100,
+    )
+  }
+
+  @Test
+  fun videoTransitionDrawsBothClips() = runBlocking<Unit> {
+    val out = export(videoSlide())
+    assertHalfwayThroughSlide(frameAt(out, 800_000))
+    // Before and after, one clip each.
+    assertEquals(1, clipShown(frameAt(out, 300_000)))
+    assertEquals(2, clipShown(frameAt(out, 2_000_000)))
+  }
+
+  @Test
+  fun blurBackgroundFillsTheBars() = runBlocking<Unit> {
+    // A 3:4 still fitted into 9:16 leaves bars above and below. The still is
+    // green on top and blue below; blurred, the top bar is greenish.
+    val file = File(tempDir, "halves.png")
+    val bitmap = Bitmap.createBitmap(300, 400, Bitmap.Config.ARGB_8888)
+    android.graphics.Canvas(bitmap).apply {
+      drawColor(Color.BLUE)
+      drawRect(0f, 0f, 300f, 200f, android.graphics.Paint().apply { color = Color.GREEN })
+    }
+    file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    val doc = EngineDocument.decode(
+      """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "blur"},
+       "media": {"p": {"path": "${file.path}", "kind": "photo"}},
+       "composition": {"durationUs": 1000000, "clips": [
+         {"clipId": "c", "mediaId": "p", "kind": "photo", "startUs": 0, "endUs": 1000000,
+          "sourceInUs": 0, "sourceOutUs": 1000000, "speed": 1, "volume": 0,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}}]}}
+      """,
+    )
+    val frame = frameAt(export(doc), 500_000)
+    val top = frame.getPixel(frame.width / 2, 10)
+    val bottom = frame.getPixel(frame.width / 2, frame.height - 10)
+    assertTrue("top bar is green: ${Integer.toHexString(top)}", Color.green(top) > 120 && Color.blue(top) < 100)
+    assertTrue("bottom bar is blue: ${Integer.toHexString(bottom)}", Color.blue(bottom) > 120 && Color.green(bottom) < 100)
+  }
+
+  @Test
+  fun previewShowsTransitions() = runBlocking<Unit> {
+    // As in the app, preview reads a 720p proxy of the 1440p source.
+    val proxy = File(tempDir, "proxy.mp4").path
+    ProxyMaker.createProxy(context, media("large_1440p.mp4"), proxy)
+    val textures = FakeTextures()
+    val player = withContext(Dispatchers.Main) {
+      PreviewPlayer(context, textures, handleAudioFocus = false) {}.apply { setDocument(videoSlide(proxy)) }
+    }
+    withContext(Dispatchers.Main) { player.seek(800_000, exact = true) }
+    // The first outgoing frame needs its decoder started, which is slow on
+    // emulators; wait for the frame at the target.
+    var last: AssertionError? = null
+    val start = System.currentTimeMillis()
+    while (System.currentTimeMillis() - start < 20_000) {
+      val frame = textures.latest
+      if (frame != null) {
+        try {
+          assertHalfwayThroughSlide(frame)
+          last = null
+          break
+        } catch (e: AssertionError) {
+          last = e
+        }
+      }
+      kotlinx.coroutines.delay(200)
+    }
+    withContext(Dispatchers.Main) { player.dispose() }
+    last?.let { throw it }
+    assertTrue("a frame was drawn", textures.latest != null)
+  }
+
+  // Sound
+
+  @Test
+  fun clipFadesShapeTheSound() = runBlocking<Unit> {
+    val doc = EngineDocument.decode(
+      """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190080},
+       "media": {"a": {"path": "${media("vfr.mp4")}", "kind": "video", "durationUs": 3930000}},
+       "composition": {"durationUs": 3000000, "clips": [
+         {"clipId": "c", "mediaId": "a", "kind": "video", "startUs": 0, "endUs": 3000000,
+          "sourceInUs": 0, "sourceOutUs": 3000000, "speed": 1, "volume": 1,
+          "audioFadeInUs": 1000000, "audioFadeOutUs": 0, "framing": ${framing("fit")}}]}}
+      """,
+    )
+    val out = export(doc)
+    val fading = rms(out, 50_000, 250_000)
+    val full = rms(out, 1_500_000, 2_500_000)
+    assertTrue("fading $fading, full $full", fading < full * 0.35 && full > 0.02)
+  }
+
+  @Test
+  fun soundCrossfadesUnderTransitions() = runBlocking<Unit> {
+    // Clip 1 has sound, clip 2 has none: clip 1 fades out under the transition.
+    val doc = EngineDocument.decode(
+      """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190080},
+       "media": {"a": {"path": "${media("vfr.mp4")}", "kind": "video", "durationUs": 3930000},
+                 "b": {"path": "${media("no_audio.mp4")}", "kind": "video", "durationUs": 3000000,
+                       "hasAudio": false}},
+       "composition": {"durationUs": 3500000, "clips": [
+         {"clipId": "c1", "mediaId": "a", "kind": "video", "startUs": 0, "endUs": 2000000,
+          "sourceInUs": 0, "sourceOutUs": 2000000, "speed": 1, "volume": 1,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}},
+         {"clipId": "c2", "mediaId": "b", "kind": "video", "startUs": 1000000, "endUs": 3500000,
+          "sourceInUs": 0, "sourceOutUs": 2500000, "speed": 1, "volume": 1,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}}],
+        "transitions": [{"type": "crossfade", "fromClipId": "c1", "toClipId": "c2",
+          "startUs": 1000000, "durationUs": 1000000}]}}
+      """,
+    )
+    val out = export(doc)
+    val before = rms(out, 200_000, 900_000)
+    val early = rms(out, 1_050_000, 1_300_000)
+    val late = rms(out, 1_700_000, 1_950_000)
+    val after = rms(out, 2_200_000, 3_300_000)
+    val levels = "before $before, early $early, late $late, after $after"
+    assertTrue(levels, early > before * 0.5)
+    assertTrue(levels, late < early * 0.5)
+    assertTrue(levels, after < before * 0.05)
   }
 
   @Test
@@ -618,6 +876,56 @@ class EngineTests {
     } finally {
       retriever.release()
     }
+  }
+
+  /** Loudness of [path]'s audio from [fromUs] to [toUs], 0 to 1. */
+  private fun rms(path: String, fromUs: Long, toUs: Long): Double {
+    val extractor = MediaExtractor().apply { setDataSource(path) }
+    val track = (0 until extractor.trackCount).first {
+      extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)!!.startsWith("audio/")
+    }
+    extractor.selectTrack(track)
+    val format = extractor.getTrackFormat(track)
+    val codec = android.media.MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
+    codec.configure(format, null, null, 0)
+    codec.start()
+    val info = android.media.MediaCodec.BufferInfo()
+    var sum = 0.0
+    var n = 0L
+    var inputDone = false
+    try {
+      while (true) {
+        if (!inputDone) {
+          val i = codec.dequeueInputBuffer(10_000)
+          if (i >= 0) {
+            val size = extractor.readSampleData(codec.getInputBuffer(i)!!, 0)
+            if (size < 0) {
+              codec.queueInputBuffer(i, 0, 0, 0, android.media.MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+              inputDone = true
+            } else {
+              codec.queueInputBuffer(i, 0, size, extractor.sampleTime, 0)
+              extractor.advance()
+            }
+          }
+        }
+        val o = codec.dequeueOutputBuffer(info, 10_000)
+        if (o < 0) continue
+        if (info.presentationTimeUs in fromUs until toUs) {
+          val samples = codec.getOutputBuffer(o)!!.order(java.nio.ByteOrder.nativeOrder()).asShortBuffer()
+          while (samples.hasRemaining()) {
+            val v = samples.get() / 32768.0
+            sum += v * v
+            n++
+          }
+        }
+        codec.releaseOutputBuffer(o, false)
+        if (info.flags and android.media.MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) break
+      }
+    } finally {
+      codec.release()
+      extractor.release()
+    }
+    return if (n == 0L) 0.0 else kotlin.math.sqrt(sum / n)
   }
 
   private fun meanBrightness(bitmap: Bitmap): Double {

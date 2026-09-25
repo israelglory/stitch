@@ -31,6 +31,7 @@ String engineDocumentJson(
           'kind': asset.kind.name,
           // Full source length; Media3 needs it before clipping.
           'durationUs': ?asset.durationUs,
+          'hasAudio': asset.hasAudio,
           if (asset.proxyPath case final proxy?) 'proxyPath': resolve(proxy),
         },
     },

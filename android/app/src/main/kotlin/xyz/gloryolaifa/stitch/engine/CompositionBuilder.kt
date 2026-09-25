@@ -3,42 +3,32 @@ package xyz.gloryolaifa.stitch.engine
 import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.media3.common.C
-import androidx.media3.common.Effect
 import androidx.media3.common.MediaItem
-import androidx.media3.common.OverlaySettings
-import androidx.media3.common.VideoCompositorSettings
-import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.GlUtil
 import androidx.media3.common.util.Size
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.effect.Presentation
-import androidx.media3.effect.StaticOverlaySettings
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
 import androidx.media3.transformer.EditedMediaItemSequence
 import androidx.media3.transformer.Effects
 import java.io.File
-import kotlin.math.abs
+import kotlin.math.max
 import kotlin.math.min
 
 /**
- * Builds a Media3 [Composition] for an [EngineDocument], mirroring the iOS
- * CompositionBuilder.
+ * Builds a Media3 [Composition] for an [EngineDocument]. Preview and export
+ * use the same composition.
  *
- * Clips alternate between two video sequences (A and B) with gaps between
- * them, so the clips on either side of a transition overlap. Each clip is
- * fitted or filled to the output size, framed, and made opaque over the
- * canvas background. The compositor shows only the sequences that have a
- * clip at each moment and mixes the two during transitions.
+ * Video is one sequence of clips back to back. A clip that ends in a
+ * transition stops where the transition starts; the next clip's
+ * [ClipEffect] draws the rest of it, mixed by the transition shader, from
+ * frames it decodes itself. Each effect also fits or fills its clip, frames
+ * it, and draws the background.
  *
- * Media3 draws the first sequence on top and times the output by it.
- *
- * Preview uses one video sequence instead, with each transition played as a
- * cut at its midpoint: CompositionPlayer stalls within a second when it
- * composites two video sequences (seen on the emulator with plain Media3
- * too). Export composites both and is verified frame by frame.
- *
- * Audio items get one sequence each; loops are inserted repeatedly.
+ * Sound: each clip's own audio plays with its item, and fades in across an
+ * incoming transition. The sound of a clip's part under a transition plays
+ * from a second, audio-only sequence, fading out. Audio items get one
+ * sequence each; loops are inserted repeatedly.
  */
 @OptIn(UnstableApi::class)
 object CompositionBuilder {
@@ -53,30 +43,67 @@ object CompositionBuilder {
   ): Built {
     val comp = doc.composition
     val size = outputSize ?: Size(doc.canvas.width, doc.canvas.height)
+    val look = CanvasLook(size.width, size.height, doc.background)
+    val clipsById = comp.clips.associateBy { it.clipId }
+    val incoming = comp.transitions.associateBy { it.toClipId }
+    val outgoing = comp.transitions.associateBy { it.fromClipId }
     val sequences = mutableListOf<EditedMediaItemSequence>()
 
-    // Video: sequences A and B for export, one cut sequence for preview.
-    val slots = if (forExport) {
-      List(2) { slot -> comp.clips.filterIndexed { i, _ -> i % 2 == slot } }
-    } else {
-      listOf(cutAtTransitions(comp))
-    }
-    for (clips in slots) {
-      if (clips.isEmpty()) continue
-      val builder = EditedMediaItemSequence.Builder(
-        setOf(C.TRACK_TYPE_VIDEO, C.TRACK_TYPE_AUDIO),
-      )
+    // Video, with each clip's own sound.
+    if (comp.clips.isNotEmpty()) {
+      val video = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_VIDEO, C.TRACK_TYPE_AUDIO))
       var cursor = 0L
-      for (clip in clips) {
-        if (clip.startUs > cursor) builder.addGap(clip.startUs - cursor)
+      for (clip in comp.clips) {
+        val start = max(cursor, clip.startUs)
+        val end = outgoing[clip.clipId]?.startUs ?: clip.endUs
+        if (clip.startUs > cursor) video.addGap(clip.startUs - cursor)
+        if (end <= start) continue
+        val into = incoming[clip.clipId]?.let { t ->
+          clipsById[t.fromClipId]?.let { from -> incomingFor(doc, t, from, forExport) }
+        }
         // A missing file plays as black silence.
-        val item = clipItem(doc, clip, forExport, size)
-        if (item == null) builder.addGap(clip.endUs - clip.startUs) else builder.addItem(item)
-        cursor = clip.endUs
+        val item = clipItem(doc, clip, end, forExport, look, into)
+        if (item == null) video.addGap(end - start) else video.addItem(item)
+        cursor = end
       }
-      if (cursor < comp.durationUs) builder.addGap(comp.durationUs - cursor)
-      sequences += builder.build()
+      if (cursor < comp.durationUs) video.addGap(comp.durationUs - cursor)
+      sequences += video.build()
     }
+
+    // The sound of each clip under the transition that leaves it.
+    val tails = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO))
+    var tailCursor = 0L
+    var hasTails = false
+    for (t in comp.transitions.sortedBy { it.startUs }) {
+      val clip = clipsById[t.fromClipId] ?: continue
+      val media = doc.media[clip.mediaId] ?: continue
+      val path = sourcePath(media, forExport) ?: continue
+      if (clip.kind != "video" || !media.hasAudio || !hasAudioTrack(path)) continue
+      if (t.startUs < tailCursor) continue
+      if (t.startUs > tailCursor) tails.addGap(t.startUs - tailCursor)
+      val sourceStart = clip.sourceInUs + ((t.startUs - clip.startUs) * clip.speed).toLong()
+      tails.addItem(
+        audioItem(
+          path = path,
+          mediaDurationUs = media.durationUs,
+          sourceInUs = sourceStart,
+          sourceOutUs = clip.sourceOutUs,
+          speed = clip.speed,
+          gain = Gain(
+            volume = clip.volume.toFloat(),
+            clipDurationUs = clip.endUs - clip.startUs,
+            fadeInUs = clip.audioFadeInUs,
+            fadeOutUs = clip.audioFadeOutUs,
+            itemDurationUs = t.durationUs,
+            offsetUs = t.startUs - clip.startUs,
+            rampOutUs = t.durationUs,
+          ),
+        ),
+      )
+      tailCursor = t.startUs + t.durationUs
+      hasTails = true
+    }
+    if (hasTails) sequences += tails.build()
 
     // Audio items, one sequence each.
     for (item in comp.audio) {
@@ -90,8 +117,6 @@ object CompositionBuilder {
       while (t < item.endUs && passTimelineUs > 0) {
         val segmentEnd = min(t + passTimelineUs, item.endUs)
         val sourceEnd = item.sourceInUs + ((segmentEnd - t) * item.speed).toLong()
-        val segmentFirst = t == item.startUs
-        val segmentLast = segmentEnd == item.endUs
         builder.addItem(
           audioItem(
             path = media.path,
@@ -99,11 +124,11 @@ object CompositionBuilder {
             sourceInUs = item.sourceInUs,
             sourceOutUs = min(sourceEnd, item.sourceOutUs),
             speed = item.speed,
-            gain = GainProcessor(
+            gain = Gain(
               volume = item.volume.toFloat(),
-              durationUs = segmentEnd - t,
-              fadeInUs = if (segmentFirst) item.fadeInUs else 0,
-              fadeOutUs = if (segmentLast) item.fadeOutUs else 0,
+              clipDurationUs = segmentEnd - t,
+              fadeInUs = if (t == item.startUs) item.fadeInUs else 0,
+              fadeOutUs = if (segmentEnd == item.endUs) item.fadeOutUs else 0,
             ),
           ),
         )
@@ -116,11 +141,6 @@ object CompositionBuilder {
     if (sequences.isEmpty()) throw EngineException.badDocument("Nothing to play")
 
     val composition = Composition.Builder(sequences)
-      .apply {
-        // With one video sequence Media3 skips the compositor, and rejects
-        // compositor settings.
-        if (slots.count { it.isNotEmpty() } == 2) setVideoCompositorSettings(Compositor(doc, slots, size))
-      }
       .setEffects(outputEffects)
       .setHdrMode(hdrMode)
       .experimentalSetForceAudioTrack(true)
@@ -128,49 +148,75 @@ object CompositionBuilder {
     return Built(composition, comp.durationUs)
   }
 
+  private val audioTracks = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+
   /**
-   * The clips back to back, each trimmed so a transition becomes a cut at
-   * its midpoint.
+   * Whether [path] has sound, read from the file once. An audio-only item
+   * without sound fails the whole export, so the document's flag is not
+   * trusted alone.
    */
-  private fun cutAtTransitions(comp: EngineDocument.Composition): List<EngineDocument.Clip> {
-    val cutIn = comp.transitions.associate { it.toClipId to it.startUs + it.durationUs / 2 }
-    val cutOut = comp.transitions.associate { it.fromClipId to it.startUs + it.durationUs / 2 }
-    return comp.clips.mapNotNull { clip ->
-      val start = cutIn[clip.clipId] ?: clip.startUs
-      val end = cutOut[clip.clipId] ?: clip.endUs
-      if (end <= start) return@mapNotNull null
-      clip.copy(
-        startUs = start,
-        endUs = end,
-        sourceInUs = clip.sourceInUs + ((start - clip.startUs) * clip.speed).toLong(),
-        sourceOutUs = clip.sourceOutUs - ((clip.endUs - end) * clip.speed).toLong(),
-      )
+  private fun hasAudioTrack(path: String): Boolean = audioTracks.getOrPut(path) {
+    val extractor = android.media.MediaExtractor()
+    try {
+      extractor.setDataSource(path)
+      (0 until extractor.trackCount).any {
+        extractor.getTrackFormat(it).getString(android.media.MediaFormat.KEY_MIME)
+          ?.startsWith("audio/") == true
+      }
+    } catch (_: Exception) {
+      false
+    } finally {
+      extractor.release()
     }
   }
 
+  /** The proxy for preview when there is one, else the original; null if missing. */
+  private fun sourcePath(media: EngineDocument.Media, forExport: Boolean): String? {
+    val path = if (!forExport && media.proxyPath != null && File(media.proxyPath).exists()) {
+      media.proxyPath
+    } else {
+      media.path
+    }
+    return path.takeIf { File(it).exists() }
+  }
+
+  private fun incomingFor(
+    doc: EngineDocument,
+    t: EngineDocument.Transition,
+    from: EngineDocument.Clip,
+    forExport: Boolean,
+  ): Incoming = Incoming(
+    type = t.type,
+    startUs = t.startUs,
+    durationUs = t.durationUs,
+    from = Outgoing(
+      path = doc.media[from.mediaId]?.let { sourcePath(it, forExport) },
+      kind = from.kind,
+      sourceStartUs = from.sourceInUs + ((t.startUs - from.startUs) * from.speed).toLong(),
+      speed = from.speed,
+      framing = from.framing,
+      timeoutMs = if (forExport) EXPORT_FRAME_TIMEOUT_MS else PREVIEW_FRAME_TIMEOUT_MS,
+    ),
+  )
+
+  // Under Media3's 10 s export watchdog: a stuck decoder repeats the last
+  // frame instead of failing the export.
+  private const val EXPORT_FRAME_TIMEOUT_MS = 8_000L
+  private const val PREVIEW_FRAME_TIMEOUT_MS = 3_000L
+
+  /** [clip] up to [endUs] on the timeline, drawn by a [ClipEffect]. */
   private fun clipItem(
     doc: EngineDocument,
     clip: EngineDocument.Clip,
+    endUs: Long,
     forExport: Boolean,
-    size: Size,
+    look: CanvasLook,
+    incoming: Incoming?,
   ): EditedMediaItem? {
-    val media = doc.media[clip.mediaId]
-    val timelineUs = clip.endUs - clip.startUs
-    val path = media?.let {
-      if (!forExport && it.proxyPath != null && File(it.proxyPath).exists()) it.proxyPath else it.path
-    }
-    val videoEffects = listOf<Effect>(
-      Presentation.createForWidthAndHeight(
-        size.width,
-        size.height,
-        if (clip.framing.mode == "fill") Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP
-        else Presentation.LAYOUT_SCALE_TO_FIT,
-      ),
-      FramingTransformation(clip.framing, size.width, size.height),
-      BackgroundFill(if (doc.background.type == "solid") doc.background.color ?: BLACK else BLACK),
-    )
-
-    if (path == null || !File(path).exists()) return null
+    val media = doc.media[clip.mediaId] ?: return null
+    val path = sourcePath(media, forExport) ?: return null
+    val timelineUs = endUs - clip.startUs
+    val effects = listOf(ClipEffect(look, clip.framing, incoming))
 
     if (clip.kind == "photo") {
       val item = MediaItem.Builder()
@@ -180,29 +226,32 @@ object CompositionBuilder {
       return EditedMediaItem.Builder(item)
         .setDurationUs(timelineUs)
         .setFrameRate(doc.canvas.frameRate)
-        .setEffects(Effects(listOf(), videoEffects))
+        .setEffects(Effects(listOf(), effects))
         .build()
     }
 
+    val sourceOut = min(clip.sourceOutUs, clip.sourceInUs + (timelineUs * clip.speed).toLong())
     val item = MediaItem.Builder()
       .setUri(Uri.fromFile(File(path)))
       .setClippingConfiguration(
         MediaItem.ClippingConfiguration.Builder()
           .setStartPositionUs(clip.sourceInUs)
-          .setEndPositionUs(clip.sourceOutUs)
+          .setEndPositionUs(sourceOut)
           .build(),
       )
       .build()
-    val gain: AudioProcessor = GainProcessor(
+    val gain = Gain(
       volume = clip.volume.toFloat(),
-      durationUs = timelineUs,
+      clipDurationUs = clip.endUs - clip.startUs,
       fadeInUs = clip.audioFadeInUs,
       fadeOutUs = clip.audioFadeOutUs,
+      itemDurationUs = timelineUs,
+      rampInUs = incoming?.durationUs ?: 0,
     )
     return EditedMediaItem.Builder(item)
-      .setDurationUs(media?.durationUs ?: clip.sourceOutUs)
+      .setDurationUs(media.durationUs ?: clip.sourceOutUs)
       .apply { if (clip.speed != 1.0) setSpeed(ConstantSpeed(clip.speed.toFloat())) }
-      .setEffects(Effects(listOf(gain), videoEffects))
+      .setEffects(Effects(listOf(GainProcessor(gain)), effects))
       .build()
   }
 
@@ -212,7 +261,7 @@ object CompositionBuilder {
     sourceInUs: Long,
     sourceOutUs: Long,
     speed: Double,
-    gain: GainProcessor,
+    gain: Gain,
   ): EditedMediaItem {
     val item = MediaItem.Builder()
       .setUri(Uri.fromFile(File(path)))
@@ -226,58 +275,8 @@ object CompositionBuilder {
     return EditedMediaItem.Builder(item)
       .setDurationUs(mediaDurationUs ?: sourceOutUs)
       .apply { if (speed != 1.0) setSpeed(ConstantSpeed(speed.toFloat())) }
-      .setEffects(Effects(listOf(gain), listOf()))
+      .setEffects(Effects(listOf(GainProcessor(gain)), listOf()))
       .build()
-  }
-
-  /**
-   * Per frame, shows each video sequence only while it has a clip, and mixes
-   * the two during a transition. Sequence 0 is on top.
-   */
-  private class Compositor(
-    private val doc: EngineDocument,
-    private val slots: List<List<EngineDocument.Clip>>,
-    private val size: Size,
-  ) : VideoCompositorSettings {
-    private val videoSlots = slots.filter { it.isNotEmpty() }
-    private val transitionsByTo = doc.composition.transitions.associateBy { it.toClipId }
-
-    override fun getOutputSize(inputSizes: List<Size>): Size = size
-
-    override fun getOverlaySettings(inputId: Int, presentationTimeUs: Long): OverlaySettings {
-      val clips = videoSlots.getOrNull(inputId) ?: return hidden
-      val t = presentationTimeUs
-      val clip = clips.firstOrNull { t >= it.startUs && t < it.endUs } ?: return hidden
-
-      // During a transition both sequences have a clip; mix them.
-      val transition = transitionsByTo[clip.clipId]
-        ?: doc.composition.transitions.firstOrNull { it.fromClipId == clip.clipId }
-      if (transition != null && t >= transition.startUs &&
-        t < transition.startUs + transition.durationUs
-      ) {
-        val p = (t - transition.startUs).toFloat() / transition.durationUs
-        val incoming = transition.toClipId == clip.clipId
-        val alpha = when (transition.type) {
-          "fadeToBlack" -> {
-            val dim = 1 - abs(p - 0.5f) * 2
-            if ((p >= 0.5f) == incoming) dim else 0f
-          }
-          // Everything else crossfades until the shader transitions (M7).
-          else -> if (inputId == 0) (if (incoming) p else 1 - p) else 1f
-        }
-        return overlay(alpha)
-      }
-      return overlay(1f)
-    }
-
-    private fun overlay(alpha: Float): OverlaySettings =
-      StaticOverlaySettings.Builder()
-        .setAlphaScale(alpha.coerceIn(0f, 1f))
-        .setBackgroundFrameAnchor(0f, 0f)
-        .setOverlayFrameAnchor(0f, 0f)
-        .build()
-
-    private val hidden = overlay(0f)
   }
 
   /**
@@ -292,6 +291,4 @@ object CompositionBuilder {
       Composition.HDR_MODE_EXPERIMENTAL_FORCE_INTERPRET_HDR_AS_SDR
     }
   }
-
-  private const val BLACK = 0xFF000000L
 }

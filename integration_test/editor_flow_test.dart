@@ -34,6 +34,9 @@ import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
 import 'package:stitch/features/editor/presentation/editor_screen.dart';
 import 'package:stitch/features/editor/presentation/preview.dart';
+import 'package:stitch/features/timeline/domain/composition.dart';
+import 'package:stitch/features/timeline/domain/models.dart';
+import 'package:stitch/features/timeline/domain/transition_ops.dart';
 
 import 'support/folder_library.dart';
 
@@ -155,6 +158,35 @@ void main() {
     await tester.tap(find.byType(PlayButton).last);
     await wait(tester, const Duration(milliseconds: 300));
 
+    // Add a slide between the clips. The clips overlap during it, so the
+    // project gets shorter; then show the middle of the slide.
+    container
+        .read(editorControllerProvider(editorScreen.projectId).notifier)
+        .apply(
+          (t) =>
+              t.setTransition(t.videoClips.first.id, TransitionType.slideLeft),
+        );
+    await wait(tester, const Duration(milliseconds: 500));
+    final edited = container
+        .read(editorControllerProvider(editorScreen.projectId))
+        .requireValue;
+    final slide = ResolvedComposition.resolve(edited.timeline)
+        .transitions
+        .single;
+    expect(edited.layout.durationUs, durationUs - slide.durationUs);
+    final playback = container.read(playbackControllerProvider.notifier);
+    await playback.pause();
+    await wait(tester, const Duration(milliseconds: 500));
+    final middle = slide.startUs + slide.durationUs ~/ 2;
+    await playback.seek(middle);
+    // The first frame of a transition starts a decoder for the outgoing
+    // clip, which takes seconds on emulators.
+    await wait(tester, const Duration(seconds: 6));
+    expect(
+      (container.read(playbackControllerProvider).positionUs - middle).abs(),
+      lessThan(100000),
+    );
+
     // Signal an external screenshot of the editor, then give it time.
     final tmp = await getTemporaryDirectory();
     File('${tmp.path}/stitch_ready_for_screenshot').writeAsStringSync('1');
@@ -178,7 +210,10 @@ void main() {
     expect(events.last, isA<ExportCompleted>());
     expect(events.whereType<ExportProgress>(), isNotEmpty);
     final info = await engine.probe(out);
-    expect((info.durationUs! - durationUs).abs(), lessThan(100000));
+    expect(
+      (info.durationUs! - edited.layout.durationUs).abs(),
+      lessThan(100000),
+    );
     expect((info.width, info.height), (540, 960));
     expect(info.hasVideo, isTrue);
   });

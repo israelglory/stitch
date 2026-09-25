@@ -44,6 +44,22 @@ Error codes are stable. Dart maps them to failure types: `missing_file`, `unsupp
 
 The composition is the timeline resolved to absolute microseconds (see `docs/timeline.md`), so the engine does no layout math.
 
+## Transitions
+
+Each transition is a shader in the style of [gl-transitions](https://gl-transitions.com) (MIT): it gets the outgoing frame, the incoming frame, and the progress `p`, which runs linearly from 0 to 1 over the transition. Coordinates `(x, y)` run from 0 to 1 across the canvas, from the bottom left. Both frames are whole canvases: each clip placed over its own background.
+
+| Type | Color at (x, y) |
+|---|---|
+| Crossfade | outgoing and incoming mixed: `mix(from, to, p)` |
+| Fade to black | `from` darkening to black until halfway, then black brightening into `to` |
+| Slide left | both frames move left by `p`: `from(x + p)` where `x < 1 - p`, else `to(x - (1 - p))` |
+| Slide right | both frames move right by `p`: `from(x - p)` where `x >= p`, else `to(x + (1 - p))` |
+| Wipe left | `to` where `x >= 1 - p` (revealed from the right edge), else `from` |
+| Wipe right | `to` where `x < p` (revealed from the left edge), else `from` |
+| Zoom in | `from` scaled up by `1 + 0.6p` about the center, mixed into `to` by `p` |
+
+The shaders are `TransitionShader.kt` (GLSL) on Android and the Metal source in `Transitions.swift` on iOS. `test_media/transition_cases.json` lists expected colors for all seven types at three progress points and four positions, generated from the table above. Both platforms' tests render every case and compare. The looping previews in the Transitions sheet (`TransitionPreview`) follow the same definitions.
+
 ## iOS (`ios/Runner/Engine/`)
 
 **Composition (`CompositionBuilder`):** an `AVMutableComposition`.
@@ -53,11 +69,14 @@ The composition is the timeline resolved to absolute microseconds (see `docs/tim
 - Audio items are packed onto as few tracks as possible. A loop is inserted repeatedly until the video ends.
 - An `AVMutableAudioMix` sets volumes, fades, and crossfades during transitions. AVFoundation resamples mismatched sample rates.
 
-**Compositor (`StitchCompositor`):** Core Image on Metal. For each frame it draws, in order:
+**Compositor (`StitchCompositor`):** Core Image on Metal. For each frame, every active clip is drawn on its own canvas:
 1. the background: a solid color, or a blurred copy of the clip
-2. each clip, turned upright from its rotation flag, fitted or filled, then framed (scale, offset, rotation)
+2. the clip, turned upright from its rotation flag, fitted or filled, then framed (scale, offset, rotation)
 
-During transitions it mixes the two clips.
+During a transition, `Transitions` mixes the two canvases.
+- It renders both into textures and runs the shader as a Metal compute kernel.
+- The shader is compiled at runtime by the system's Metal compiler. A Core Image kernel would be compiled at build time instead, which needs Xcode's optional Metal toolchain for every build.
+- Without Metal it falls back to a dissolve.
 - Geometry is computed in canvas pixels, then scaled to the render size, so every resolution frames the same.
 - The compositor does not declare HDR support, so AVFoundation tone maps HDR to SDR before frames arrive. Output is Rec. 709.
 
@@ -77,18 +96,33 @@ During transitions it mixes the two clips.
 
 Built on Media3 1.11 (`Transformer`, `CompositionPlayer`, and effects). Much of this API is marked unstable, so the version is pinned in `android/app/build.gradle.kts` and should only be upgraded with the engine tests passing.
 
-**Composition (`CompositionBuilder`):** a Media3 `Composition`.
-- For export, clips alternate between two video sequences (A and B). Gaps pad each sequence to the full length, so the clips on either side of a transition overlap.
-- Each clip is fitted or filled to the output size (`Presentation`), then framed (`FramingTransformation`). `BackgroundFill` then paints the canvas color into any transparent area, so every clip frame is opaque.
-- The compositor settings show a sequence only while it has a clip. During a transition they mix the two: a crossfade, or a dip to black. Media3 draws sequence A on top.
+**Composition (`CompositionBuilder`):** a Media3 `Composition`, the same for preview and export.
+- Video is one sequence: the clips back to back.
+  - A clip that ends in a transition stops where the transition starts.
+  - The next clip's effect draws the rest of it, mixed with the incoming clip.
 - Speed uses `EditedMediaItem.setSpeed`, which keeps pitch. Photos are image items with a duration. A missing file becomes a gap and plays as black.
-- Audio items get one sequence each. A loop is inserted repeatedly. `GainProcessor` applies volume and fades per item, and Media3 mixes the sequences.
+- Sound:
+  - Each clip's own sound plays with its item and fades in across an incoming transition.
+  - The sound of a clip's part under an outgoing transition plays from a second, audio-only sequence, fading out.
+  - Audio items get one sequence each, with loops inserted repeatedly.
+  - `Gain` places each clip's fades on the whole clip, even when the clip plays as two items.
 - HDR is tone mapped to SDR in OpenGL. That needs the `GL_EXT_YUV_target` extension, which phones that play HDR have and emulators lack. Without it, HDR sources are read as SDR, and on emulators 10-bit sources fail as `unsupported_media`.
+
+**Clip effect (`ClipEffect`):** one GL effect per clip draws the whole canvas in a single full-resolution pass:
+- the background: the canvas color, or a blur of the clip (filled into a texture 96 px on the long side, then blurred in two gaussian passes, with sigma 4 percent of the width as on iOS)
+- the clip, fitted or filled, then framed, with the same geometry as iOS
+
+During the transition into its clip, the effect also draws the outgoing clip and mixes the two with the transition shader.
+- Media3 hands an effect one clip at a time, so `OutgoingFrames` decodes the outgoing clip's last moments itself. Photos are uploaded once.
+- Video is decoded to memory with `MediaCodec` and uploaded as Y, U, and V textures, then converted in the shader (BT.601, BT.709, or BT.2020, full or limited range, from the stream).
+- Decoding into a `SurfaceTexture` instead stalled the decoder while the GL thread waited for a frame.
+- A frame not ready in time repeats the previous one. Export waits up to 8 s, under Media3's 10 s export watchdog. Preview waits up to 3 s, so it never freezes.
+- This replaces Media3's compositor, which cannot run custom shaders and stops drawing when previewing two video sequences.
 
 **Preview (`PreviewPlayer`):** a `CompositionPlayer` drawing into a Flutter `SurfaceProducer`.
 - Rendering is capped at 1280 px on the long side.
-- `CompositionPlayer` stops drawing within a second when it composites two video sequences. This happens with plain Media3 as well, on the API 35 emulator. So the preview uses one video sequence, and each transition shows as a cut at its midpoint. Export still renders transitions fully. M7 revisits this with the transition shaders.
 - Scrubbing seeks use the player's scrubbing mode. Audio focus is handled, so calls pause the preview.
+- Pausing seeks exactly to the paused position, so the frame shown matches the playhead even when video fell behind the audio clock.
 
 **Export (`Exporter`):** a `Transformer`.
 - Video is H.264 or HEVC at the requested bitrate. The frame rate is capped at the requested rate: frames are dropped above it and never duplicated below it.
@@ -108,7 +142,8 @@ Built on Media3 1.11 (`Transformer`, `CompositionPlayer`, and effects). Much of 
 
 ## Tests
 
-- **Swift:** `ios/RunnerTests/EngineTests.swift` covers probe, composition, export, thumbnails, and proxies. The inputs are the corpus in `test_media/`, which `tool/make_test_media.sh` regenerates:
+- **Both platforms:** every transition is checked against `test_media/transition_cases.json`.
+- **Swift:** `ios/RunnerTests/EngineTests.swift` covers probe, composition, export, transitions, thumbnails, and proxies. The inputs are the corpus in `test_media/`, which `tool/make_test_media.sh` regenerates:
   - variable frame rate
   - HEVC HDR
   - rotated portrait
@@ -123,7 +158,12 @@ Built on Media3 1.11 (`Transformer`, `CompositionPlayer`, and effects). Much of 
   xcodebuild test -workspace ios/Runner.xcworkspace -scheme Runner \
     -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:RunnerTests/EngineTests
   ```
-- **Kotlin:** `android/app/src/androidTest/.../engine/EngineTests.kt` mirrors the Swift tests. It adds checks that each clip appears in its time range, in both export and preview, and that letterbox bars take the background color. The corpus is packaged as test assets. Run the tests with `cd android && ./gradlew :app:connectedDebugAndroidTest`.
+- **Kotlin:** `android/app/src/androidTest/.../engine/EngineTests.kt` mirrors the Swift tests. It adds checks for:
+  - each clip appearing in its time range, in export and preview
+  - a video transition drawing both clips, in export and preview
+  - the blurred background
+  - letterbox bars taking the background color
+  - clip fades and the crossfade under a transition, measured from the exported sound The corpus is packaged as test assets. Run the tests with `cd android && ./gradlew :app:connectedDebugAndroidTest`.
 - **End to end:** `integration_test/editor_flow_test.dart` covers the whole path. It picks from Photos, creates a project, previews, plays, exports, and then probes the export.
 
 ## Xcode project
@@ -133,5 +173,6 @@ Built on Media3 1.11 (`Transformer`, `CompositionPlayer`, and effects). Much of 
 ## Deferred
 
 - The audio limiter moves to M8: `AVAudioMix` has no limiter stage.
-- Transitions other than crossfade and fade to black come with the shader milestone, M7. So does transition preview on Android, and the blurred background on Android, which is black until then.
+- Transition `params` (the model's extra settings) are not used yet; every transition has fixed looks.
+- On Android, an HDR clip leaving through a transition is drawn without tone mapping for those frames.
 - Text and captions are drawn from M8 and M9.

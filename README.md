@@ -70,3 +70,5 @@ flutter test --tags golden --update-goldens   # after an intended visual change
 ## License
 
 GPL-3.0. See [LICENSE](LICENSE). Bundled fonts: Inter (SIL Open Font License 1.1) and Lucide (ISC); their licenses are in `assets/licenses/` and shown in the app.
+
+The transitions are modeled on [gl-transitions](https://gl-transitions.com) (MIT). They are written for Stitch; no code is copied.

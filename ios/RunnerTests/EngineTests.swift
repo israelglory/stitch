@@ -1,4 +1,5 @@
 import AVFoundation
+import UIKit
 import XCTest
 
 @testable import Runner
@@ -156,9 +157,9 @@ final class EngineTests: XCTestCase {
 
   private func export(
     _ doc: EngineDocument, width: Int64 = 360, height: Int64 = 640, fps: Int64 = 30,
-    hevc: Bool = false
+    hevc: Bool = false, name: String = "out"
   ) async throws -> AVURLAsset {
-    let out = tempDir.appendingPathComponent("out.mp4").path
+    let out = tempDir.appendingPathComponent("\(name).mp4").path
     let exporter = Exporter(
       doc: doc,
       request: ExportRequestMessage(
@@ -168,7 +169,7 @@ final class EngineTests: XCTestCase {
     let path = try await exporter.run { last = $0 }
     XCTAssertEqual(last, 1)
     XCTAssertFalse(
-      FileManager.default.fileExists(atPath: tempDir.appendingPathComponent("out.part.mp4").path))
+      FileManager.default.fileExists(atPath: tempDir.appendingPathComponent("\(name).part.mp4").path))
     return AVURLAsset(url: URL(fileURLWithPath: path))
   }
 
@@ -271,6 +272,96 @@ final class EngineTests: XCTestCase {
       XCTAssertEqual(e.code, "cancelled")
     }
     XCTAssertFalse(FileManager.default.fileExists(atPath: out))
+  }
+
+  // MARK: Transitions
+
+  /// A solid [color] image the size of the test canvas.
+  private func solidPhoto(_ name: String, _ color: UIColor) -> String {
+    let size = CGSize(width: 360, height: 640)
+    let format = UIGraphicsImageRendererFormat()
+    format.scale = 1
+    let image = UIGraphicsImageRenderer(size: size, format: format).image { context in
+      color.setFill()
+      context.fill(CGRect(origin: .zero, size: size))
+    }
+    let path = tempDir.appendingPathComponent("\(name).png").path
+    try! image.pngData()!.write(to: URL(fileURLWithPath: path))
+    return path
+  }
+
+  /// Two 2.4 s photo clips with a 1.2 s [type] transition from 1.2 s.
+  private func transitionDocument(_ type: String, from: String, to: String) -> EngineDocument {
+    let framing = #"{"mode": "fit", "scale": 1, "offsetX": 0, "offsetY": 0, "rotationDeg": 0}"#
+    let json = """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190080},
+       "media": {"a": {"path": "\(from)", "kind": "photo"}, "b": {"path": "\(to)", "kind": "photo"}},
+       "composition": {"durationUs": 3600000, "clips": [
+         {"clipId": "c1", "mediaId": "a", "kind": "photo", "startUs": 0, "endUs": 2400000,
+          "sourceInUs": 0, "sourceOutUs": 2400000, "speed": 1, "volume": 0,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": \(framing)},
+         {"clipId": "c2", "mediaId": "b", "kind": "photo", "startUs": 1200000, "endUs": 3600000,
+          "sourceInUs": 0, "sourceOutUs": 2400000, "speed": 1, "volume": 0,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": \(framing)}],
+        "transitions": [{"type": "\(type)", "fromClipId": "c1", "toClipId": "c2",
+          "startUs": 1200000, "durationUs": 1200000}]}}
+      """
+    return try! EngineDocument.decode(json)
+  }
+
+  func testTransitionsMatchTheSharedTable() async throws {
+    let red = solidPhoto("red", .red)
+    let blue = solidPhoto("blue", .blue)
+    let data = try Data(contentsOf: URL(fileURLWithPath: media("transition_cases.json")))
+    let table = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+    let cases = table["cases"] as! [[String: Any]]
+    var types: [String] = []
+    for c in cases where !types.contains(c["type"] as! String) { types.append(c["type"] as! String) }
+
+    var failures: [String] = []
+    for type in types {
+      let asset = try await export(transitionDocument(type, from: red, to: blue), name: type)
+      let generator = AVAssetImageGenerator(asset: asset)
+      generator.requestedTimeToleranceBefore = .zero
+      generator.requestedTimeToleranceAfter = .zero
+      let typeCases = cases.filter { $0["type"] as! String == type }
+      for progress in Set(typeCases.map { $0["progress"] as! Double }).sorted() {
+        let time = CMTime(value: Int64(1_200_000 + progress * 1_200_000), timescale: 1_000_000)
+        let (image, _) = try await generator.image(at: time)
+        let pixels = rgba(image)
+        for c in typeCases where c["progress"] as! Double == progress {
+          let x = c["x"] as! Double
+          let y = c["y"] as! Double
+          // Image rows run top down; the table's y runs bottom up.
+          let col = Int(x * Double(image.width))
+          let row = min(Int((1 - y) * Double(image.height)), image.height - 1)
+          let i = (row * image.width + col) * 4
+          let r = Double(pixels[i]) / 255
+          let b = Double(pixels[i + 2]) / 255
+          let wantR = c["from"] as! Double
+          let wantB = c["to"] as! Double
+          if abs(r - wantR) > 0.12 || abs(b - wantB) > 0.12 {
+            failures.append(
+              String(
+                format: "%@ p=%.2f x=%.1f: red %.2f (want %.2f), blue %.2f (want %.2f)",
+                type, progress, x, r, wantR, b, wantB))
+          }
+        }
+      }
+    }
+    XCTAssert(failures.isEmpty, failures.joined(separator: "\n"))
+  }
+
+  /// [image] as tightly packed RGBA bytes, rows top down.
+  private func rgba(_ image: CGImage) -> [UInt8] {
+    var pixels = [UInt8](repeating: 0, count: image.width * image.height * 4)
+    let context = CGContext(
+      data: &pixels, width: image.width, height: image.height, bitsPerComponent: 8,
+      bytesPerRow: image.width * 4, space: CGColorSpaceCreateDeviceRGB(),
+      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+    context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+    return pixels
   }
 
   // MARK: Performance (reported, not a pass/fail gate: simulators are not

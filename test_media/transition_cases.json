@@ -1,0 +1,677 @@
+{
+ "_comment": "Expected colors for each transition between two solid frames. The color at (x, y), both 0 to 1 from the bottom left, is from * fromColor + to * toColor. Generated from the definitions in docs/engine.md; used by the Kotlin and Swift engine tests.",
+ "cases": [
+  {
+   "type": "crossfade",
+   "progress": 0.25,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 0.75,
+   "to": 0.25
+  },
+  {
+   "type": "crossfade",
+   "progress": 0.25,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 0.75,
+   "to": 0.25
+  },
+  {
+   "type": "crossfade",
+   "progress": 0.25,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 0.75,
+   "to": 0.25
+  },
+  {
+   "type": "crossfade",
+   "progress": 0.25,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 0.75,
+   "to": 0.25
+  },
+  {
+   "type": "crossfade",
+   "progress": 0.5,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 0.5,
+   "to": 0.5
+  },
+  {
+   "type": "crossfade",
+   "progress": 0.5,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 0.5,
+   "to": 0.5
+  },
+  {
+   "type": "crossfade",
+   "progress": 0.5,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 0.5,
+   "to": 0.5
+  },
+  {
+   "type": "crossfade",
+   "progress": 0.5,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 0.5,
+   "to": 0.5
+  },
+  {
+   "type": "crossfade",
+   "progress": 0.75,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 0.25,
+   "to": 0.75
+  },
+  {
+   "type": "crossfade",
+   "progress": 0.75,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 0.25,
+   "to": 0.75
+  },
+  {
+   "type": "crossfade",
+   "progress": 0.75,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 0.25,
+   "to": 0.75
+  },
+  {
+   "type": "crossfade",
+   "progress": 0.75,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 0.25,
+   "to": 0.75
+  },
+  {
+   "type": "fadeToBlack",
+   "progress": 0.25,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 0.5,
+   "to": 0.0
+  },
+  {
+   "type": "fadeToBlack",
+   "progress": 0.25,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 0.5,
+   "to": 0.0
+  },
+  {
+   "type": "fadeToBlack",
+   "progress": 0.25,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 0.5,
+   "to": 0.0
+  },
+  {
+   "type": "fadeToBlack",
+   "progress": 0.25,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 0.5,
+   "to": 0.0
+  },
+  {
+   "type": "fadeToBlack",
+   "progress": 0.5,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 0.0
+  },
+  {
+   "type": "fadeToBlack",
+   "progress": 0.5,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 0.0
+  },
+  {
+   "type": "fadeToBlack",
+   "progress": 0.5,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 0.0
+  },
+  {
+   "type": "fadeToBlack",
+   "progress": 0.5,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 0.0
+  },
+  {
+   "type": "fadeToBlack",
+   "progress": 0.75,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 0.5
+  },
+  {
+   "type": "fadeToBlack",
+   "progress": 0.75,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 0.5
+  },
+  {
+   "type": "fadeToBlack",
+   "progress": 0.75,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 0.5
+  },
+  {
+   "type": "fadeToBlack",
+   "progress": 0.75,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 0.5
+  },
+  {
+   "type": "slideLeft",
+   "progress": 0.25,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "slideLeft",
+   "progress": 0.25,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "slideLeft",
+   "progress": 0.25,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "slideLeft",
+   "progress": 0.25,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "slideLeft",
+   "progress": 0.5,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "slideLeft",
+   "progress": 0.5,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "slideLeft",
+   "progress": 0.5,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "slideLeft",
+   "progress": 0.5,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "slideLeft",
+   "progress": 0.75,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "slideLeft",
+   "progress": 0.75,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "slideLeft",
+   "progress": 0.75,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "slideLeft",
+   "progress": 0.75,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "slideRight",
+   "progress": 0.25,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "slideRight",
+   "progress": 0.25,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "slideRight",
+   "progress": 0.25,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "slideRight",
+   "progress": 0.25,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "slideRight",
+   "progress": 0.5,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "slideRight",
+   "progress": 0.5,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "slideRight",
+   "progress": 0.5,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "slideRight",
+   "progress": 0.5,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "slideRight",
+   "progress": 0.75,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "slideRight",
+   "progress": 0.75,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "slideRight",
+   "progress": 0.75,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "slideRight",
+   "progress": 0.75,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "wipeLeft",
+   "progress": 0.25,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "wipeLeft",
+   "progress": 0.25,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "wipeLeft",
+   "progress": 0.25,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "wipeLeft",
+   "progress": 0.25,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "wipeLeft",
+   "progress": 0.5,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "wipeLeft",
+   "progress": 0.5,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "wipeLeft",
+   "progress": 0.5,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "wipeLeft",
+   "progress": 0.5,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "wipeLeft",
+   "progress": 0.75,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "wipeLeft",
+   "progress": 0.75,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "wipeLeft",
+   "progress": 0.75,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "wipeLeft",
+   "progress": 0.75,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "wipeRight",
+   "progress": 0.25,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "wipeRight",
+   "progress": 0.25,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "wipeRight",
+   "progress": 0.25,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "wipeRight",
+   "progress": 0.25,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "wipeRight",
+   "progress": 0.5,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "wipeRight",
+   "progress": 0.5,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "wipeRight",
+   "progress": 0.5,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "wipeRight",
+   "progress": 0.5,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "wipeRight",
+   "progress": 0.75,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "wipeRight",
+   "progress": 0.75,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "wipeRight",
+   "progress": 0.75,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 0.0,
+   "to": 1.0
+  },
+  {
+   "type": "wipeRight",
+   "progress": 0.75,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 1.0,
+   "to": 0.0
+  },
+  {
+   "type": "zoomIn",
+   "progress": 0.25,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 0.75,
+   "to": 0.25
+  },
+  {
+   "type": "zoomIn",
+   "progress": 0.25,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 0.75,
+   "to": 0.25
+  },
+  {
+   "type": "zoomIn",
+   "progress": 0.25,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 0.75,
+   "to": 0.25
+  },
+  {
+   "type": "zoomIn",
+   "progress": 0.25,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 0.75,
+   "to": 0.25
+  },
+  {
+   "type": "zoomIn",
+   "progress": 0.5,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 0.5,
+   "to": 0.5
+  },
+  {
+   "type": "zoomIn",
+   "progress": 0.5,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 0.5,
+   "to": 0.5
+  },
+  {
+   "type": "zoomIn",
+   "progress": 0.5,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 0.5,
+   "to": 0.5
+  },
+  {
+   "type": "zoomIn",
+   "progress": 0.5,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 0.5,
+   "to": 0.5
+  },
+  {
+   "type": "zoomIn",
+   "progress": 0.75,
+   "x": 0.1,
+   "y": 0.5,
+   "from": 0.25,
+   "to": 0.75
+  },
+  {
+   "type": "zoomIn",
+   "progress": 0.75,
+   "x": 0.3,
+   "y": 0.5,
+   "from": 0.25,
+   "to": 0.75
+  },
+  {
+   "type": "zoomIn",
+   "progress": 0.75,
+   "x": 0.7,
+   "y": 0.5,
+   "from": 0.25,
+   "to": 0.75
+  },
+  {
+   "type": "zoomIn",
+   "progress": 0.75,
+   "x": 0.9,
+   "y": 0.5,
+   "from": 0.25,
+   "to": 0.75
+  }
+ ]
+}

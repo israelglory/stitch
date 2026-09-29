@@ -16,6 +16,14 @@ abstract final class TimelineLimits {
   static const double minVolume = 0;
   static const double maxVolume = 2;
 
+  /// Zoom of a clip or text on the canvas; 1.0 is its natural size.
+  static const double minScale = 0.2;
+  static const double maxScale = 8;
+
+  /// Two keyframes of an item are at least this far apart (timeline time),
+  /// and the playhead counts as on a keyframe within half of it.
+  static const int keyframeSpacingUs = 33333;
+
   static const int minTransitionUs = 200000;
   static const int maxTransitionUs = 1500000;
   static const int defaultTransitionUs = 500000;

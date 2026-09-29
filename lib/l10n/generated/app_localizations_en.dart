@@ -304,6 +304,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullScreen => 'Full screen';
 
   @override
+  String get keyframeAdd => 'Add keyframe';
+
+  @override
+  String get keyframeRemove => 'Remove keyframe';
+
+  @override
+  String keyframeMarker(String time) {
+    return 'Keyframe at $time';
+  }
+
+  @override
+  String get toolOpacity => 'Opacity';
+
+  @override
+  String get toolEasing => 'Easing';
+
+  @override
+  String get easingLinear => 'Linear';
+
+  @override
+  String get easingIn => 'Ease in';
+
+  @override
+  String get easingOut => 'Ease out';
+
+  @override
+  String get easingInOut => 'Ease in and out';
+
+  @override
+  String get easingHold => 'Hold';
+
+  @override
   String get exitFullScreen => 'Exit full screen';
 
   @override

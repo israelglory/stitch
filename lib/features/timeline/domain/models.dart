@@ -27,6 +27,49 @@ sealed class Anchor with _$Anchor {
   factory fromJson(Map<String, dynamic> json) => _$AnchorFromJson(json);
 }
 
+/// How values move from one keyframe to the next. Applied to the progress
+/// p (0 to 1) between the two; the same formulas are in the native
+/// engines (see keyframes.dart).
+enum KeyframeEasing { linear, easeIn, easeOut, easeInOut, hold }
+
+/// An item's animatable values at one moment: a keyframe stores all of
+/// them (a snapshot), and each is interpolated on its own.
+///
+/// [x] and [y] follow the item's own convention: for clips, the offset from
+/// the canvas center as a fraction of the canvas (as [ClipFraming]); for
+/// text, the center as a fraction of the canvas (as [ItemTransform]).
+/// [volume] is used by clips and audio items. New values get defaults, so
+/// older projects keep loading.
+@freezed
+abstract class KeyframeValues with _$KeyframeValues {
+  const factory({
+    @Default(0.0) double x,
+    @Default(0.0) double y,
+    @Default(1.0) double scale,
+    @Default(0.0) double rotationDeg,
+    @Default(1.0) double opacity,
+    @Default(1.0) double volume,
+  }) = _KeyframeValues;
+
+  factory fromJson(Map<String, dynamic> json) => _$KeyframeValuesFromJson(json);
+}
+
+/// One keyframe of an item. [timeUs] is in source time for clips and audio
+/// items, so keyframes follow their content through trims, splits, and
+/// speed changes; for text, it is the offset from the item's start.
+/// [easing] shapes the way to the next keyframe.
+@freezed
+abstract class Keyframe with _$Keyframe {
+  const factory({
+    required String id,
+    required int timeUs,
+    required KeyframeValues values,
+    @Default(KeyframeEasing.linear) KeyframeEasing easing,
+  }) = _Keyframe;
+
+  factory fromJson(Map<String, dynamic> json) => _$KeyframeFromJson(json);
+}
+
 enum FramingMode { fit, fill, manual }
 
 /// How a clip sits on the canvas. Offsets are fractions of the canvas
@@ -64,6 +107,12 @@ abstract class VideoClip with _$VideoClip {
     /// plays silent.
     @Default(false) bool audioDetached,
     @Default(ClipFraming()) ClipFraming framing,
+
+    /// 0 shows only the background, 1 the clip.
+    @Default(1.0) double opacity,
+
+    /// Sorted by time. Empty: the values above hold for the whole clip.
+    @Default(<Keyframe>[]) List<Keyframe> keyframes,
   }) = _VideoClip;
   const new _();
 
@@ -177,6 +226,11 @@ abstract class TextItem with _$TextItem {
     @Default(ItemTransform()) ItemTransform transform,
     @Default(TextAnimation.none) TextAnimation animationIn,
     @Default(TextAnimation.none) TextAnimation animationOut,
+    @Default(1.0) double opacity,
+
+    /// Sorted by time (from the item's start). Empty: [transform] and
+    /// [opacity] hold for the whole item.
+    @Default(<Keyframe>[]) List<Keyframe> keyframes,
 
     /// The clip this item was anchored to was deleted.
     @Default(false) bool needsReview,
@@ -254,6 +308,9 @@ abstract class AudioItem with _$AudioItem {
     /// Repeats the source span until the end of the video.
     @Default(false) bool loop,
     @Default(false) bool needsReview,
+
+    /// Sorted by source time; only volume is used.
+    @Default(<Keyframe>[]) List<Keyframe> keyframes,
   }) = _AudioItem;
   const new _();
 

@@ -7,6 +7,7 @@ import 'package:stitch/design/design.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/editor_state.dart';
 import 'package:stitch/features/editor/presentation/editor_media.dart';
+import 'package:stitch/features/editor/presentation/sheets/keyframe_sheets.dart';
 import 'package:stitch/features/projects/domain/project.dart';
 import 'package:stitch/features/projects/presentation/format_screen.dart';
 import 'package:stitch/features/timeline/domain/audio_ops.dart';
@@ -106,7 +107,8 @@ class SpeedSheet extends StatelessWidget {
   }
 }
 
-/// Volume of a clip or an audio item, 0 to 200 percent.
+/// Volume of a clip or an audio item, 0 to 200 percent, at the playhead
+/// (a keyframe there once the item has keyframes).
 class VolumeSheet extends StatelessWidget {
   const new({required this.projectId, required this.selection, super.key});
 
@@ -116,19 +118,17 @@ class VolumeSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final id = selection.id;
-    final isClip = selection is ClipSelected;
-    return _EditSlider(
+    final owner = keyframeOwnerOf(selection);
+    if (owner == null) return const SizedBox.shrink();
+    return KeyframedSlider(
       projectId: projectId,
+      owner: owner,
       label: l10n.toolVolume,
       min: TimelineLimits.minVolume,
       max: TimelineLimits.maxVolume,
       format: (v) => _percentText(l10n, v),
-      value: (s) => isClip
-          ? s.timeline.clipById(id)?.volume ?? 1
-          : s.timeline.audioById(id)?.volume ?? 1,
-      apply: (b, v) =>
-          isClip ? b.setClipVolume(id, v) : b.setAudioVolume(id, v),
+      read: (v) => v.volume,
+      write: (v, x) => v.copyWith(volume: x),
     );
   }
 }

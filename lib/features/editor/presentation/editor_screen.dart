@@ -259,15 +259,18 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                     const Expanded(child: TimeReadout()),
                     const PlayButton(),
                     Expanded(
-                      child: Align(
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: AppIconButton(
-                          icon: AppIcons.fullscreen,
-                          semanticLabel: l10n.fullScreen,
-                          onPressed: () => context.push(
-                            AppRoutes.editorPreview(widget.projectId),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          KeyframeButton(projectId: widget.projectId),
+                          AppIconButton(
+                            icon: AppIcons.fullscreen,
+                            semanticLabel: l10n.fullScreen,
+                            onPressed: () => context.push(
+                              AppRoutes.editorPreview(widget.projectId),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ],

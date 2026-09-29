@@ -277,6 +277,9 @@ abstract final class AppSizes {
   static const double laneHeight = 32;
   static const double laneHeaderWidth = 56;
   static const double trimHandleWidth = 12;
+
+  /// Side of the rhombus marking a keyframe on a timeline item.
+  static const double keyframeMarker = 10;
   static const double transitionButton = 24;
 }
 

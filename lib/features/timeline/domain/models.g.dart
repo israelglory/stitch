@@ -30,6 +30,50 @@ Map<String, dynamic> _$TimeAnchorToJson(TimeAnchor instance) =>
       'runtimeType': instance.$type,
     };
 
+_KeyframeValues _$KeyframeValuesFromJson(Map<String, dynamic> json) =>
+    _KeyframeValues(
+      x: (json['x'] as num?)?.toDouble() ?? 0.0,
+      y: (json['y'] as num?)?.toDouble() ?? 0.0,
+      scale: (json['scale'] as num?)?.toDouble() ?? 1.0,
+      rotationDeg: (json['rotationDeg'] as num?)?.toDouble() ?? 0.0,
+      opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
+      volume: (json['volume'] as num?)?.toDouble() ?? 1.0,
+    );
+
+Map<String, dynamic> _$KeyframeValuesToJson(_KeyframeValues instance) =>
+    <String, dynamic>{
+      'x': instance.x,
+      'y': instance.y,
+      'scale': instance.scale,
+      'rotationDeg': instance.rotationDeg,
+      'opacity': instance.opacity,
+      'volume': instance.volume,
+    };
+
+_Keyframe _$KeyframeFromJson(Map<String, dynamic> json) => _Keyframe(
+  id: json['id'] as String,
+  timeUs: (json['timeUs'] as num).toInt(),
+  values: KeyframeValues.fromJson(json['values'] as Map<String, dynamic>),
+  easing:
+      $enumDecodeNullable(_$KeyframeEasingEnumMap, json['easing']) ??
+      KeyframeEasing.linear,
+);
+
+Map<String, dynamic> _$KeyframeToJson(_Keyframe instance) => <String, dynamic>{
+  'id': instance.id,
+  'timeUs': instance.timeUs,
+  'values': instance.values.toJson(),
+  'easing': _$KeyframeEasingEnumMap[instance.easing]!,
+};
+
+const _$KeyframeEasingEnumMap = {
+  KeyframeEasing.linear: 'linear',
+  KeyframeEasing.easeIn: 'easeIn',
+  KeyframeEasing.easeOut: 'easeOut',
+  KeyframeEasing.easeInOut: 'easeInOut',
+  KeyframeEasing.hold: 'hold',
+};
+
 _ClipFraming _$ClipFramingFromJson(Map<String, dynamic> json) => _ClipFraming(
   mode:
       $enumDecodeNullable(_$FramingModeEnumMap, json['mode']) ??
@@ -68,6 +112,12 @@ _VideoClip _$VideoClipFromJson(Map<String, dynamic> json) => _VideoClip(
   framing: json['framing'] == null
       ? const ClipFraming()
       : ClipFraming.fromJson(json['framing'] as Map<String, dynamic>),
+  opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
+  keyframes:
+      (json['keyframes'] as List<dynamic>?)
+          ?.map((e) => Keyframe.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <Keyframe>[],
 );
 
 Map<String, dynamic> _$VideoClipToJson(_VideoClip instance) =>
@@ -82,6 +132,8 @@ Map<String, dynamic> _$VideoClipToJson(_VideoClip instance) =>
       'volume': instance.volume,
       'audioDetached': instance.audioDetached,
       'framing': instance.framing.toJson(),
+      'opacity': instance.opacity,
+      'keyframes': instance.keyframes.map((e) => e.toJson()).toList(),
     };
 
 const _$MediaKindEnumMap = {
@@ -183,6 +235,12 @@ _TextItem _$TextItemFromJson(Map<String, dynamic> json) => _TextItem(
   animationOut:
       $enumDecodeNullable(_$TextAnimationEnumMap, json['animationOut']) ??
       TextAnimation.none,
+  opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
+  keyframes:
+      (json['keyframes'] as List<dynamic>?)
+          ?.map((e) => Keyframe.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <Keyframe>[],
   needsReview: json['needsReview'] as bool? ?? false,
 );
 
@@ -196,6 +254,8 @@ Map<String, dynamic> _$TextItemToJson(_TextItem instance) => <String, dynamic>{
   'transform': instance.transform.toJson(),
   'animationIn': _$TextAnimationEnumMap[instance.animationIn]!,
   'animationOut': _$TextAnimationEnumMap[instance.animationOut]!,
+  'opacity': instance.opacity,
+  'keyframes': instance.keyframes.map((e) => e.toJson()).toList(),
   'needsReview': instance.needsReview,
 };
 
@@ -298,6 +358,11 @@ _AudioItem _$AudioItemFromJson(Map<String, dynamic> json) => _AudioItem(
   speed: (json['speed'] as num?)?.toDouble() ?? 1.0,
   loop: json['loop'] as bool? ?? false,
   needsReview: json['needsReview'] as bool? ?? false,
+  keyframes:
+      (json['keyframes'] as List<dynamic>?)
+          ?.map((e) => Keyframe.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <Keyframe>[],
 );
 
 Map<String, dynamic> _$AudioItemToJson(_AudioItem instance) =>
@@ -317,6 +382,7 @@ Map<String, dynamic> _$AudioItemToJson(_AudioItem instance) =>
       'speed': instance.speed,
       'loop': instance.loop,
       'needsReview': instance.needsReview,
+      'keyframes': instance.keyframes.map((e) => e.toJson()).toList(),
     };
 
 const _$AudioKindEnumMap = {

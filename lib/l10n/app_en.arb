@@ -395,6 +395,52 @@
   "@fullScreen": {
     "description": "Full screen preview button."
   },
+  "keyframeAdd": "Add keyframe",
+  "@keyframeAdd": {
+    "description": "Button in the playback row: adds a keyframe to the selected clip, text, or sound at the playhead. A keyframe records the item's position, zoom, rotation, opacity, and volume at that moment; values move smoothly between keyframes."
+  },
+  "keyframeRemove": "Remove keyframe",
+  "@keyframeRemove": {
+    "description": "The same button when the playhead is on a keyframe: removes it."
+  },
+  "keyframeMarker": "Keyframe at {time}",
+  "@keyframeMarker": {
+    "description": "Accessibility label of a keyframe marker on a timeline item; tapping it moves the playhead there.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "0:04"
+      }
+    }
+  },
+  "toolOpacity": "Opacity",
+  "@toolOpacity": {
+    "description": "Tool: how see-through a clip or text is."
+  },
+  "toolEasing": "Easing",
+  "@toolEasing": {
+    "description": "Tool, shown on a keyframe: how values move from this keyframe to the next."
+  },
+  "easingLinear": "Linear",
+  "@easingLinear": {
+    "description": "Easing: steady speed."
+  },
+  "easingIn": "Ease in",
+  "@easingIn": {
+    "description": "Easing: starts slow, speeds up."
+  },
+  "easingOut": "Ease out",
+  "@easingOut": {
+    "description": "Easing: starts fast, slows down."
+  },
+  "easingInOut": "Ease in and out",
+  "@easingInOut": {
+    "description": "Easing: slow at both ends."
+  },
+  "easingHold": "Hold",
+  "@easingHold": {
+    "description": "Easing: no movement; jumps at the next keyframe."
+  },
   "exitFullScreen": "Exit full screen",
   "@exitFullScreen": {
     "description": "Button that leaves the full screen preview."

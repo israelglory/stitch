@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:stitch/features/timeline/domain/keyframes.dart';
 import 'package:stitch/features/timeline/domain/layout.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
 
@@ -8,7 +9,8 @@ import 'package:stitch/features/timeline/domain/models.dart';
 /// - each transition follows an existing clip that has a next clip, one
 ///   per cut, with its duration within the cap;
 /// - items are anchored to clip content whenever there are clips;
-/// - text items and audio items on the same lane do not overlap.
+/// - text items and audio items on the same lane do not overlap;
+/// - keyframes are sorted by time, with values within the limits.
 ///
 /// Every operation ends with this, so individual operations only need to
 /// get their own change right.
@@ -57,17 +59,31 @@ Timeline normalize(Timeline timeline) {
   ]);
 
   return result.copyWith(
+    videoClips: [
+      for (final clip in result.videoClips)
+        identical(clip.keyframes.normalized(), clip.keyframes)
+            ? clip
+            : clip.copyWith(keyframes: clip.keyframes.normalized()),
+    ],
     textItems: [
       for (final (i, item) in result.textItems.indexed)
-        item.laneIndex == textLanes[i]
+        item.laneIndex == textLanes[i] &&
+                identical(item.keyframes.normalized(), item.keyframes)
             ? item
-            : item.copyWith(laneIndex: textLanes[i]),
+            : item.copyWith(
+                laneIndex: textLanes[i],
+                keyframes: item.keyframes.normalized(),
+              ),
     ],
     audioItems: [
       for (final (i, item) in result.audioItems.indexed)
-        item.laneIndex == audioLanes[i]
+        item.laneIndex == audioLanes[i] &&
+                identical(item.keyframes.normalized(), item.keyframes)
             ? item
-            : item.copyWith(laneIndex: audioLanes[i]),
+            : item.copyWith(
+                laneIndex: audioLanes[i],
+                keyframes: item.keyframes.normalized(),
+              ),
     ],
   );
 }

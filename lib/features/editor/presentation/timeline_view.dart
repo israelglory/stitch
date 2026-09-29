@@ -11,14 +11,16 @@ import 'package:stitch/design/design.dart';
 import 'package:stitch/features/audio/application/audio_providers.dart';
 import 'package:stitch/features/audio/application/waveforms.dart';
 import 'package:stitch/features/audio/domain/waveform_slice.dart';
+import 'package:stitch/features/editor/application/clip_frame_preview.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/editor_state.dart';
+import 'package:stitch/features/editor/application/keyframing.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
-import 'package:stitch/features/editor/application/trim_preview.dart';
 import 'package:stitch/features/editor/presentation/clip_frame.dart';
 import 'package:stitch/features/editor/presentation/editor_media.dart';
 import 'package:stitch/features/timeline/domain/audio_ops.dart';
 import 'package:stitch/features/timeline/domain/caption_ops.dart';
+import 'package:stitch/features/timeline/domain/keyframes.dart';
 import 'package:stitch/features/timeline/domain/layout.dart';
 import 'package:stitch/features/timeline/domain/models.dart' as m;
 import 'package:stitch/features/timeline/domain/normalize.dart';
@@ -404,16 +406,26 @@ final class _TimelineActions {
       }
     },
     onEnd: (_) {
-      if (preview) _trimPreview.end();
       _end();
+      // After the edit is sent: the frame stays until the engine shows it.
+      if (preview) _framePreview.end();
     },
   );
+
+  /// Moves the playhead to [us] (a tapped keyframe).
+  void jumpTo(int us) {
+    unawaited(AppHaptics.selection());
+    _view._position.value = us;
+    unawaited(_view._playback.seek(us));
+  }
+
+  String get projectId => _view.widget.projectId;
 
   static ClipEdge _domainEdge(TrimEdge edge) =>
       edge == TrimEdge.start ? ClipEdge.start : ClipEdge.end;
 
-  TrimPreview get _trimPreview =>
-      _view.ref.read(trimPreviewProvider(_view.widget.projectId).notifier);
+  ClipFramePreview get _framePreview =>
+      _view.ref.read(clipFramePreviewProvider(_view.widget.projectId).notifier);
 
   /// Shows the frame at [clipId]'s dragged edge: its first frame, or its
   /// last one.
@@ -427,7 +439,7 @@ final class _TimelineActions {
     final sourceUs = edge == ClipEdge.start
         ? clip.sourceInUs
         : math.max(clip.sourceInUs, clip.sourceOutUs - _lastFrameUs);
-    _trimPreview.follow(clipId, sourceUs);
+    _framePreview.follow(clipId, sourceUs);
   }
 
   /// Back from a clip's end to its last frame (at 30 fps).
@@ -559,6 +571,47 @@ class _ContentState extends ConsumerState<_Content> {
 
   double _px(int us) => widget.scale.usToPx(us);
 
+  /// Keyframe markers of the item [selection] names, when it is selected:
+  /// its keyframes on the timeline, from its start at [startUs] to
+  /// [width] pixels on. Tapping one moves the playhead there.
+  KeyframeMarkers? _keyframeMarkers(
+    Selection selection,
+    int startUs,
+    double width,
+  ) {
+    final owner = keyframeOwnerOf(selection);
+    if (owner == null || widget.state.selection != selection) return null;
+    final timeline = widget.state.timeline;
+    final keyframes = timeline.keyframesOf(owner);
+    if (keyframes.isEmpty) return null;
+    final current = ref
+        .watch(keyframeTargetProvider(widget.actions.projectId))
+        ?.current
+        ?.id;
+    final layout = widget.state.layout;
+    final times = <int>[];
+    final positions = <double>[];
+    int? currentIndex;
+    for (final k in keyframes) {
+      final at = timeline.timelineTimeOfKeyframe(owner, k.timeUs, layout);
+      if (at == null) continue;
+      final x = _px(at - startUs);
+      // Trimmed away: they still shape the values, but are not shown.
+      if (x < 0 || x > width) continue;
+      if (k.id == current) currentIndex = positions.length;
+      times.add(at);
+      positions.add(x);
+    }
+    if (positions.isEmpty) return null;
+    final l10n = AppLocalizations.of(context);
+    return KeyframeMarkers(
+      positions: positions,
+      labels: [for (final at in times) l10n.keyframeMarker(formatDuration(at))],
+      current: currentIndex,
+      onTap: (i) => widget.actions.jumpTo(times[i]),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -662,6 +715,13 @@ class _ContentState extends ConsumerState<_Content> {
                     : _speedLabel(l10n, clip.speed),
                 isMissing: state.missingMedia.contains(clip.mediaId),
                 selected: selected,
+                keyframes: selected
+                    ? _keyframeMarkers(
+                        ClipSelected(clip.id),
+                        span.startUs,
+                        width,
+                      )
+                    : null,
                 onTap: () => actions.select(ClipSelected(clip.id)),
                 trim: selected
                     ? actions.trimFor(
@@ -833,7 +893,7 @@ class _ContentState extends ConsumerState<_Content> {
               final s = x == null ? 0 : TimelineLayout.of(b).startOf(x.anchor);
               return (s, s + (x?.durationUs ?? 0));
             },
-            build: ({required width, required selected, trim}) =>
+            build: ({required width, required selected, trim, keyframes}) =>
                 OverlayItemTile(
                   kind: OverlayKind.text,
                   label: item.text,
@@ -841,6 +901,7 @@ class _ContentState extends ConsumerState<_Content> {
                   selected: selected,
                   needsReview: item.needsReview,
                   trim: trim,
+                  keyframes: keyframes,
                   onTap: () => widget.actions.select(TextSelected(item.id)),
                 ),
           ),
@@ -865,15 +926,17 @@ class _ContentState extends ConsumerState<_Content> {
             final s = x == null ? 0 : TimelineLayout.of(b).startOf(x.anchor);
             return (s, s + (x?.durationUs ?? 0));
           },
-          build: ({required width, required selected, trim}) => OverlayItemTile(
-            kind: OverlayKind.caption,
-            label: item.text,
-            width: width,
-            selected: selected,
-            needsReview: item.needsReview,
-            trim: trim,
-            onTap: () => widget.actions.select(CaptionSelected(item.id)),
-          ),
+          build: ({required width, required selected, trim, keyframes}) =>
+              OverlayItemTile(
+                kind: OverlayKind.caption,
+                label: item.text,
+                width: width,
+                selected: selected,
+                needsReview: item.needsReview,
+                trim: trim,
+                keyframes: keyframes,
+                onTap: () => widget.actions.select(CaptionSelected(item.id)),
+              ),
         ),
     ];
   }
@@ -924,7 +987,7 @@ class _ContentState extends ConsumerState<_Content> {
                 final l = TimelineLayout.of(b);
                 return (l.startOf(x.anchor), audioEndUs(x, l));
               },
-              build: ({required width, required selected, trim}) =>
+              build: ({required width, required selected, trim, keyframes}) =>
                   AudioItemTile(
                     kind: switch (item.kind) {
                       m.AudioKind.music => AudioKind.music,
@@ -943,6 +1006,7 @@ class _ContentState extends ConsumerState<_Content> {
                     selected: selected,
                     needsReview: item.needsReview,
                     trim: trim,
+                    keyframes: keyframes,
                     onTap: () => widget.actions.select(AudioSelected(item.id)),
                   ),
             );
@@ -963,6 +1027,7 @@ class _ContentState extends ConsumerState<_Content> {
       required double width,
       required bool selected,
       TrimCallbacks? trim,
+      KeyframeMarkers? keyframes,
     })
     build,
   }) {
@@ -986,6 +1051,9 @@ class _ContentState extends ConsumerState<_Content> {
           selected: selected,
           trim: selected
               ? actions.trimFor(id: id, edges: edgesOf, trim: trim)
+              : null,
+          keyframes: selected
+              ? _keyframeMarkers(selection, start, width)
               : null,
         ),
       ),

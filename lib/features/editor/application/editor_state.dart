@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 import 'package:stitch/features/editor/domain/edit_history.dart';
 import 'package:stitch/features/projects/domain/project.dart';
+import 'package:stitch/features/timeline/domain/keyframes.dart';
 import 'package:stitch/features/timeline/domain/layout.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
 
@@ -115,3 +116,12 @@ final class EditorState {
     saveFailed: saveFailed ?? this.saveFailed,
   );
 }
+
+/// The item whose keyframes the editor shows and edits: the selected clip,
+/// text, or audio item. Captions have none.
+KeyframeOwner? keyframeOwnerOf(Selection selection) => switch (selection) {
+  ClipSelected(:final id) => (kind: KeyframeOwnerKind.clip, id: id),
+  TextSelected(:final id) => (kind: KeyframeOwnerKind.text, id: id),
+  AudioSelected(:final id) => (kind: KeyframeOwnerKind.audio, id: id),
+  _ => null,
+};

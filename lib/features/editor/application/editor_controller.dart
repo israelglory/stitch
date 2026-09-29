@@ -21,6 +21,7 @@ import 'package:stitch/features/text/application/text_rendering.dart';
 import 'package:stitch/features/timeline/domain/audio_ops.dart';
 import 'package:stitch/features/timeline/domain/caption_ops.dart';
 import 'package:stitch/features/timeline/domain/composition.dart';
+import 'package:stitch/features/timeline/domain/keyframes.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
 import 'package:stitch/features/timeline/domain/text_ops.dart';
 import 'package:stitch/features/timeline/domain/video_ops.dart';
@@ -36,8 +37,8 @@ const autosaveDelay = Duration(milliseconds: 500);
 /// that arrive together. During a gesture nothing is sent until it ends:
 /// on Android every document rebuilds the preview's players, and a drag
 /// sending one per frame made editing lag. Nothing needs them meanwhile:
-/// a trim shows the frame at its handle (TrimPreview), and text being
-/// dragged or typed is drawn by the editor.
+/// a trim or a clip moved on the canvas shows a frame (ClipFramePreview),
+/// and text being dragged or typed is drawn by the editor.
 const engineSyncDelay = Duration(milliseconds: 32);
 
 /// Owns an open project. All edits go through [apply] (or a gesture),
@@ -126,6 +127,27 @@ class EditorController extends _$EditorController {
   /// snapshot at the start, and the whole gesture undoes in one step.
   void beginGesture() {
     _gestureBase = _current.project;
+    _gestureKeyframeId = ref.read(idGeneratorProvider).next();
+  }
+
+  /// Id for the keyframe a gesture records (a drag on the canvas, a
+  /// slider), fresh for each gesture: one gesture adds at most one.
+  String get gestureKeyframeId =>
+      _gestureKeyframeId ??= ref.read(idGeneratorProvider).next();
+  String? _gestureKeyframeId;
+
+  /// Adds a keyframe to the selected item at timeline time [atUs] holding
+  /// its values there, or removes the keyframe there. One undo step.
+  void toggleKeyframe(int atUs) {
+    final owner = keyframeOwnerOf(_current.selection);
+    if (owner == null) return;
+    final current = _current.timeline.keyframeAt(owner, atUs);
+    final id = ref.read(idGeneratorProvider).next();
+    apply(
+      (t) => current == null
+          ? t.addKeyframe(owner, atUs, id: id)
+          : t.removeKeyframe(owner, current.id),
+    );
   }
 
   void updateGesture(Timeline Function(Timeline base) edit) {
@@ -183,6 +205,10 @@ class EditorController extends _$EditorController {
     await _send(project);
     return project;
   }
+
+  /// Version of the last document sent to the engine; the engine reports
+  /// the version it shows in its playback state.
+  int get sentDocumentVersion => _version;
 
   /// Sends the document again, after another screen used the preview.
   void resync() => _syncEngine(_current.project, immediate: true);

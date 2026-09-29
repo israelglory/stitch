@@ -598,6 +598,66 @@ abstract class AppLocalizations {
   /// **'Full screen'**
   String get fullScreen;
 
+  /// Button in the playback row: adds a keyframe to the selected clip, text, or sound at the playhead. A keyframe records the item's position, zoom, rotation, opacity, and volume at that moment; values move smoothly between keyframes.
+  ///
+  /// In en, this message translates to:
+  /// **'Add keyframe'**
+  String get keyframeAdd;
+
+  /// The same button when the playhead is on a keyframe: removes it.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove keyframe'**
+  String get keyframeRemove;
+
+  /// Accessibility label of a keyframe marker on a timeline item; tapping it moves the playhead there.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyframe at {time}'**
+  String keyframeMarker(String time);
+
+  /// Tool: how see-through a clip or text is.
+  ///
+  /// In en, this message translates to:
+  /// **'Opacity'**
+  String get toolOpacity;
+
+  /// Tool, shown on a keyframe: how values move from this keyframe to the next.
+  ///
+  /// In en, this message translates to:
+  /// **'Easing'**
+  String get toolEasing;
+
+  /// Easing: steady speed.
+  ///
+  /// In en, this message translates to:
+  /// **'Linear'**
+  String get easingLinear;
+
+  /// Easing: starts slow, speeds up.
+  ///
+  /// In en, this message translates to:
+  /// **'Ease in'**
+  String get easingIn;
+
+  /// Easing: starts fast, slows down.
+  ///
+  /// In en, this message translates to:
+  /// **'Ease out'**
+  String get easingOut;
+
+  /// Easing: slow at both ends.
+  ///
+  /// In en, this message translates to:
+  /// **'Ease in and out'**
+  String get easingInOut;
+
+  /// Easing: no movement; jumps at the next keyframe.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold'**
+  String get easingHold;
+
   /// Button that leaves the full screen preview.
   ///
   /// In en, this message translates to:

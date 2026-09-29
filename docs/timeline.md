@@ -23,9 +23,36 @@ Pure Dart. The model is in `lib/features/timeline/domain/`, undo history is in `
 
 **Audio.** Looping audio fills to the end of the video. Anything past the video end is cut at export and flagged in the composition (`cutAtVideoEnd`). Fades always fit inside the item.
 
+**Keyframes.** Clips, text, and audio items can animate. The code is in `keyframes.dart`.
+- Each keyframe is a snapshot of the whole item: `KeyframeValues` holds position (`x`, `y`, as fractions of the canvas), `scale`, `rotationDeg`, `opacity`, and `volume`. Each keyframe also has an easing preset: linear, ease in, ease out, ease in and out, or hold.
+- Keyframe times follow the item's content:
+  - Clip and audio keyframes are stored in source time, so they stay with their content through trims, splits, and speed changes.
+  - Text keyframes are offsets from the item's start.
+  - Looping audio repeats its keyframes on every pass.
+- Values between two keyframes use the easing of the earlier keyframe. Before the first keyframe and after the last, that keyframe's values hold.
+- An item without keyframes uses its own fields: a clip's `framing`, `opacity`, and `volume`; a text item's `transform` and `opacity`; an audio item's `volume`.
+- Keyframes are at least one frame (`keyframeSpacingUs`) apart. Scale is kept between 0.2 and 8.
+- `setValuesAt` records changes:
+  - With no keyframes, it changes the item's own fields.
+  - On a keyframe, it updates that keyframe.
+  - Between keyframes, it adds one.
+  - Sliders and canvas gestures all go through it.
+- When the last keyframe is removed, its values become the item's own, so the item keeps its current look.
+- A split gives each part the keyframes inside it, plus the nearest keyframe on each side, so both parts animate exactly as before.
+
+**Evaluator contract.** The native engines must evaluate keyframes with the same curves as `easeProgress`, where `p` is progress from 0 to 1:
+
+| Easing | Curve |
+|---|---|
+| Linear | `p` |
+| Ease in | `p³` |
+| Ease out | `1 - (1 - p)³` |
+| Ease in and out | `4p³` below 0.5, otherwise `1 - (-2p + 2)³ / 2` |
+| Hold | `0` until the next keyframe |
+
 ## Operations
 
-Operations are extension methods grouped by area: `VideoTrackOps`, `TransitionOps`, `TextOps`, `CaptionOps`, and `AudioOps`.
+Operations are extension methods grouped by area: `VideoTrackOps`, `TransitionOps`, `TextOps`, `CaptionOps`, `AudioOps`, and `KeyframeOps`.
 - Every operation is total. When it does not apply (an unknown id, a split too close to an edge, a value already set), it returns the same instance. The editor controller checks `identical` to skip pushing undo history.
 - `can*` methods tell the UI when to disable a tool.
 - New ids are passed in by the caller, so operations stay deterministic.
@@ -50,5 +77,5 @@ The native engines receive this document as JSON. Preview and export both use it
 ## Tests
 
 - `test/features/timeline/`: one file per area.
-- `test/features/timeline/invariants_test.dart` runs 1,000 seeded random sequences of 60 edits and checks every invariant after each step: limits, caps, anchor integrity, lane overlap, contiguous clips, composition bounds, JSON round trip, and idempotent `normalize`. A failure prints the seed and the list of edits that caused it.
+- `test/features/timeline/invariants_test.dart` runs 1,000 seeded random sequences of 60 edits and checks every invariant after each step: limits, caps, anchor integrity, lane overlap, contiguous clips, composition bounds, keyframe order, spacing, and limits, JSON round trip, and idempotent `normalize`. A failure prints the seed and the list of edits that caused it.
 - Domain line coverage is 100%.

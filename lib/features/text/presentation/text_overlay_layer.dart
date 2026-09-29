@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stitch/design/design.dart';
+import 'package:stitch/features/editor/application/clip_frame_preview.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/editor_state.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
@@ -13,8 +14,8 @@ import 'package:stitch/features/text/application/text_rendering.dart';
 import 'package:stitch/features/text/domain/text_motion.dart';
 import 'package:stitch/features/text/presentation/text_editor_sheet.dart';
 import 'package:stitch/features/timeline/domain/composition.dart';
+import 'package:stitch/features/timeline/domain/keyframes.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
-import 'package:stitch/features/timeline/domain/text_ops.dart';
 import 'package:stitch/l10n/generated/app_localizations.dart';
 
 /// Text on the preview, drawn by the editor rather than the engine: the
@@ -24,6 +25,8 @@ import 'package:stitch/l10n/generated/app_localizations.dart';
 ///
 /// Also takes the preview's taps: a tap on text selects it (or edits it
 /// when already selected); elsewhere it deselects, or toggles playback.
+/// With a clip selected, dragging elsewhere moves it, pinching zooms it,
+/// and twisting turns it (a keyframe at the playhead once it has any).
 class TextOverlayLayer extends ConsumerStatefulWidget {
   const new({required this.projectId, required this.drawAll, super.key});
 
@@ -34,13 +37,16 @@ class TextOverlayLayer extends ConsumerStatefulWidget {
   ConsumerState<TextOverlayLayer> createState() => _TextOverlayLayerState();
 }
 
-/// A text item as it shows at the playhead.
+/// A text item as it shows at the playhead: its placement and opacity
+/// there (keyframes move them), and its in and out motion.
 final class _Shown {
-  const new(this.text, this.layout, this.motion);
+  const new(this.text, this.layout, this.motion, this.transform, this.opacity);
 
   final ResolvedText text;
   final OverlayTextLayout layout;
   final TextMotion motion;
+  final ItemTransform transform;
+  final double opacity;
 }
 
 class _TextOverlayLayerState extends ConsumerState<TextOverlayLayer> {
@@ -48,14 +54,14 @@ class _TextOverlayLayerState extends ConsumerState<TextOverlayLayer> {
   final _layouts =
       <(String, TextStyleSpec, double, double), OverlayTextLayout>{};
 
-  /// The dragged item, its transform, and the focal point when the drag
-  /// started.
+  /// The dragged item, its values at the playhead, and the focal point
+  /// when the drag started.
   String? _dragging;
-  ItemTransform? _dragBase;
+  KeyframeValues? _dragBase;
   Offset _dragStart = Offset.zero;
 
-  static const _minScale = 0.2;
-  static const _maxScale = 8.0;
+  /// The selected clip, while moved, zoomed, or turned on the canvas.
+  String? _clipDragging;
 
   /// Drops layouts not in [keep] (text changes as it is typed).
   void _keepLayouts(Set<(String, TextStyleSpec, double, double)> keep) {
@@ -68,6 +74,55 @@ class _TextOverlayLayerState extends ConsumerState<TextOverlayLayer> {
 
   EditorController get _controller =>
       ref.read(editorControllerProvider(widget.projectId).notifier);
+
+  /// Starts moving the selected clip on the canvas, when the playhead is
+  /// on it: from its values there, showing its frame there.
+  void _startClipDrag(EditorState state, int playhead, Offset focal) {
+    final selection = state.selection;
+    if (selection is! ClipSelected) return;
+    final owner = (kind: KeyframeOwnerKind.clip, id: selection.id);
+    final values = state.timeline.valuesAt(owner, playhead);
+    final sourceUs = state.timeline.keyframeTimeAt(owner, playhead);
+    if (values == null || sourceUs == null) return;
+    final playback = ref.read(playbackControllerProvider.notifier);
+    if (ref.read(playbackControllerProvider).isPlaying) {
+      unawaited(playback.pause());
+    }
+    _dragging = selection.id;
+    _clipDragging = selection.id;
+    _dragBase = values;
+    _dragStart = focal;
+    ref
+        .read(clipFramePreviewProvider(widget.projectId).notifier)
+        .follow(selection.id, sourceUs);
+    _controller.beginGesture();
+  }
+
+  /// Moves (offsets are fractions of the canvas), zooms, and turns the
+  /// clip; with keyframes, records one at the playhead.
+  void _updateClipDrag(
+    ScaleUpdateDetails d,
+    KeyframeValues base,
+    int playhead,
+    Size preview,
+  ) {
+    final id = _clipDragging;
+    if (id == null) return;
+    final delta = d.localFocalPoint - _dragStart;
+    _controller.updateGesture(
+      (b) => b.setValuesAt(
+        (kind: KeyframeOwnerKind.clip, id: id),
+        playhead,
+        (v) => v.copyWith(
+          x: base.x + delta.dx / preview.width,
+          y: base.y + delta.dy / preview.height,
+          scale: base.scale * d.scale,
+          rotationDeg: base.rotationDeg + d.rotation * 180 / math.pi,
+        ),
+        newKeyframeId: _controller.gestureKeyframeId,
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -86,7 +141,7 @@ class _TextOverlayLayerState extends ConsumerState<TextOverlayLayer> {
 
   /// Canvas pixels to preview pixels.
   static Matrix4 _transform(_Shown s, Size preview, double unit) {
-    final t = s.text.transform;
+    final t = s.transform;
     return Matrix4.identity()
       ..translateByDouble(
         t.x * preview.width,
@@ -151,6 +206,10 @@ class _TextOverlayLayerState extends ConsumerState<TextOverlayLayer> {
             if (playhead >= t.startUs && playhead < t.endUs)
               () {
                 final duration = t.endUs - t.startUs;
+                final v = state.timeline.valuesAt((
+                  kind: KeyframeOwnerKind.text,
+                  id: t.id,
+                ), playhead);
                 return _Shown(
                   t,
                   _layout(t, canvas.width.toDouble(), canvas.height.toDouble()),
@@ -162,6 +221,15 @@ class _TextOverlayLayerState extends ConsumerState<TextOverlayLayer> {
                     durationUs: duration,
                     tUs: playhead - t.startUs,
                   ),
+                  v == null
+                      ? t.transform
+                      : ItemTransform(
+                          x: v.x,
+                          y: v.y,
+                          scale: v.scale,
+                          rotationDeg: v.rotationDeg,
+                        ),
+                  v?.opacity ?? 1,
                 );
               }(),
         ];
@@ -201,11 +269,19 @@ class _TextOverlayLayerState extends ConsumerState<TextOverlayLayer> {
             final hit = _hit(shown, d.localFocalPoint, preview, unit);
             // Two fingers may start anywhere once a text is selected.
             final id = hit ?? (d.pointerCount > 1 ? selectedId : null);
-            final item = id == null ? null : state.timeline.textById(id);
-            if (id == null || item == null) return;
+            final values = id == null
+                ? null
+                : state.timeline.valuesAt((
+                    kind: KeyframeOwnerKind.text,
+                    id: id,
+                  ), playhead);
+            if (id == null || values == null) {
+              _startClipDrag(state, playhead, d.localFocalPoint);
+              return;
+            }
             if (id != selectedId) _controller.select(TextSelected(id));
             _dragging = id;
-            _dragBase = item.transform;
+            _dragBase = values;
             _dragStart = d.localFocalPoint;
             _controller.beginGesture();
           },
@@ -213,23 +289,40 @@ class _TextOverlayLayerState extends ConsumerState<TextOverlayLayer> {
             final id = _dragging;
             final base = _dragBase;
             if (id == null || base == null) return;
-            // Scale and rotation are totals since the start.
+            if (_clipDragging != null) {
+              _updateClipDrag(d, base, playhead, preview);
+              return;
+            }
+            // Scale and rotation are totals since the start. Keyframed
+            // text records a keyframe at the playhead.
             final delta = d.localFocalPoint - _dragStart;
-            final moved = base.copyWith(
-              x: (base.x + delta.dx / preview.width).clamp(0.0, 1.0),
-              y: (base.y + delta.dy / preview.height).clamp(0.0, 1.0),
-              scale: (base.scale * d.scale).clamp(_minScale, _maxScale),
-              rotationDeg: base.rotationDeg + d.rotation * 180 / math.pi,
-            );
             _controller.updateGesture(
-              (b) => b.updateText(id, (t) => t.copyWith(transform: moved)),
+              (b) => b.setValuesAt(
+                (kind: KeyframeOwnerKind.text, id: id),
+                playhead,
+                (v) => v.copyWith(
+                  x: (base.x + delta.dx / preview.width).clamp(0.0, 1.0),
+                  y: (base.y + delta.dy / preview.height).clamp(0.0, 1.0),
+                  scale: base.scale * d.scale,
+                  rotationDeg: base.rotationDeg + d.rotation * 180 / math.pi,
+                ),
+                newKeyframeId: _controller.gestureKeyframeId,
+              ),
             );
           },
           onScaleEnd: (_) {
             if (_dragging == null) return;
+            final clip = _clipDragging;
             _dragging = null;
+            _clipDragging = null;
             _dragBase = null;
             _controller.endGesture();
+            if (clip != null) {
+              // After the edit is sent: its frame stays until shown.
+              ref
+                  .read(clipFramePreviewProvider(widget.projectId).notifier)
+                  .end();
+            }
             unawaited(HapticFeedback.selectionClick());
           },
           child: Stack(
@@ -298,7 +391,7 @@ class _TextPainter extends CustomPainter {
         ..transform(
           _TextOverlayLayerState._transform(s, preview, unit).storage,
         );
-      final alpha = s.motion.alpha.clamp(0.0, 1.0);
+      final alpha = (s.motion.alpha * s.opacity).clamp(0.0, 1.0);
       if (alpha < 1) {
         canvas.saveLayer(
           Offset.zero & s.layout.size,
@@ -316,7 +409,7 @@ class _TextPainter extends CustomPainter {
       if (alpha < 1) canvas.restore();
       if (s.text.id == selectedId) {
         // A thin frame, the same width at any scale.
-        final scale = unit * s.text.transform.scale * s.motion.scale;
+        final scale = unit * s.transform.scale * s.motion.scale;
         canvas.drawRect(
           Offset.zero & s.layout.size,
           Paint()

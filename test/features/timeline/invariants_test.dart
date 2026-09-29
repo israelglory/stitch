@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:stitch/features/timeline/domain/audio_ops.dart';
 import 'package:stitch/features/timeline/domain/caption_ops.dart';
 import 'package:stitch/features/timeline/domain/composition.dart';
+import 'package:stitch/features/timeline/domain/keyframes.dart';
 import 'package:stitch/features/timeline/domain/layout.dart';
 import 'package:stitch/features/timeline/domain/limits.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
@@ -187,6 +188,57 @@ _Edit _randomEdit(Timeline t, Random rng, String Function() id) {
       ('loop', (t) => t.setAudioLoop(pick(audioIds), loop: rng.nextBool())),
       ('delete audio', (t) => t.deleteAudio(pick(audioIds))),
     ],
+    // Keyframes on any item: add, change values (recording), remove, ease.
+    for (final (kind, ids) in [
+      (KeyframeOwnerKind.clip, clipIds),
+      (KeyframeOwnerKind.text, textIds),
+      (KeyframeOwnerKind.audio, audioIds),
+    ])
+      if (ids.isNotEmpty) ...[
+        (
+          'keyframe ${kind.name}',
+          (t) =>
+              t.addKeyframe((kind: kind, id: pick(ids)), anyTime(), id: id()),
+        ),
+        (
+          'animate ${kind.name}',
+          (t) => t.setValuesAt(
+            (kind: kind, id: pick(ids)),
+            anyTime(),
+            (v) => v.copyWith(
+              x: v.x + rng.nextDouble() - 0.5,
+              scale: v.scale * (0.5 + rng.nextDouble() * 3),
+              opacity: rng.nextDouble() * 1.4 - 0.2,
+              volume: rng.nextDouble() * 3,
+            ),
+            newKeyframeId: id(),
+          ),
+        ),
+        (
+          'unkeyframe ${kind.name}',
+          (t) {
+            final owner = (kind: kind, id: pick(ids));
+            final keyframes = t.keyframesOf(owner);
+            return keyframes.isEmpty
+                ? t
+                : t.removeKeyframe(owner, pick(keyframes).id);
+          },
+        ),
+        (
+          'ease ${kind.name}',
+          (t) {
+            final owner = (kind: kind, id: pick(ids));
+            final keyframes = t.keyframesOf(owner);
+            return keyframes.isEmpty
+                ? t
+                : t.setKeyframeEasing(
+                    owner,
+                    pick(keyframes).id,
+                    pick(KeyframeEasing.values),
+                  );
+          },
+        ),
+      ],
     if (captionIds.isNotEmpty) ...[
       (
         'edit caption',
@@ -209,6 +261,33 @@ List<String> _violations(Timeline t) {
   final layout = TimelineLayout.of(t);
   final clips = t.videoClips;
   final clipIds = {for (final c in clips) c.id};
+
+  // Keyframes: sorted, unique ids per item, values within limits, and
+  // every value evaluates to a finite number.
+  void keyframes(String what, List<Keyframe> list) {
+    for (var i = 0; i < list.length; i++) {
+      final k = list[i];
+      if (i > 0 && list[i - 1].timeUs > k.timeUs) {
+        problems.add('$what keyframes out of order');
+      }
+      if (k.values.clamped() != k.values) {
+        problems.add('$what keyframe ${k.id} out of limits: ${k.values}');
+      }
+    }
+    if (list.map((k) => k.id).toSet().length != list.length) {
+      problems.add('$what has duplicate keyframe ids');
+    }
+  }
+
+  for (final c in clips) {
+    keyframes('clip ${c.id}', c.keyframes);
+  }
+  for (final x in t.textItems) {
+    keyframes('text ${x.id}', x.keyframes);
+  }
+  for (final x in t.audioItems) {
+    keyframes('audio ${x.id}', x.keyframes);
+  }
 
   // Ids are unique within each collection.
   void unique(String what, Iterable<String> ids) {

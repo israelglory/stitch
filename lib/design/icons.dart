@@ -52,6 +52,13 @@ abstract final class AppIcons {
   static const background = IconData(58086, fontFamily: _f); // paint-bucket
   static const transition = IconData(57930, fontFamily: _f); // arrow-left-right
   static const fade = IconData(58780, fontFamily: _f); // blend
+  static const keyframeAdd = IconData(58850, fontFamily: _f); // diamond-plus
+  static const keyframeRemove = IconData(
+    58849,
+    fontFamily: _f,
+  ); // diamond-minus
+  static const easing = IconData(58251, fontFamily: _f); // spline
+  static const opacity = IconData(57524, fontFamily: _f); // droplet
   static const loop = IconData(57670, fontFamily: _f); // repeat
   static const microphone = IconData(57624, fontFamily: _f); // mic
   static const soundEffects = IconData(58717, fontFamily: _f); // drum

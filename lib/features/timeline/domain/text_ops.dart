@@ -1,4 +1,5 @@
 import 'package:stitch/features/timeline/domain/item_timing.dart';
+import 'package:stitch/features/timeline/domain/keyframes.dart';
 import 'package:stitch/features/timeline/domain/layout.dart';
 import 'package:stitch/features/timeline/domain/limits.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
@@ -83,13 +84,21 @@ extension TextOps on Timeline {
   Timeline trimText(String id, ClipEdge edge, int deltaUs) {
     final item = textById(id);
     if (item == null || deltaUs == 0) return this;
+    final layout = TimelineLayout.of(this);
     final timing = ItemTimingMath(
-      TimelineLayout.of(this),
+      layout,
     ).trim((anchor: item.anchor, durationUs: item.durationUs), edge, deltaUs);
+    // Keyframes count from the item's start: a moved start moves them back
+    // by as much, so they stay at the same moments.
+    final moved = layout.startOf(timing.anchor) - layout.startOf(item.anchor);
     return normalize(
       _replaceText(
         id,
-        (t) => t.copyWith(anchor: timing.anchor, durationUs: timing.durationUs),
+        (t) => t.copyWith(
+          anchor: timing.anchor,
+          durationUs: timing.durationUs,
+          keyframes: t.keyframes.shifted(-moved),
+        ),
       ),
     );
   }
@@ -111,11 +120,17 @@ extension TextOps on Timeline {
         textItems: [
           for (final t in textItems)
             if (t.id == id) ...[
-              t.copyWith(durationUs: first.durationUs),
+              t.copyWith(
+                durationUs: first.durationUs,
+                keyframes: t.keyframes.within(0, first.durationUs),
+              ),
               t.copyWith(
                 id: newId,
                 anchor: second.anchor,
                 durationUs: second.durationUs,
+                keyframes: t.keyframes
+                    .shifted(-first.durationUs)
+                    .within(0, second.durationUs),
               ),
             ] else
               t,

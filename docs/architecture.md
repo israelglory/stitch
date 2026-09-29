@@ -33,6 +33,8 @@ Still to come: transitions, text, captions, audio, export.
 - Riverpod with code generation. `Notifier` and `AsyncNotifier` only.
 - All timeline edits go through one `EditorController`, which applies pure domain operations and pushes immutable snapshots to undo and redo history (M3, M4).
 - Playback position streams from the engine through a separate provider. Widgets `select` the fields they need, so the timeline does not rebuild at display rate.
+- `keyframing.dart` derives what the keyframe button acts on (`keyframeTarget`) and the selected item's values at the playhead (`valuesAtPlayhead`). Sliders and canvas gestures start from those values.
+- During a gesture (a drag, pinch, or slider move), edits update the editor state only. The engine gets one document when the gesture ends, which keeps dragging smooth on slower Android phones.
 
 ## Engine boundary
 

@@ -11,13 +11,16 @@ import 'package:stitch/features/captions/presentation/caption_editor_sheet.dart'
 import 'package:stitch/features/captions/presentation/captions_sheet.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/editor_state.dart';
+import 'package:stitch/features/editor/application/keyframing.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
+import 'package:stitch/features/editor/presentation/sheets/keyframe_sheets.dart';
 import 'package:stitch/features/editor/presentation/sheets/tool_sheets.dart';
 import 'package:stitch/features/media/domain/library_item.dart';
 import 'package:stitch/features/projects/presentation/import_progress_sheet.dart';
 import 'package:stitch/features/text/presentation/text_editor_sheet.dart';
 import 'package:stitch/features/timeline/domain/audio_ops.dart';
 import 'package:stitch/features/timeline/domain/caption_ops.dart';
+import 'package:stitch/features/timeline/domain/keyframes.dart';
 import 'package:stitch/features/timeline/domain/text_ops.dart';
 import 'package:stitch/features/timeline/domain/video_ops.dart';
 import 'package:stitch/l10n/generated/app_localizations.dart';
@@ -237,6 +240,28 @@ class _TextTools extends ConsumerWidget {
           onPressed: () => showTextEditor(context, projectId, textId: textId),
         ),
         ToolbarItem(
+          icon: AppIcons.opacity,
+          label: l10n.toolOpacity,
+          onPressed: () => showToolSheet(
+            context,
+            title: l10n.toolOpacity,
+            child: OpacitySheet(
+              projectId: projectId,
+              owner: (kind: KeyframeOwnerKind.text, id: textId),
+            ),
+          ),
+        ),
+        if (ref.watch(keyframeTargetProvider(projectId))?.current != null)
+          ToolbarItem(
+            icon: AppIcons.easing,
+            label: l10n.toolEasing,
+            onPressed: () => showToolSheet(
+              context,
+              title: l10n.toolEasing,
+              child: EasingSheet(projectId: projectId),
+            ),
+          ),
+        ToolbarItem(
           icon: AppIcons.split,
           label: l10n.toolSplit,
           onPressed: canSplit
@@ -343,6 +368,28 @@ class _ClipTools extends ConsumerWidget {
               : null,
         ),
         ToolbarItem(
+          icon: AppIcons.opacity,
+          label: l10n.toolOpacity,
+          onPressed: () => showToolSheet(
+            context,
+            title: l10n.toolOpacity,
+            child: OpacitySheet(
+              projectId: projectId,
+              owner: (kind: KeyframeOwnerKind.clip, id: clipId),
+            ),
+          ),
+        ),
+        if (ref.watch(keyframeTargetProvider(projectId))?.current != null)
+          ToolbarItem(
+            icon: AppIcons.easing,
+            label: l10n.toolEasing,
+            onPressed: () => showToolSheet(
+              context,
+              title: l10n.toolEasing,
+              child: EasingSheet(projectId: projectId),
+            ),
+          ),
+        ToolbarItem(
           icon: AppIcons.delete,
           label: l10n.delete,
           destructive: true,
@@ -429,6 +476,16 @@ class _AudioTools extends ConsumerWidget {
             ),
           ),
         ),
+        if (ref.watch(keyframeTargetProvider(projectId))?.current != null)
+          ToolbarItem(
+            icon: AppIcons.easing,
+            label: l10n.toolEasing,
+            onPressed: () => showToolSheet(
+              context,
+              title: l10n.toolEasing,
+              child: EasingSheet(projectId: projectId),
+            ),
+          ),
         ToolbarItem(
           icon: AppIcons.fade,
           label: l10n.toolFade,

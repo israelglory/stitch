@@ -25,6 +25,7 @@ class VideoClipTile extends StatelessWidget {
     this.speedLabel,
     this.isMissing = false,
     this.trim,
+    this.keyframes,
     super.key,
   });
 
@@ -51,6 +52,9 @@ class VideoClipTile extends StatelessWidget {
   final bool isMissing;
   final TrimCallbacks? trim;
 
+  /// Keyframe markers, shown while selected.
+  final KeyframeMarkers? keyframes;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -60,16 +64,19 @@ class VideoClipTile extends StatelessWidget {
       child: SizedBox(
         width: width,
         height: AppSizes.videoTrackHeight,
-        child: Semantics(
-          customSemanticsActions: semanticActions,
-          child: Pressable(
-            onPressed: onTap,
-            semanticLabel: semanticLabel ?? durationLabel,
-            selected: selected,
-            minSize: Size.zero,
-            child: TimelineItemFrame(
+        // The frame wraps the item so its keyframe markers stay separate
+        // controls for screen readers.
+        child: TimelineItemFrame(
+          selected: selected,
+          trim: trim,
+          keyframes: keyframes,
+          child: Semantics(
+            customSemanticsActions: semanticActions,
+            child: Pressable(
+              onPressed: onTap,
+              semanticLabel: semanticLabel ?? durationLabel,
               selected: selected,
-              trim: trim,
+              minSize: Size.zero,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.control),
                 child: Stack(
@@ -198,6 +205,7 @@ class OverlayItemTile extends StatelessWidget {
     this.selected = false,
     this.needsReview = false,
     this.trim,
+    this.keyframes,
     super.key,
   });
 
@@ -212,6 +220,9 @@ class OverlayItemTile extends StatelessWidget {
   final bool needsReview;
   final TrimCallbacks? trim;
 
+  /// Keyframe markers, shown while selected.
+  final KeyframeMarkers? keyframes;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -225,6 +236,7 @@ class OverlayItemTile extends StatelessWidget {
       semanticLabel: label,
       selected: selected,
       trim: trim,
+      keyframes: keyframes,
       child: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: selected
@@ -277,6 +289,7 @@ class AudioItemTile extends StatelessWidget {
     this.selected = false,
     this.needsReview = false,
     this.trim,
+    this.keyframes,
     super.key,
   });
 
@@ -300,6 +313,9 @@ class AudioItemTile extends StatelessWidget {
   final bool needsReview;
   final TrimCallbacks? trim;
 
+  /// Keyframe markers, shown while selected.
+  final KeyframeMarkers? keyframes;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -313,6 +329,7 @@ class AudioItemTile extends StatelessWidget {
       semanticLabel: label,
       selected: selected,
       trim: trim,
+      keyframes: keyframes,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -384,6 +401,7 @@ class _LaneItem extends StatelessWidget {
     required this.semanticLabel,
     required this.selected,
     required this.trim,
+    required this.keyframes,
     required this.child,
   });
 
@@ -393,6 +411,9 @@ class _LaneItem extends StatelessWidget {
   final String semanticLabel;
   final bool selected;
   final TrimCallbacks? trim;
+
+  /// Keyframe markers, shown while selected.
+  final KeyframeMarkers? keyframes;
   final Widget child;
 
   static const double _tint = 0.24;
@@ -409,14 +430,15 @@ class _LaneItem extends StatelessWidget {
       child: SizedBox(
         width: width,
         height: AppSizes.laneHeight,
-        child: Pressable(
-          onPressed: onTap,
-          semanticLabel: semanticLabel,
+        child: TimelineItemFrame(
           selected: selected,
-          minSize: Size.zero,
-          child: TimelineItemFrame(
+          trim: trim,
+          keyframes: keyframes,
+          child: Pressable(
+            onPressed: onTap,
+            semanticLabel: semanticLabel,
             selected: selected,
-            trim: trim,
+            minSize: Size.zero,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.control),
               child: ColoredBox(color: fill(laneColor, colors), child: child),

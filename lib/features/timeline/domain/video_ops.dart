@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:stitch/features/timeline/domain/keyframes.dart';
 import 'package:stitch/features/timeline/domain/layout.dart';
 import 'package:stitch/features/timeline/domain/limits.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
@@ -71,8 +72,16 @@ extension VideoTrackOps on Timeline {
     final splitSource =
         clip.sourceInUs + timelineToSourceUs(atUs - span.startUs, clip.speed);
 
-    final first = clip.copyWith(sourceOutUs: splitSource);
-    final second = clip.copyWith(id: newId, sourceInUs: splitSource);
+    // Each part keeps the keyframes that shape it (source time).
+    final first = clip.copyWith(
+      sourceOutUs: splitSource,
+      keyframes: clip.keyframes.within(clip.sourceInUs, splitSource),
+    );
+    final second = clip.copyWith(
+      id: newId,
+      sourceInUs: splitSource,
+      keyframes: clip.keyframes.within(splitSource, clip.sourceOutUs),
+    );
 
     final split = copyWith(
       videoClips: [
@@ -289,6 +298,8 @@ extension VideoTrackOps on Timeline {
       sourceInUs: 0,
       sourceOutUs: length,
       audioDetached: false,
+      // Where they were in the clip, now that it starts at 0.
+      keyframes: clip.keyframes.shifted(-clip.sourceInUs),
     );
     final oldIn = clip.sourceInUs;
     return normalize(

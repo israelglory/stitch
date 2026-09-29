@@ -8,13 +8,15 @@ import 'package:stitch/core/time/time.dart';
 import 'package:stitch/design/design.dart';
 import 'package:stitch/engine/engine_provider.dart';
 import 'package:stitch/features/captions/presentation/caption_preview_layer.dart';
+import 'package:stitch/features/editor/application/clip_frame_preview.dart';
 import 'package:stitch/features/editor/application/current_clip.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
+import 'package:stitch/features/editor/application/keyframing.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
-import 'package:stitch/features/editor/application/trim_preview.dart';
 import 'package:stitch/features/editor/presentation/editor_media.dart';
 import 'package:stitch/features/projects/domain/project.dart';
 import 'package:stitch/features/text/presentation/text_overlay_layer.dart';
+import 'package:stitch/features/timeline/domain/keyframes.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
 import 'package:stitch/l10n/generated/app_localizations.dart';
 
@@ -42,11 +44,11 @@ class EditorPreview extends ConsumerWidget {
     final playing = ref.watch(
       playbackControllerProvider.select((p) => p.isPlaying),
     );
-    final trimFrame = ref.watch(trimPreviewProvider(projectId));
+    final frame = ref.watch(clipFramePreviewProvider(projectId));
     if (project == null) return const SizedBox.shrink();
-    final trimmed = trimFrame == null
+    final framed = frame == null
         ? null
-        : project.timeline.clipById(trimFrame.clipId);
+        : project.timeline.clipById(frame.clipId);
 
     return Semantics(
       button: true,
@@ -71,19 +73,28 @@ class EditorPreview extends ConsumerWidget {
                       filterQuality: FilterQuality.medium,
                     )
                   else
-                    _Canvas(project: project, clip: clip),
+                    _PlayheadCanvas(
+                      projectId: projectId,
+                      project: project,
+                      clip: clip,
+                    ),
                   if (texture == null)
                     CaptionPreviewLayer(projectId: projectId),
                   TextOverlayLayer(
                     projectId: projectId,
                     drawAll: texture == null,
                   ),
-                  // While a trim handle is dragged: the frame at the handle.
-                  if (trimFrame != null && trimmed != null)
+                  // While a clip is edited by hand: its frame, placed by
+                  // its values at that moment.
+                  if (frame != null && framed != null)
                     _Canvas(
                       project: project,
-                      clip: trimmed,
-                      image: MemoryImage(trimFrame.image),
+                      clip: framed,
+                      values: project.timeline.valuesAt((
+                        kind: KeyframeOwnerKind.clip,
+                        id: framed.id,
+                      ), frame.atUs),
+                      image: MemoryImage(frame.image),
                     ),
                 ],
               ),
@@ -95,13 +106,48 @@ class EditorPreview extends ConsumerWidget {
   }
 }
 
-/// One clip drawn as the engine would: its framing over the project's
+/// [_Canvas] for the clip under the playhead, placed by its values there.
+class _PlayheadCanvas extends ConsumerWidget {
+  const new({
+    required this.projectId,
+    required this.project,
+    required this.clip,
+  });
+
+  final String projectId;
+  final Project project;
+  final VideoClip? clip;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final clip = this.clip;
+    final values = clip == null
+        ? null
+        : ref.watch(
+            valuesAtPlayheadProvider(
+              projectId,
+              KeyframeOwnerKind.clip,
+              clip.id,
+            ),
+          );
+    return _Canvas(project: project, clip: clip, values: values);
+  }
+}
+
+/// One clip drawn as the engine would: its framing (moved, zoomed, and
+/// turned by [values] when given) and opacity over the project's
 /// background. Shows the clip's poster, or [image] (a frame of it).
 class _Canvas extends StatelessWidget {
-  const new({required this.project, required this.clip, this.image});
+  const new({
+    required this.project,
+    required this.clip,
+    this.values,
+    this.image,
+  });
 
   final Project project;
   final VideoClip? clip;
+  final KeyframeValues? values;
   final ImageProvider? image;
 
   Widget _picture(VideoClip clip, {BoxFit fit = BoxFit.cover}) =>
@@ -129,27 +175,39 @@ class _Canvas extends StatelessWidget {
     if (clip == null) return background;
 
     final framing = clip.framing;
+    final v =
+        values ??
+        KeyframeValues(
+          x: framing.offsetX,
+          y: framing.offsetY,
+          scale: framing.scale,
+          rotationDeg: framing.rotationDeg,
+          opacity: clip.opacity,
+        );
     return Stack(
       fit: StackFit.expand,
       children: [
         background,
         LayoutBuilder(
-          builder: (context, box) => Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.identity()
-              ..translateByDouble(
-                framing.offsetX * box.maxWidth,
-                framing.offsetY * box.maxHeight,
-                0,
-                1,
-              )
-              ..rotateZ(framing.rotationDeg * math.pi / 180)
-              ..scaleByDouble(framing.scale, framing.scale, 1, 1),
-            child: _picture(
-              clip,
-              fit: framing.mode == FramingMode.fill
-                  ? BoxFit.cover
-                  : BoxFit.contain,
+          builder: (context, box) => Opacity(
+            opacity: v.opacity.clamp(0.0, 1.0),
+            child: Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.identity()
+                ..translateByDouble(
+                  v.x * box.maxWidth,
+                  v.y * box.maxHeight,
+                  0,
+                  1,
+                )
+                ..rotateZ(v.rotationDeg * math.pi / 180)
+                ..scaleByDouble(v.scale, v.scale, 1, 1),
+              child: _picture(
+                clip,
+                fit: framing.mode == FramingMode.fill
+                    ? BoxFit.cover
+                    : BoxFit.contain,
+              ),
             ),
           ),
         ),
@@ -207,6 +265,37 @@ class PlayButton extends ConsumerWidget {
       icon: playing ? AppIcons.pause : AppIcons.play,
       semanticLabel: playing ? l10n.pause : l10n.play,
       onPressed: () => ref.read(playbackControllerProvider.notifier).toggle(),
+    );
+  }
+}
+
+/// Adds a keyframe to the selected clip, text, or sound at the playhead,
+/// or removes the one there. Disabled with nothing selected, or with the
+/// playhead outside the selected item.
+class KeyframeButton extends ConsumerWidget {
+  const new({required this.projectId, super.key});
+
+  final String projectId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final target = ref.watch(keyframeTargetProvider(projectId));
+    final onKeyframe = target?.current != null;
+    return AppIconButton(
+      icon: onKeyframe ? AppIcons.keyframeRemove : AppIcons.keyframeAdd,
+      semanticLabel: onKeyframe ? l10n.keyframeRemove : l10n.keyframeAdd,
+      color: onKeyframe ? context.colors.accent : null,
+      onPressed: target == null
+          ? null
+          : () {
+              unawaited(AppHaptics.selection());
+              ref
+                  .read(editorControllerProvider(projectId).notifier)
+                  .toggleKeyframe(
+                    ref.read(playbackControllerProvider).positionUs,
+                  );
+            },
     );
   }
 }

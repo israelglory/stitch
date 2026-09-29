@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:stitch/features/timeline/domain/item_timing.dart';
+import 'package:stitch/features/timeline/domain/keyframes.dart';
 import 'package:stitch/features/timeline/domain/layout.dart';
 import 'package:stitch/features/timeline/domain/limits.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
@@ -130,12 +131,17 @@ extension AudioOps on Timeline {
     final start = layout.startOf(item.anchor);
     final splitSource =
         item.sourceInUs + timelineToSourceUs(atUs - start, item.speed);
-    final first = item.copyWith(sourceOutUs: splitSource, fadeOutUs: 0);
+    final first = item.copyWith(
+      sourceOutUs: splitSource,
+      fadeOutUs: 0,
+      keyframes: item.keyframes.within(item.sourceInUs, splitSource),
+    );
     final second = item.copyWith(
       id: newId,
       sourceInUs: splitSource,
       anchor: layout.anchorAt(atUs),
       fadeInUs: 0,
+      keyframes: item.keyframes.within(splitSource, item.sourceOutUs),
     );
     return normalize(
       copyWith(
@@ -237,6 +243,8 @@ extension AudioOps on Timeline {
       sourceOutUs: clip.sourceOutUs,
       volume: clip.volume,
       speed: clip.speed,
+      // Same file and span, so the same source times; volume carries over.
+      keyframes: clip.keyframes,
     );
     return normalize(
       copyWith(

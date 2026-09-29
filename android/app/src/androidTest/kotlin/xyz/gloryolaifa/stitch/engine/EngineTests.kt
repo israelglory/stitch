@@ -271,6 +271,16 @@ class EngineTests {
   }
 
   @Test
+  fun exportProgressKeepsUpWithTheVideo() = runBlocking<Unit> {
+    val seen = mutableListOf<Double>()
+    export(sampleDocument(), name = "progress.mp4", onProgress = { _, _, f -> seen += f })
+    assertEquals(seen.sorted(), seen)
+    // Before the file is written it gets close: it followed the frames.
+    val beforeDone = seen.filter { it < 1.0 }
+    assertTrue("progress $seen", (beforeDone.maxOrNull() ?: 0.0) >= 0.8)
+  }
+
+  @Test
   fun exportDrawsEveryClipAndHidesTheIdleSequence() = runBlocking<Unit> {
     val out = export(sampleDocument())
     // Clip 1 alone, the crossfade, clip 2 alone (sequence A is in a gap

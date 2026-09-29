@@ -4,6 +4,7 @@ import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/editor_state.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
 import 'package:stitch/features/timeline/domain/keyframes.dart';
+import 'package:stitch/features/timeline/domain/layout.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
 
 part 'keyframing.g.dart';
@@ -23,16 +24,24 @@ KeyframeTarget? keyframeTarget(Ref ref, String projectId) {
     ),
   );
   if (owner == null) return null;
-  final timeline = ref.watch(
-    editorControllerProvider(projectId).select((s) => s.value?.timeline),
-  );
+  final state = ref.watch(_timelineProvider(projectId));
   final position = ref.watch(
     playbackControllerProvider.select((p) => p.positionUs),
   );
-  if (timeline == null || timeline.keyframeTimeAt(owner, position) == null) {
-    return null;
-  }
-  return (owner: owner, current: timeline.keyframeAt(owner, position));
+  if (state == null) return null;
+  final (timeline, layout) = state;
+  if (timeline.keyframeTimeAt(owner, position, layout) == null) return null;
+  return (owner: owner, current: timeline.keyframeAt(owner, position, layout));
+}
+
+/// The timeline and its layout, which changes only with the timeline, so
+/// the providers above do not rebuild it at every playback tick.
+@riverpod
+(Timeline, TimelineLayout)? _timeline(Ref ref, String projectId) {
+  final timeline = ref.watch(
+    editorControllerProvider(projectId).select((s) => s.value?.timeline),
+  );
+  return timeline == null ? null : (timeline, TimelineLayout.of(timeline));
 }
 
 /// Values of the selected item at the playhead: what sliders and canvas
@@ -44,12 +53,11 @@ KeyframeValues? valuesAtPlayhead(
   KeyframeOwnerKind kind,
   String id,
 ) {
-  final owner = (kind: kind, id: id);
-  final timeline = ref.watch(
-    editorControllerProvider(projectId).select((s) => s.value?.timeline),
-  );
+  final state = ref.watch(_timelineProvider(projectId));
   final position = ref.watch(
     playbackControllerProvider.select((p) => p.positionUs),
   );
-  return timeline?.valuesAt(owner, position);
+  if (state == null) return null;
+  final (timeline, layout) = state;
+  return timeline.valuesAt((kind: kind, id: id), position, layout);
 }

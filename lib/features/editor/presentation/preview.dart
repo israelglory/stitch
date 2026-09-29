@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stitch/core/time/time.dart';
 import 'package:stitch/design/design.dart';
@@ -55,6 +56,8 @@ class EditorPreview extends ConsumerWidget {
       label: playing ? l10n.pause : l10n.play,
       onTap: () => ref.read(playbackControllerProvider.notifier).toggle(),
       child: GestureDetector(
+        // The Semantics above already offers the tap.
+        excludeFromSemantics: true,
         behavior: HitTestBehavior.opaque,
         onTap: () =>
             unawaited(ref.read(playbackControllerProvider.notifier).toggle()),
@@ -295,6 +298,14 @@ class KeyframeButton extends ConsumerWidget {
                   .toggleKeyframe(
                     ref.read(playbackControllerProvider).positionUs,
                   );
+              // The button's new label is not read out on its own.
+              unawaited(
+                SemanticsService.sendAnnouncement(
+                  View.of(context),
+                  onKeyframe ? l10n.keyframeRemoved : l10n.keyframeAdded,
+                  Directionality.of(context),
+                ),
+              );
             },
     );
   }

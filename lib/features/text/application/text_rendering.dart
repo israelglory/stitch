@@ -62,6 +62,8 @@ abstract interface class TextRasterizer {
   /// Draws [text] in [style] for a [canvasWidth] x [canvasHeight] canvas;
   /// a [typewriter] gets one frame per step of the reveal. Lines wrap at
   /// [wrapFraction] of the width; [highlight] colors part of the text.
+  /// [zoom] is the largest the text is shown at (its scale, or its
+  /// keyframes' largest), so zoomed text is drawn with enough pixels.
   Future<TextRaster> render({
     required String text,
     required TextStyleSpec style,
@@ -70,6 +72,7 @@ abstract interface class TextRasterizer {
     required int canvasHeight,
     double wrapFraction = textWrapFraction,
     TextHighlight? highlight,
+    double zoom = 1,
   });
 
   /// Forgets images drawn earlier (their files were deleted).
@@ -87,6 +90,25 @@ class PngTextRasterizer implements TextRasterizer {
   /// Images are drawn this many times the canvas resolution, so text
   /// stays sharp at exports larger than the canvas.
   final double pixelRatio;
+
+  /// Images of text shown larger are drawn up to this many times
+  /// [pixelRatio] (a typewriter's frames, up to [maxTypewriterDetail]).
+  static const double maxDetail = 4;
+  static const double maxTypewriterDetail = 2;
+
+  /// Longest side of any image, in pixels: GPUs take textures this size.
+  static const double maxImageSide = 4096;
+
+  /// [zoom] rounded up to 1, 2, or 4, so a pinch does not redraw the text
+  /// at every step.
+  static double detailFor(double zoom, {required bool typewriter}) {
+    var detail = 1.0;
+    final limit = typewriter ? maxTypewriterDetail : maxDetail;
+    while (detail < zoom && detail < limit) {
+      detail *= 2;
+    }
+    return detail;
+  }
 
   final _inFlight = <String, Future<TextRaster>>{};
 
@@ -112,7 +134,9 @@ class PngTextRasterizer implements TextRasterizer {
     required int canvasHeight,
     double wrapFraction = textWrapFraction,
     TextHighlight? highlight,
+    double zoom = 1,
   }) {
+    final detail = detailFor(zoom, typewriter: typewriter);
     final key = stableKey(
       jsonEncode({
         'v': _version,
@@ -122,6 +146,7 @@ class PngTextRasterizer implements TextRasterizer {
         'w': canvasWidth,
         'h': canvasHeight,
         'r': pixelRatio,
+        if (detail != 1) 'detail': detail,
         if (wrapFraction != textWrapFraction) 'wrap': wrapFraction,
         if (highlight != null)
           'highlight': [highlight.start, highlight.end, highlight.color],
@@ -142,6 +167,7 @@ class PngTextRasterizer implements TextRasterizer {
                 highlight: highlight,
               ),
               typewriter: typewriter,
+              detail: detail,
               // A block body: returning the removed future would make this one
               // wait for itself.
             )
@@ -159,6 +185,7 @@ class PngTextRasterizer implements TextRasterizer {
     String key,
     OverlayTextSpec spec, {
     required bool typewriter,
+    double detail = 1,
   }) async {
     final dir = Directory(p.join(directory.path, key));
     final meta = File(p.join(dir.path, 'meta.json'));
@@ -182,6 +209,11 @@ class PngTextRasterizer implements TextRasterizer {
     await dir.create(recursive: true);
     final layout = OverlayTextLayout(spec);
     try {
+      final longest = math.max(layout.size.width, layout.size.height);
+      final ratio = math.min(
+        pixelRatio * detail,
+        math.max(pixelRatio, maxImageSide / math.max(1, longest)),
+      );
       final characters = layout.characterCount;
       final reveals = typewriter && characters > 1
           ? [
@@ -202,7 +234,7 @@ class PngTextRasterizer implements TextRasterizer {
       final paths = <String>[];
       for (final (i, revealed) in reveals.indexed) {
         final image = await layout.toImage(
-          pixelRatio: pixelRatio,
+          pixelRatio: ratio,
           revealed: revealed,
         );
         final png = await image.toByteData(format: ui.ImageByteFormat.png);

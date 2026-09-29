@@ -34,6 +34,7 @@ class _FlakyRasterizer extends FakeTextRasterizer {
     required int canvasHeight,
     double wrapFraction = textWrapFraction,
     TextHighlight? highlight,
+    double zoom = 1,
   }) {
     if (text == failing) return Future.error(StateError('no'));
     return super.render(
@@ -44,6 +45,7 @@ class _FlakyRasterizer extends FakeTextRasterizer {
       canvasHeight: canvasHeight,
       wrapFraction: wrapFraction,
       highlight: highlight,
+      zoom: zoom,
     );
   }
 }

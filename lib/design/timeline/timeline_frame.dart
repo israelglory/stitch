@@ -12,13 +12,28 @@ enum TrimEdge { start, end }
 /// Callbacks for dragging an item's edges. The timeline converts pixels to
 /// time and applies snapping.
 class TrimCallbacks {
-  const new({required this.onUpdate, this.onStart, this.onEnd});
+  const new({
+    required this.onUpdate,
+    this.onStart,
+    this.onEnd,
+    this.startLabel,
+    this.endLabel,
+  });
 
   final void Function(TrimEdge edge)? onStart;
 
   /// `dx` is the horizontal drag delta in logical pixels.
   final void Function(TrimEdge edge, double dx) onUpdate;
   final void Function(TrimEdge edge)? onEnd;
+
+  /// What screen readers call each handle. Labeled handles can be moved
+  /// with increase and decrease (a step each), without a drag.
+  final String? startLabel;
+  final String? endLabel;
+
+  /// How far one increase or decrease moves a handle: more than twice the
+  /// snapping distance, so a step never snaps back to where it was.
+  static const double semanticStep = AppSizes.minTouchTarget / 2;
 }
 
 /// Keyframes of a selected timeline item, drawn on it as rhombuses.
@@ -97,7 +112,8 @@ class TimelineItemFrame extends StatelessWidget {
                   ),
                 ),
               ),
-              if (keyframes case final markers?) ..._markers(context, markers),
+              if (keyframes case final markers?)
+                ..._markers(context, markers, constraints.maxWidth),
               if (trim case final trim?) ...[
                 PositionedDirectional(
                   start: 0,
@@ -121,14 +137,28 @@ class TimelineItemFrame extends StatelessWidget {
     );
   }
 
-  /// Each keyframe: a rhombus, and a tap target around it.
-  List<Widget> _markers(BuildContext context, KeyframeMarkers markers) {
+  /// Each keyframe: a rhombus, and a full-size tap target around it (the
+  /// trim handles above only take horizontal drags, so taps reach it).
+  /// Tap targets stay inside the item's [width], so one at an edge is not
+  /// cut in half. A rhombus sits on its time, but never under the trim
+  /// handles, where a keyframe at the very start or end would be hidden.
+  List<Widget> _markers(
+    BuildContext context,
+    KeyframeMarkers markers,
+    double width,
+  ) {
     final colors = context.colors;
-    const hit = AppSizes.minTouchTarget / 2;
+    const hit = AppSizes.minTouchTarget;
+    const half = AppSizes.keyframeMarker / 2;
+    final inset = (trim == null ? 0.0 : AppSizes.trimHandleWidth) + half;
+    double left(double x) =>
+        (x - hit / 2).clamp(0.0, math.max(0.0, width - hit)).toDouble();
+    double center(double x) =>
+        width < inset * 2 ? width / 2 : x.clamp(inset, width - inset);
     return [
       for (final (i, x) in markers.positions.indexed)
         Positioned(
-          left: x - hit / 2,
+          left: left(x),
           top: 0,
           bottom: 0,
           width: hit,
@@ -138,9 +168,15 @@ class TimelineItemFrame extends StatelessWidget {
             selected: i == markers.current,
             onTap: markers.onTap == null ? null : () => markers.onTap!(i),
             child: GestureDetector(
+              // The Semantics above offers the tap.
+              excludeFromSemantics: true,
               behavior: HitTestBehavior.opaque,
               onTap: markers.onTap == null ? null : () => markers.onTap!(i),
-              child: Center(
+              child: Align(
+                alignment: Alignment(
+                  (center(x) - half - left(x)) / (hit - half * 2) * 2 - 1,
+                  0,
+                ),
                 child: CustomPaint(
                   size: const Size.square(AppSizes.keyframeMarker),
                   painter: _RhombusPainter(
@@ -197,14 +233,30 @@ class _HandleHitArea extends StatelessWidget {
   final TrimEdge edge;
   final TrimCallbacks trim;
 
+  /// One screen reader step, as a whole drag.
+  void _step(double dx) {
+    trim.onStart?.call(edge);
+    trim.onUpdate(edge, dx);
+    trim.onEnd?.call(edge);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final label = edge == TrimEdge.start ? trim.startLabel : trim.endLabel;
+    final handle = GestureDetector(
       behavior: HitTestBehavior.translucent,
+      excludeFromSemantics: label != null,
       onHorizontalDragStart: (_) => trim.onStart?.call(edge),
       onHorizontalDragUpdate: (d) => trim.onUpdate(edge, d.delta.dx),
       onHorizontalDragEnd: (_) => trim.onEnd?.call(edge),
       onHorizontalDragCancel: () => trim.onEnd?.call(edge),
+    );
+    if (label == null) return handle;
+    return Semantics(
+      label: label,
+      onIncrease: () => _step(TrimCallbacks.semanticStep),
+      onDecrease: () => _step(-TrimCallbacks.semanticStep),
+      child: handle,
     );
   }
 }

@@ -413,6 +413,51 @@
       }
     }
   },
+  "trimStart": "Trim start",
+  "@trimStart": {
+    "description": "Accessibility label of a selected timeline item's start handle. Screen readers adjust it (swipe up or down) to trim."
+  },
+  "trimEnd": "Trim end",
+  "@trimEnd": {
+    "description": "Accessibility label of a selected timeline item's end handle."
+  },
+  "keyframeAdded": "Keyframe added",
+  "@keyframeAdded": {
+    "description": "Spoken by screen readers after the keyframe button adds one."
+  },
+  "keyframeRemoved": "Keyframe removed",
+  "@keyframeRemoved": {
+    "description": "Spoken by screen readers after the keyframe button removes one."
+  },
+  "toolTransform": "Transform",
+  "@toolTransform": {
+    "description": "Tool: move, zoom, and turn a clip or text with sliders. The same can be done by dragging, pinching, and twisting it on the preview."
+  },
+  "transformHorizontal": "Left and right",
+  "@transformHorizontal": {
+    "description": "Slider in the Transform tool: moves the item sideways."
+  },
+  "transformVertical": "Up and down",
+  "@transformVertical": {
+    "description": "Slider in the Transform tool: moves the item up or down."
+  },
+  "transformZoom": "Zoom",
+  "@transformZoom": {
+    "description": "Slider in the Transform tool: makes the item bigger or smaller."
+  },
+  "transformRotation": "Rotation",
+  "@transformRotation": {
+    "description": "Slider in the Transform tool: turns the item."
+  },
+  "valueDegrees": "{value}°",
+  "@valueDegrees": {
+    "description": "An angle in degrees, like 45°.",
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
   "toolOpacity": "Opacity",
   "@toolOpacity": {
     "description": "Tool: how see-through a clip or text is."

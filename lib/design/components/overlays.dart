@@ -233,6 +233,19 @@ class ConfirmDialog extends StatelessWidget {
   /// Above this text scale the buttons stack so labels are not truncated.
   static const double _stackButtonsAtScale = 1.3;
 
+  /// Whether [label] fits a regular button [width] wide, untruncated.
+  static bool _fits(BuildContext context, String label, double width) {
+    final painter = TextPainter(
+      text: TextSpan(text: label, style: AppTypography.button),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final needed = painter.width + AppSpacing.xl * 2;
+    painter.dispose();
+    return needed <= width;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -300,17 +313,38 @@ class ConfirmDialog extends StatelessWidget {
                       const SizedBox(height: AppSpacing.xl),
                       if (onCancel == null)
                         confirm
-                      else if (stacked) ...[
-                        confirm,
-                        const SizedBox(height: AppSpacing.sm),
-                        cancel,
-                      ] else
-                        Row(
-                          children: [
-                            Expanded(child: cancel),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(child: confirm),
-                          ],
+                      else
+                        // Side by side while both labels fit half the row
+                        // ("Keep exporting" does not on a narrow phone).
+                        LayoutBuilder(
+                          builder: (context, box) {
+                            final half = (box.maxWidth - AppSpacing.sm) / 2;
+                            final sideBySide =
+                                !stacked &&
+                                _fits(context, confirmLabel, half) &&
+                                _fits(
+                                  context,
+                                  cancelLabel ?? l10n.cancel,
+                                  half,
+                                );
+                            if (!sideBySide) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  confirm,
+                                  const SizedBox(height: AppSpacing.sm),
+                                  cancel,
+                                ],
+                              );
+                            }
+                            return Row(
+                              children: [
+                                Expanded(child: cancel),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(child: confirm),
+                              ],
+                            );
+                          },
                         ),
                     ],
                   ),

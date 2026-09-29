@@ -616,6 +616,66 @@ abstract class AppLocalizations {
   /// **'Keyframe at {time}'**
   String keyframeMarker(String time);
 
+  /// Accessibility label of a selected timeline item's start handle. Screen readers adjust it (swipe up or down) to trim.
+  ///
+  /// In en, this message translates to:
+  /// **'Trim start'**
+  String get trimStart;
+
+  /// Accessibility label of a selected timeline item's end handle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trim end'**
+  String get trimEnd;
+
+  /// Spoken by screen readers after the keyframe button adds one.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyframe added'**
+  String get keyframeAdded;
+
+  /// Spoken by screen readers after the keyframe button removes one.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyframe removed'**
+  String get keyframeRemoved;
+
+  /// Tool: move, zoom, and turn a clip or text with sliders. The same can be done by dragging, pinching, and twisting it on the preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Transform'**
+  String get toolTransform;
+
+  /// Slider in the Transform tool: moves the item sideways.
+  ///
+  /// In en, this message translates to:
+  /// **'Left and right'**
+  String get transformHorizontal;
+
+  /// Slider in the Transform tool: moves the item up or down.
+  ///
+  /// In en, this message translates to:
+  /// **'Up and down'**
+  String get transformVertical;
+
+  /// Slider in the Transform tool: makes the item bigger or smaller.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom'**
+  String get transformZoom;
+
+  /// Slider in the Transform tool: turns the item.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotation'**
+  String get transformRotation;
+
+  /// An angle in degrees, like 45°.
+  ///
+  /// In en, this message translates to:
+  /// **'{value}°'**
+  String valueDegrees(int value);
+
   /// Tool: how see-through a clip or text is.
   ///
   /// In en, this message translates to:

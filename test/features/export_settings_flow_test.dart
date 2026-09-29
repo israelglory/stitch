@@ -113,6 +113,23 @@ void main() {
       await finish(tester);
     });
 
+    testWidgets('finishing while asking to stop closes the question', (
+      tester,
+    ) async {
+      await openEditor(tester);
+      env.engine.exportStep = const Duration(milliseconds: 300);
+      await openExportSheet(tester);
+      await startExport(tester);
+      await tester.tap(find.widgetWithText(SecondaryButton, 'Cancel'));
+      await settle(tester, rounds: 2);
+      expect(find.text('Stop exporting?'), findsOneWidget);
+      await settleUntil(tester, find.text('Saved to Photos'));
+      await settle(tester);
+      expect(find.text('Stop exporting?'), findsNothing);
+      expect(env.system.saved, hasLength(1));
+      await finish(tester);
+    });
+
     testWidgets('refused photo access offers to allow it', (tester) async {
       await openEditor(tester);
       env.system.saveResult = GallerySave.denied;

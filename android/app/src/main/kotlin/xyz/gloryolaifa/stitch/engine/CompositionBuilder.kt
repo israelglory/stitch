@@ -39,7 +39,8 @@ object CompositionBuilder {
   /**
    * [outputEffects] apply to the mixed result (export frame rate,
    * resampling). [audioOnly] leaves the picture out: clips play only their
-   * sound, so no video is decoded (for speech recognition).
+   * sound, so no video is decoded (for speech recognition). [onVideoFrame]
+   * is told the timeline time of each video frame drawn.
    */
   fun build(
     doc: EngineDocument,
@@ -47,6 +48,7 @@ object CompositionBuilder {
     outputSize: Size? = null,
     outputEffects: Effects = Effects.EMPTY,
     audioOnly: Boolean = false,
+    onVideoFrame: ((Long) -> Unit)? = null,
   ): Built {
     val comp = doc.composition
     val size = outputSize ?: Size(doc.canvas.width, doc.canvas.height)
@@ -71,7 +73,7 @@ object CompositionBuilder {
           clipsById[t.fromClipId]?.let { from -> incomingFor(doc, t, from, forExport) }
         }
         // A missing file plays as black silence.
-        val item = clipItem(doc, clip, end, forExport, look, into)
+        val item = clipItem(doc, clip, end, forExport, look, into, onVideoFrame)
         if (item == null) video.addGap(end - start) else video.addItem(item)
         cursor = end
       }
@@ -284,12 +286,15 @@ object CompositionBuilder {
     forExport: Boolean,
     look: CanvasLook,
     incoming: Incoming?,
+    onVideoFrame: ((Long) -> Unit)?,
   ): EditedMediaItem? {
     val media = doc.media[clip.mediaId] ?: return null
     val path = sourcePath(media, forExport) ?: return null
     val timelineUs = endUs - clip.startUs
     val effects = listOf(
-      ClipEffect(look, clip.framing, incoming, doc.overlays, clip.opacity, clip.keyframes),
+      ClipEffect(
+        look, clip.framing, incoming, doc.overlays, clip.opacity, clip.keyframes, onVideoFrame,
+      ),
     )
 
     if (clip.kind == "photo") {

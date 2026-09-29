@@ -77,7 +77,7 @@ final class KeyframeTargetProvider
   }
 }
 
-String _$keyframeTargetHash() => r'1fef0f358e6667d5035bc618c0d6cdfc9e9dbde0';
+String _$keyframeTargetHash() => r'3fa106b74caf704685c2e5f7a198d8069ba51a64';
 
 /// The keyframe button's target; null (disabled) with nothing selected or
 /// with the playhead outside the selected item. Changes only when the
@@ -103,6 +103,103 @@ final class KeyframeTargetFamily extends $Family
 
   @override
   String toString() => r'keyframeTargetProvider';
+}
+
+/// The timeline and its layout, which changes only with the timeline, so
+/// the providers above do not rebuild it at every playback tick.
+
+@ProviderFor(_timeline)
+final _timelineProvider = _TimelineFamily._();
+
+/// The timeline and its layout, which changes only with the timeline, so
+/// the providers above do not rebuild it at every playback tick.
+
+final class _TimelineProvider
+    extends
+        $FunctionalProvider<
+          (Timeline, TimelineLayout)?,
+          (Timeline, TimelineLayout)?,
+          (Timeline, TimelineLayout)?
+        >
+    with $Provider<(Timeline, TimelineLayout)?> {
+  /// The timeline and its layout, which changes only with the timeline, so
+  /// the providers above do not rebuild it at every playback tick.
+  _TimelineProvider._({
+    required _TimelineFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'_timelineProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$_timelineHash();
+
+  @override
+  String toString() {
+    return r'_timelineProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<(Timeline, TimelineLayout)?> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  (Timeline, TimelineLayout)? create(Ref ref) {
+    final argument = this.argument as String;
+    return _timeline(ref, argument);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue((Timeline, TimelineLayout)? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<(Timeline, TimelineLayout)?>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is _TimelineProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$_timelineHash() => r'316652a5b6d75fd8639e55a6f6a5e44dcba83616';
+
+/// The timeline and its layout, which changes only with the timeline, so
+/// the providers above do not rebuild it at every playback tick.
+
+final class _TimelineFamily extends $Family
+    with $FunctionalFamilyOverride<(Timeline, TimelineLayout)?, String> {
+  _TimelineFamily._()
+    : super(
+        retry: null,
+        name: r'_timelineProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// The timeline and its layout, which changes only with the timeline, so
+  /// the providers above do not rebuild it at every playback tick.
+
+  _TimelineProvider call(String projectId) =>
+      _TimelineProvider._(argument: projectId, from: this);
+
+  @override
+  String toString() => r'_timelineProvider';
 }
 
 /// Values of the selected item at the playhead: what sliders and canvas
@@ -171,7 +268,7 @@ final class ValuesAtPlayheadProvider
   }
 }
 
-String _$valuesAtPlayheadHash() => r'ef7cf9e801b8412b4b7ab2f25d69029535f1353b';
+String _$valuesAtPlayheadHash() => r'eb589dcff98fb39ab8aa100f4961709257f20a0c';
 
 /// Values of the selected item at the playhead: what sliders and canvas
 /// gestures start from.

@@ -11,6 +11,9 @@ class FakeTextRasterizer implements TextRasterizer {
   /// Highlights asked for, in order (null for none).
   final highlights = <TextHighlight?>[];
 
+  /// Zooms asked for, in order.
+  final zooms = <double>[];
+
   @override
   Future<TextRaster> render({
     required String text,
@@ -20,8 +23,10 @@ class FakeTextRasterizer implements TextRasterizer {
     required int canvasHeight,
     double wrapFraction = textWrapFraction,
     TextHighlight? highlight,
+    double zoom = 1,
   }) async {
     rendered.add(text);
+    zooms.add(zoom);
     highlights.add(highlight);
     final frames = typewriter ? text.length.clamp(1, 24) : 1;
     return TextRaster(

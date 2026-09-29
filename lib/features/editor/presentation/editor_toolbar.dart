@@ -240,6 +240,18 @@ class _TextTools extends ConsumerWidget {
           onPressed: () => showTextEditor(context, projectId, textId: textId),
         ),
         ToolbarItem(
+          icon: AppIcons.transform,
+          label: l10n.toolTransform,
+          onPressed: () => showToolSheet(
+            context,
+            title: l10n.toolTransform,
+            child: TransformSheet(
+              projectId: projectId,
+              owner: (kind: KeyframeOwnerKind.text, id: textId),
+            ),
+          ),
+        ),
+        ToolbarItem(
           icon: AppIcons.opacity,
           label: l10n.toolOpacity,
           onPressed: () => showToolSheet(
@@ -366,6 +378,18 @@ class _ClipTools extends ConsumerWidget {
                   ),
                 )
               : null,
+        ),
+        ToolbarItem(
+          icon: AppIcons.transform,
+          label: l10n.toolTransform,
+          onPressed: () => showToolSheet(
+            context,
+            title: l10n.toolTransform,
+            child: TransformSheet(
+              projectId: projectId,
+              owner: (kind: KeyframeOwnerKind.clip, id: clipId),
+            ),
+          ),
         ),
         ToolbarItem(
           icon: AppIcons.opacity,

@@ -123,6 +123,21 @@ void main() {
       expect(t.clipById('a')!.opacity, 1, reason: 'own value untouched');
     });
 
+    test('the playhead is on a keyframe wherever another cannot go', () {
+      final t = _zooming();
+      // A frame time a little off the keyframe (players report those).
+      for (final off in [-30000, -20000, 20000, 33332]) {
+        final at = s(1) + off;
+        expect(t.keyframeAt(_a, at)?.id, 'k1', reason: 'at $off');
+        expect(identical(t.addKeyframe(_a, at, id: 'x'), t), isTrue);
+      }
+      expect(t.keyframeAt(_a, s(1) + 33334), isNull);
+      expect(
+        t.addKeyframe(_a, s(1) + 33334, id: 'x').keyframesOf(_a),
+        hasLength(3),
+      );
+    });
+
     test('values stay within limits', () {
       final t = track([4]).setValuesAt(
         _a,

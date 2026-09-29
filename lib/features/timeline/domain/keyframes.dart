@@ -306,28 +306,31 @@ extension KeyframeOps on Timeline {
   }
 
   /// [owner]'s values at timeline time [atUs] (its base values outside
-  /// the item), or null for an unknown item.
-  KeyframeValues? valuesAt(KeyframeOwner owner, int atUs) {
+  /// the item), or null for an unknown item. Pass [l], this timeline's
+  /// layout, when it is at hand: at every playback tick, building it is
+  /// the expensive part.
+  KeyframeValues? valuesAt(KeyframeOwner owner, int atUs, [TimelineLayout? l]) {
     final base = baseValuesOf(owner);
     if (base == null) return null;
-    final time = keyframeTimeAt(owner, atUs);
+    final time = keyframeTimeAt(owner, atUs, l);
     if (time == null) return base;
     return keyframesOf(owner).valuesAt(time) ?? base;
   }
 
-  /// The keyframe of [owner] under timeline time [atUs] (within half the
+  /// The keyframe of [owner] under timeline time [atUs] (within the
   /// keyframe spacing), if any.
-  Keyframe? keyframeAt(KeyframeOwner owner, int atUs) {
-    final time = keyframeTimeAt(owner, atUs);
+  Keyframe? keyframeAt(KeyframeOwner owner, int atUs, [TimelineLayout? l]) {
+    final time = keyframeTimeAt(owner, atUs, l);
     if (time == null) return null;
-    return keyframesOf(owner).near(time, _localUs(owner, _halfSpacing));
+    return keyframesOf(owner).near(time, _localUs(owner, _onKeyframeUs));
   }
 
   /// Adds a keyframe of [owner] at timeline time [atUs] holding its
   /// current values there. Not within the keyframe spacing of another.
   Timeline addKeyframe(KeyframeOwner owner, int atUs, {required String id}) {
-    final time = keyframeTimeAt(owner, atUs);
-    final values = valuesAt(owner, atUs);
+    final layout = TimelineLayout.of(this);
+    final time = keyframeTimeAt(owner, atUs, layout);
+    final values = valuesAt(owner, atUs, layout);
     if (time == null || values == null) return this;
     final keyframes = keyframesOf(owner);
     final spacing = _localUs(owner, TimelineLimits.keyframeSpacingUs);
@@ -381,14 +384,15 @@ extension KeyframeOps on Timeline {
     KeyframeValues Function(KeyframeValues current) change, {
     required String newKeyframeId,
   }) {
-    final current = valuesAt(owner, atUs);
+    final layout = TimelineLayout.of(this);
+    final current = valuesAt(owner, atUs, layout);
     if (current == null) return this;
     final next = change(current).clamped();
     final keyframes = keyframesOf(owner);
     if (keyframes.isEmpty) return _withBase(owner, next);
-    final time = keyframeTimeAt(owner, atUs);
+    final time = keyframeTimeAt(owner, atUs, layout);
     if (time == null) return this;
-    final existing = keyframeAt(owner, atUs);
+    final existing = keyframeAt(owner, atUs, layout);
     if (existing != null) {
       if (existing.values == next) return this;
       return _withKeyframes(owner, [
@@ -403,7 +407,11 @@ extension KeyframeOps on Timeline {
     ]);
   }
 
-  static const int _halfSpacing = TimelineLimits.keyframeSpacingUs ~/ 2;
+  /// Within this of a keyframe the playhead is on it: the window in which
+  /// [addKeyframe] refuses a new one, so the keyframe button never offers
+  /// an add that would do nothing. (The playhead rarely lands exactly on
+  /// a keyframe: players report frame times, a few milliseconds off.)
+  static const int _onKeyframeUs = TimelineLimits.keyframeSpacingUs - 1;
 
   /// [timelineUs] in [owner]'s time base (source time runs faster at
   /// higher speed).

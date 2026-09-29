@@ -39,6 +39,7 @@ These were needed to build the listed components. Each has one narrow use.
 | `CanvasPalette` | 5 neutrals | Solid canvas backgrounds. These are content colors in the user's video, not UI colors. |
 | `AppSizes.microIcon` | 16 | Icon inside the 24pt transition button and lane items |
 | `AppSizes.strokeWidth` | 2 | Selection outlines, playhead |
+| `AppSizes.keyframeMarker` | 10 | The rhombus drawn for each keyframe on a selected timeline item |
 
 ## Components
 
@@ -66,12 +67,20 @@ These were needed to build the listed components. Each has one narrow use.
 | Onboarding mock-ups | `mocks/editor_mocks.dart` | Static mock-ups built from real components. Decorative, so hidden from screen readers. |
 | `TimeRuler`, `Playhead`, `LaneHeader` | `timeline/timeline_chrome.dart` | Ruler labels stay at least 64pt apart at any zoom. |
 | `VideoClipTile`, `TransitionButton`, `OverlayItemTile`, `AudioItemTile` | `timeline/timeline_items.dart` | Waveform, fades, past-the-end marker, needs-review flag. |
-| `TimelineItemFrame`, `TrimCallbacks` | `timeline/timeline_frame.dart` | Selection outline with trim handles inside the item bounds. |
+| `TimelineItemFrame`, `TrimCallbacks`, `KeyframeMarkers` | `timeline/timeline_frame.dart` | Selection outline with trim handles inside the item bounds. On a selected item, each keyframe is a rhombus: accent for the one under the playhead, `onOverlay` for the rest, with an `overlay` edge. A rhombus never sits under a trim handle; each has a full 44pt tap target kept inside the item, and tapping it moves the playhead there. |
 
 ## Accessibility
 
 - Every control has a semantic label. Icon-only controls require one in their constructor.
 - Tests check 44pt tap targets and labeled tap targets on all non-timeline components. They also render the full gallery on an iPhone SE at 100%, 140%, and 200% text with no layout errors.
+- Keyframes:
+  - The keyframe button in the playback row announces "Keyframe added" or "Keyframe removed" after it acts.
+  - Each marker is a labeled button ("Keyframe at 0:04") that is selected when the playhead is on it.
+  - The Transform tool (sliders for left and right, up and down, zoom, and rotation) does what dragging, pinching, and twisting on the preview do, so no keyframe edit needs a gesture.
+  - `keyframes_flow_test.dart` checks the editor with keyframes against the 44pt and labeled tap target guidelines.
+- A selected timeline item's trim handles are "Trim start" and "Trim end": screen readers adjust them (increase and decrease), a step of 22pt each, more than twice the snapping distance.
+- `ConfirmDialog` puts its buttons side by side only while both labels fit untruncated ("Keep exporting" does not on a 360dp phone); otherwise they stack.
+- Gestures that have another way in do not add their own unlabeled screen reader actions (`excludeFromSemantics`). Tapping the preview is the labeled Play button. A clip's long press to reorder has the tile's Move earlier and Move later actions. Tapping empty timeline is the toolbar's Back.
 - Text in fixed-height rows stops scaling so it is never clipped: toolbars and media labels at 130%, the timeline at 120%. Everything else scales freely.
 
 ## Open decisions

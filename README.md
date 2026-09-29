@@ -111,6 +111,7 @@ Stitch is built to meet F-Droid's inclusion policy: no proprietary libraries, no
 - iOS: transitions render slightly soft in 4K exports.
 - Tablets ignore the portrait lock; the editor layout works in both orientations but is designed for portrait.
 - Android: 10-bit (HDR) clips are shown without tone mapping in the frame handed to transitions, so they look flat there.
+- Text is drawn as an image with up to eight times the canvas's pixels (more when it is zoomed, capped at 4096 pixels a side), so text zoomed past 400 percent can look soft in a 4K export.
 
 ## License
 

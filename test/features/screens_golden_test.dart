@@ -288,6 +288,76 @@ void main() {
       await _finish(tester);
     });
 
+    /// The first clip selected with keyframes at 0 and 1.5 s, the playhead
+    /// on the first one.
+    Future<void> openKeyframes(
+      WidgetTester tester, {
+      bool light = false,
+    }) async {
+      final env = await createEnv(tester);
+      if (light) {
+        env.container
+            .read(settingsControllerProvider.notifier)
+            .update((s) => s.copyWith(theme: ThemeChoice.light));
+      }
+      final id = await createProject(tester, env);
+      await pumpApp(tester, env, location: AppRoutes.editor(id));
+      await settleUntil(tester, find.byType(VideoClipTile));
+      await tester.tap(find.byType(VideoClipTile).first);
+      await settle(tester);
+      final playback = env.container.read(playbackControllerProvider.notifier);
+      await tester.tap(find.bySemanticsLabel('Add keyframe'));
+      await settle(tester);
+      await playback.seek(1500000);
+      await settle(tester);
+      await tester.tap(find.bySemanticsLabel('Add keyframe'));
+      await settle(tester);
+      await playback.seek(0);
+      await settle(tester);
+    }
+
+    Future<void> openTool(WidgetTester tester, String label) async {
+      await tester.scrollUntilVisible(
+        find.text(label),
+        100,
+        scrollable: find.descendant(
+          of: find.byType(ContextToolbar),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text(label));
+      await settle(tester);
+    }
+
+    testWidgets('keyframes', (tester) async {
+      await openKeyframes(tester);
+      await _golden(tester, 'editor_keyframes');
+      await _finish(tester);
+    });
+
+    testWidgets('keyframes in light', (tester) async {
+      await openKeyframes(tester, light: true);
+      await _golden(tester, 'editor_keyframes_light');
+      await _finish(tester);
+    });
+
+    testWidgets('transform sheet', (tester) async {
+      await openKeyframes(tester);
+      await openTool(tester, 'Transform');
+      await _golden(tester, 'editor_transform_sheet');
+      await _finish(tester);
+    });
+
+    testWidgets('easing sheet', (tester) async {
+      await openKeyframes(tester);
+      await openTool(tester, 'Easing');
+      await tester.tap(find.text('Ease in and out'));
+      await tester.pump();
+      await _golden(tester, 'editor_easing_sheet');
+      await _finish(tester);
+    });
+
     testWidgets('transition sheet', (tester) async {
       await openEditor(tester);
       await tester.tap(find.byType(TransitionButton).first);

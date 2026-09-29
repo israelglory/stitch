@@ -180,6 +180,57 @@ void main() {
       expect(result, isTrue);
     });
 
+    testWidgets('dialog buttons stack when a label does not fit', (
+      tester,
+    ) async {
+      // A 360 dp wide phone, as the Redmi Note 11.
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      Future<void> open(String cancel) async {
+        await tester.pumpWidget(
+          themed(
+            Builder(
+              builder: (context) => PrimaryButton(
+                label: 'Open',
+                onPressed: () => showConfirmDialog(
+                  context: context,
+                  title: 'Stop exporting?',
+                  message: 'The video exported so far is not kept.',
+                  confirmLabel: 'Stop',
+                  cancelLabel: cancel,
+                  destructive: true,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
+      }
+
+      await open('Keep exporting');
+      final confirm = tester.getRect(find.text('Stop'));
+      final cancel = tester.getRect(find.text('Keep exporting'));
+      expect(cancel.top, greaterThan(confirm.bottom), reason: 'stacked');
+      final label = tester.widget<Text>(find.text('Keep exporting'));
+      final painter = TextPainter(
+        text: TextSpan(text: label.data, style: AppTypography.button),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      expect(cancel.width, greaterThanOrEqualTo(painter.width - 0.5));
+      painter.dispose();
+
+      await tester.tap(find.text('Keep exporting'));
+      await tester.pumpAndSettle();
+      await open('No');
+      expect(
+        tester.getRect(find.text('No')).center.dy,
+        closeTo(tester.getRect(find.text('Stop')).center.dy, 1),
+        reason: 'short labels sit side by side',
+      );
+    });
+
     testWidgets('bottom sheet confirm check fires', (tester) async {
       var confirmed = false;
       await tester.pumpWidget(

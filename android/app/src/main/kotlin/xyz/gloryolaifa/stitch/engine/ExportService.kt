@@ -105,6 +105,12 @@ class ExportService : Service() {
         PackageManager.PERMISSION_GRANTED
 
     private fun notification(context: Context, percent: Int): Notification {
+      // A channel needs a name (an empty one throws, and a foreground
+      // service without its notification takes the app down): without a
+      // title from Dart, the app's name.
+      val title = title.ifBlank {
+        context.applicationInfo.loadLabel(context.packageManager).toString()
+      }
       // Created or renamed each time, so its name in the system settings
       // follows the app's language.
       context.getSystemService(NotificationManager::class.java).createNotificationChannel(

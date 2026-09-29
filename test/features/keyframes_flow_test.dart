@@ -1,7 +1,10 @@
 // Keyframes through the real editor, with the fake engine: the button in
 // the playback row, the markers on the selected item, the sliders and
 // canvas gestures that record them, and easing.
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stitch/app/router.dart';
@@ -14,7 +17,9 @@ import 'package:stitch/features/editor/presentation/preview.dart';
 import 'package:stitch/features/text/presentation/text_overlay_layer.dart';
 import 'package:stitch/features/timeline/domain/keyframes.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
+import 'package:stitch/features/timeline/domain/text_ops.dart';
 
+import '../helpers/app_scope.dart';
 import '../helpers/pump.dart';
 
 Finder get addButton => find.bySemanticsLabel('Add keyframe');
@@ -34,8 +39,10 @@ void main() {
   KeyframeOwner ownerOf(WidgetTester tester, String id) =>
       (kind: KeyframeOwnerKind.clip, id: firstClip(tester, id).id);
 
+  late TestEnv env;
+
   Future<String> open(WidgetTester tester) async {
-    final env = await createEnv(tester);
+    env = await createEnv(tester);
     final id = await createProject(tester, env);
     await pumpApp(tester, env, location: AppRoutes.editor(id));
     await settleUntil(tester, find.byType(VideoClipTile));
@@ -254,6 +261,159 @@ void main() {
           .first,
     );
     expect(transform.transform.getMaxScaleOnAxis(), closeTo(1.5, 1e-9));
+    await finishEditing(tester);
+  });
+
+  testWidgets('the Transform tool moves and zooms without gestures', (
+    tester,
+  ) async {
+    final id = await open(tester);
+    await selectFirstClip(tester);
+    await tapTool(tester, 'Transform');
+    final sliders = find.descendant(
+      of: find.byType(AppSlider),
+      matching: find.byType(Slider),
+    );
+    expect(sliders, findsNWidgets(4));
+    expect(find.text('Left and right'), findsOneWidget);
+    expect(find.text('Rotation'), findsOneWidget);
+
+    // No keyframes: the clip's own framing.
+    await tester.drag(sliders.at(0), const Offset(60, 0));
+    await settle(tester);
+    expect(firstClip(tester, id).framing.offsetX, greaterThan(0));
+    await tester.drag(sliders.at(2), const Offset(60, 0));
+    await settle(tester);
+    expect(firstClip(tester, id).framing.scale, greaterThan(1));
+    await closeSheet(tester);
+
+    // With a keyframe at 0, turning at 2 s records one there.
+    await seek(tester, 0);
+    await tester.tap(addButton);
+    await settle(tester);
+    await seek(tester, 2000000);
+    await tapTool(tester, 'Transform');
+    await tester.drag(sliders.at(3), const Offset(80, 0));
+    await settle(tester);
+    await closeSheet(tester);
+    final t = stateOf(tester, id).timeline;
+    expect(firstClip(tester, id).keyframes, hasLength(2));
+    expect(t.valuesAt(ownerOf(tester, id), 0)!.rotationDeg, 0);
+    expect(t.valuesAt(ownerOf(tester, id), 2000000)!.rotationDeg, isNot(0));
+    await finishEditing(tester);
+  });
+
+  testWidgets('screen readers hear what the keyframe button did', (
+    tester,
+  ) async {
+    await open(tester);
+    await selectFirstClip(tester);
+    tester.takeAnnouncements();
+    await tester.tap(addButton);
+    await settle(tester);
+    expect(tester.takeAnnouncements().map((a) => a.message), [
+      'Keyframe added',
+    ]);
+    await tester.tap(removeButton);
+    await settle(tester);
+    expect(tester.takeAnnouncements().map((a) => a.message), [
+      'Keyframe removed',
+    ]);
+    await finishEditing(tester);
+  });
+
+  testWidgets('keyframe controls are labeled and big enough to tap', (
+    tester,
+  ) async {
+    await open(tester);
+    await selectFirstClip(tester);
+    await tester.tap(addButton);
+    await settle(tester);
+    await seek(tester, 1500000);
+    await tester.tap(addButton);
+    await settle(tester);
+    expect(markers, findsNWidgets(2));
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+    await finishEditing(tester);
+  });
+
+  testWidgets('a clip shows its frame while a Transform slider moves', (
+    tester,
+  ) async {
+    // A 1 x 1 PNG, standing in for the engine's JPEG frames.
+    final png = base64Decode(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAE'
+      'hQGAhKmMIQAAAABJRU5ErkJggg==',
+    );
+    final id = await open(tester);
+    env.engine.previewFrameHandler = (_, _, {required exact}) => png;
+    await selectFirstClip(tester);
+    await seek(tester, 1000000);
+    await tapTool(tester, 'Transform');
+    final frame = find.descendant(
+      of: find.byType(EditorPreview),
+      matching: find.byWidgetPredicate(
+        (w) => w is Image && w.image is MemoryImage,
+      ),
+    );
+    final zoom = find
+        .descendant(of: find.byType(AppSlider), matching: find.byType(Slider))
+        .at(2);
+    final gesture = await tester.startGesture(tester.getCenter(zoom));
+    for (var i = 0; i < 5; i++) {
+      await gesture.moveBy(const Offset(12, 0));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await tester.pump();
+    expect(frame, findsOneWidget);
+    // The frame at the playhead, from the clip's file.
+    expect(env.engine.previewFrames.last.$2, 1000000);
+    await gesture.up();
+    await settle(tester);
+    expect(frame, findsNothing);
+    expect(firstClip(tester, id).framing.scale, greaterThan(1));
+    await finishEditing(tester);
+  });
+
+  testWidgets('screen readers trim a clip with its labeled handles', (
+    tester,
+  ) async {
+    final id = await open(tester);
+    await selectFirstClip(tester);
+    final before = firstClip(tester, id).sourceOutUs;
+    tester.semantics.performAction(
+      find.semantics.byLabel('Trim end'),
+      SemanticsAction.decrease,
+    );
+    await settle(tester);
+    expect(firstClip(tester, id).sourceOutUs, lessThan(before));
+    expect(find.bySemanticsLabel('Trim start'), findsOneWidget);
+    await finishEditing(tester);
+  });
+
+  testWidgets('text zoomed by a keyframe is drawn for its largest size', (
+    tester,
+  ) async {
+    final id = await open(tester);
+    final controller = containerOf(tester)
+        .read(editorControllerProvider(id).notifier);
+    const owner = (kind: KeyframeOwnerKind.text, id: 't');
+    controller.apply(
+      (t) => t
+          .addText(id: 't', text: 'Big', atUs: 0)
+          .addKeyframe(owner, 0, id: 'k1')
+          .setValuesAt(
+            owner,
+            1000000,
+            (v) => v.copyWith(scale: 3),
+            newKeyframeId: 'k2',
+          ),
+    );
+    await settle(tester);
+    await tester.pump(const Duration(seconds: 1));
+    await settle(tester);
+    expect(env.rasterizer.zooms.last, 3);
     await finishEditing(tester);
   });
 }

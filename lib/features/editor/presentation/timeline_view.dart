@@ -235,6 +235,8 @@ class _TimelineViewState extends ConsumerState<TimelineView>
         );
 
         return GestureDetector(
+          // Screen readers deselect with the toolbar's Back.
+          excludeFromSemantics: true,
           behavior: HitTestBehavior.opaque,
           onTap: () => _editor.select(const NoSelection()),
           onScaleStart: _onScaleStart,
@@ -379,6 +381,8 @@ final class _TimelineActions {
     bool keepEndInPlace = false,
     bool preview = false,
   }) => TrimCallbacks(
+    startLabel: AppLocalizations.of(_view.context).trimStart,
+    endLabel: AppLocalizations.of(_view.context).trimEnd,
     onStart: (edge) {
       _begin();
       if (preview) _previewEdge(id, _domainEdge(edge));
@@ -675,6 +679,9 @@ class _ContentState extends ConsumerState<_Content> {
           child: Opacity(
             opacity: _reorderId == clip.id ? 0.4 : 1,
             child: GestureDetector(
+              // Screen readers reorder with the tile's Move earlier and
+              // Move later actions.
+              excludeFromSemantics: true,
               onLongPressStart: (d) {
                 unawaited(AppHaptics.selection());
                 setState(() {

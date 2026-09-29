@@ -53,6 +53,7 @@ abstract final class AppIcons {
   static const transition = IconData(57930, fontFamily: _f); // arrow-left-right
   static const fade = IconData(58780, fontFamily: _f); // blend
   static const keyframeAdd = IconData(58850, fontFamily: _f); // diamond-plus
+  static const transform = IconData(57633, fontFamily: _f); // move
   static const keyframeRemove = IconData(
     58849,
     fontFamily: _f,

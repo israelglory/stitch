@@ -2,8 +2,11 @@ package xyz.gloryolaifa.stitch.engine
 
 import android.content.Context
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.Looper
+import android.os.Process
 import android.util.Log
+import android.view.Surface
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -13,6 +16,9 @@ import androidx.media3.common.util.Size
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.transformer.CompositionPlayer
 import io.flutter.view.TextureRegistry
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -28,7 +34,13 @@ import kotlin.math.roundToInt
  * the texture is scaled on screen. Scrubbing seeks use the player's
  * scrubbing mode, which drops stale seeks while a frame is being decoded.
  *
- * Used from the main thread only.
+ * Called from the main thread; the player runs on its own thread. Media3
+ * does its composition work on the thread that owns the player
+ * (`setComposition` takes 25 to 40 ms on a mid-range phone), and Flutter
+ * draws its UI on the main thread, so a player there made every edit drop
+ * frames. Calls are posted to the player thread; for documents and seeks
+ * only the newest waiting one is applied. The Flutter surface is only
+ * touched on the main thread, which hands it to the player thread.
  */
 @OptIn(UnstableApi::class)
 class PreviewPlayer(
@@ -41,11 +53,30 @@ class PreviewPlayer(
   private val producer = textures.createSurfaceProducer()
   val textureId: Long get() = producer.id()
 
-  private val handler = Handler(Looper.getMainLooper())
+  private val thread = HandlerThread("StitchPreview", Process.THREAD_PRIORITY_DISPLAY).apply {
+    start()
+  }
+
+  /** The player thread. Everything below [thread] is used on it only. */
+  private val handler = Handler(thread.looper)
   private var player: CompositionPlayer? = null
   private var durationUs = 0L
   private var size = Size(1, 1)
   private var surfaceAttached = false
+
+  /** The surface to draw into and its size, from the main thread. */
+  private data class Target(val surface: Surface, val size: Size)
+
+  /** Main thread only: the size last given to the producer. */
+  private var producerSize: Size? = null
+
+  /** The newest target, for players made or rebuilt on the player thread. */
+  @Volatile private var target: Target? = null
+
+  private data class DocumentRequest(val doc: EngineDocument, val target: Target)
+
+  private val pendingDocument = AtomicReference<DocumentRequest?>(null)
+  private val pendingSeek = AtomicReference<Pair<Long, Boolean>?>(null)
 
   private val ticker = object : Runnable {
     override fun run() {
@@ -99,9 +130,10 @@ class PreviewPlayer(
   private fun replaceFailedPlayer(atMs: Long) {
     if (!failed || rebuiltForDocument) return
     val doc = document ?: return
+    val target = target ?: return
     rebuiltForDocument = true
     discardPlayer()
-    setDocument(doc, positionMs = atMs)
+    apply(doc, target, positionMs = atMs)
   }
 
   private fun discardPlayer() {
@@ -154,11 +186,20 @@ class PreviewPlayer(
     }
     producer.setCallback(object : TextureRegistry.SurfaceProducer.Callback {
       override fun onSurfaceAvailable() {
-        player?.setVideoSurface(producer.surface, size)
+        val next = Target(producer.surface, producerSize ?: return)
+        target = next
+        handler.post {
+          player?.setVideoSurface(next.surface, next.size)
+          surfaceAttached = player != null
+        }
       }
 
       override fun onSurfaceCleanup() {
-        player?.clearVideoSurface()
+        // The surface goes when this returns: stop drawing into it first.
+        runAndWait {
+          player?.clearVideoSurface()
+          surfaceAttached = false
+        }
       }
     })
   }
@@ -169,6 +210,7 @@ class PreviewPlayer(
     .build()
 
   private fun ensurePlayer(): CompositionPlayer = player ?: CompositionPlayer.Builder(context)
+    .setLooper(thread.looper)
     .setAudioMixerFactory(LimitingAudioMixer.Factory())
     // Calls and other apps taking audio pause the preview.
     .setAudioAttributes(audioAttributes, handleAudioFocus)
@@ -179,19 +221,48 @@ class PreviewPlayer(
       player = it
     }
 
+  /** Runs [block] on the player thread and waits for it, briefly. */
+  private fun runAndWait(block: () -> Unit) {
+    if (Looper.myLooper() == thread.looper) return block()
+    val done = CountDownLatch(1)
+    val posted = handler.post {
+      try {
+        block()
+      } finally {
+        done.countDown()
+      }
+    }
+    if (posted) done.await(WAIT_MS, TimeUnit.MILLISECONDS)
+  }
+
   /**
-   * Replaces what is played, keeping the position (or starting at
-   * [positionMs]) and play state.
+   * Replaces what is played, keeping the position and play state. Main
+   * thread: sizes the Flutter surface, then hands the rest to the player
+   * thread. Only the newest waiting document is built.
    */
-  fun setDocument(doc: EngineDocument, positionMs: Long? = null) {
+  fun setDocument(doc: EngineDocument) {
+    val previewSize = previewSize(doc.canvas)
+    if (previewSize != producerSize) {
+      producerSize = previewSize
+      producer.setSize(previewSize.width, previewSize.height)
+    }
+    val next = Target(producer.surface, previewSize)
+    target = next
+    pendingDocument.set(DocumentRequest(doc, next))
+    handler.post {
+      pendingDocument.getAndSet(null)?.let { apply(it.doc, it.target) }
+    }
+  }
+
+  /** Player thread: plays [doc] into [target]. */
+  private fun apply(doc: EngineDocument, target: Target, positionMs: Long? = null) {
     if (doc !== document) rebuiltForDocument = false
     document = doc
     // A failed player cannot take a new document; a new one can.
     val keepFromFailed = if (failed) player?.currentPosition else null
     if (failed) discardPlayer()
-    val previewSize = previewSize(doc.canvas)
     val built = try {
-      CompositionBuilder.build(doc, forExport = false, outputSize = previewSize)
+      CompositionBuilder.build(doc, forExport = false, outputSize = target.size)
     } catch (e: Exception) {
       Log.e(TAG, "Preview build failed", e)
       // Nothing left to play (the last clip went): stop showing the old
@@ -210,10 +281,9 @@ class PreviewPlayer(
     val p = ensurePlayer()
     val keepMs = min(positionMs ?: keepFromFailed ?: p.currentPosition, built.durationUs / 1000)
     durationUs = built.durationUs
-    if (previewSize != size || !surfaceAttached) {
-      size = previewSize
-      producer.setSize(size.width, size.height)
-      p.setVideoSurface(producer.surface, size)
+    if (target.size != size || !surfaceAttached) {
+      size = target.size
+      p.setVideoSurface(target.surface, size)
       surfaceAttached = true
     }
     pendingVersion = doc.version.toLong()
@@ -226,10 +296,15 @@ class PreviewPlayer(
   }
 
   fun play() {
+    handler.post(::playNow)
+  }
+
+  private fun playNow() {
     // Play is the way to try a failed document again: on a new player.
     if (failed) {
       val doc = document ?: return
-      setDocument(doc, positionMs = player?.currentPosition)
+      val target = target ?: return
+      apply(doc, target, positionMs = player?.currentPosition)
     }
     val p = player ?: return
     p.isScrubbingModeEnabled = false
@@ -245,8 +320,11 @@ class PreviewPlayer(
    * taking it would end the recording, which holds focus itself.
    */
   fun setVolume(volume: Double) {
-    level = volume.toFloat().coerceIn(0f, 1f)
-    player?.let(::applyVolume)
+    val next = volume.toFloat().coerceIn(0f, 1f)
+    handler.post {
+      level = next
+      player?.let(::applyVolume)
+    }
   }
 
   /** Preview volume, kept for players made later. */
@@ -259,6 +337,11 @@ class PreviewPlayer(
 
   fun pause() {
     PreviewPlayback.playing = false
+    handler.post(::pauseNow)
+  }
+
+  private fun pauseNow() {
+    PreviewPlayback.playing = false
     val p = player ?: return
     p.pause()
     // Video can trail the audio clock on slow devices; show the frame at the
@@ -268,7 +351,15 @@ class PreviewPlayer(
     publish()
   }
 
+  /** Only the newest waiting seek is made: scrubbing asks for many. */
   fun seek(us: Long, exact: Boolean) {
+    pendingSeek.set(us to exact)
+    handler.post {
+      pendingSeek.getAndSet(null)?.let { (at, isExact) -> seekNow(at, isExact) }
+    }
+  }
+
+  private fun seekNow(us: Long, exact: Boolean) {
     redrawsLeft = MAX_REDRAWS
     val p = player ?: return
     // Scrubbing mode coalesces rapid seeks and allows landing near the target.
@@ -294,6 +385,12 @@ class PreviewPlayer(
   /** Stops playback and frees decoders. The texture stays usable. */
   fun release() {
     PreviewPlayback.playing = false
+    pendingDocument.set(null)
+    handler.post(::releaseNow)
+  }
+
+  private fun releaseNow() {
+    PreviewPlayback.playing = false
     discardPlayer()
     document = null
     durationUs = 0
@@ -302,8 +399,12 @@ class PreviewPlayer(
 
   fun dispose() {
     FrameMisses.listener = null
-    handler.removeCallbacks(redraw)
-    release()
+    pendingDocument.set(null)
+    runAndWait {
+      handler.removeCallbacksAndMessages(null)
+      releaseNow()
+    }
+    thread.quitSafely()
     producer.release()
   }
 
@@ -322,5 +423,8 @@ class PreviewPlayer(
     const val SHOWN_FALLBACK_MS = 1_500L
     const val REDRAW_DELAY_MS = 500L
     const val MAX_REDRAWS = 5
+
+    /** Longest the main thread waits for the player thread. */
+    const val WAIT_MS = 2_000L
   }
 }

@@ -42,6 +42,9 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
   /// document again on leaving).
   bool _showingExport = false;
 
+  /// The "Stop exporting?" question is open.
+  bool _asking = false;
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +69,7 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
 
   Future<void> _confirmStop() async {
     final l10n = AppLocalizations.of(context);
+    _asking = true;
     final stop = await showConfirmDialog(
       context: context,
       title: l10n.stopExportTitle,
@@ -74,6 +78,7 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
       cancelLabel: l10n.keepExporting,
       destructive: true,
     );
+    _asking = false;
     if (!stop || !mounted) return;
     // It may have finished while the question was open: then there is
     // nothing to stop, and the result stays on screen.
@@ -86,6 +91,14 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Finished (or failed) while asking whether to stop: the question no
+    // longer applies, so it goes and the result shows.
+    ref.listen(exportControllerProvider(widget.projectId), (_, next) {
+      if (_asking && next is! ExportRunning && next is! ExportIdle) {
+        _asking = false;
+        Navigator.of(context, rootNavigator: true).pop(false);
+      }
+    });
     final state = ref.watch(exportControllerProvider(widget.projectId));
     final running = state is ExportRunning || state is ExportIdle;
     return PopScope(

@@ -39,6 +39,7 @@ import 'package:stitch/features/editor/application/playback_controller.dart';
 import 'package:stitch/features/editor/presentation/editor_screen.dart';
 import 'package:stitch/features/editor/presentation/preview.dart';
 import 'package:stitch/features/timeline/domain/composition.dart';
+import 'package:stitch/features/timeline/domain/keyframes.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
 import 'package:stitch/features/timeline/domain/text_ops.dart';
 import 'package:stitch/features/timeline/domain/transition_ops.dart';
@@ -198,6 +199,21 @@ void main() {
           ),
         ),
       )
+      // Keyframes move it from the middle down to 80 percent in a second.
+      ..apply(
+        (t) => t
+            .addKeyframe(
+              (kind: KeyframeOwnerKind.text, id: textId),
+              0,
+              id: 'k1',
+            )
+            .setValuesAt(
+              (kind: KeyframeOwnerKind.text, id: textId),
+              1000000,
+              (v) => v.copyWith(y: 0.8),
+              newKeyframeId: 'k2',
+            ),
+      )
       ..select(const NoSelection());
     final music = await bundledSoundFile(
       bundledMusic.first,
@@ -265,32 +281,50 @@ void main() {
     expect(events.whereType<ExportProgress>(), isNotEmpty);
     final info = await engine.probe(out);
     expect(info.hasAudio, isTrue);
-    // The text box is in the video: white across the middle of a frame.
-    final frame = (await engine.thumbnails(
+    // The text box is in the video: white across a row of a frame, in the
+    // middle at the start, low once its keyframes have moved it.
+    final frames = await engine.thumbnails(
       out,
-      const [200000],
+      const [0, 1500000],
       maxSize: 480,
       outDir: '${tmp.path}/frames',
-    )).single!;
-    final codec = await ui.instantiateImageCodec(
-      await File(frame).readAsBytes(),
     );
-    final image = (await codec.getNextFrame()).image;
-    final rgba = (await image.toByteData())!;
-    var white = 0;
-    const samples = 20;
-    for (var i = 0; i < samples; i++) {
-      final x = image.width ~/ 2 - image.width ~/ 12 + i * image.width ~/ 120;
-      final y = image.height ~/ 2;
-      final o = (y * image.width + x) * 4;
-      final (r, g, b) = (
-        rgba.getUint8(o),
-        rgba.getUint8(o + 1),
-        rgba.getUint8(o + 2),
+    Future<int> whiteAcross(String path, double row) async {
+      final codec = await ui.instantiateImageCodec(
+        await File(path).readAsBytes(),
       );
-      if (r > 200 && g > 200 && b > 200) white++;
+      final image = (await codec.getNextFrame()).image;
+      final rgba = (await image.toByteData())!;
+      var white = 0;
+      for (var i = 0; i < 20; i++) {
+        final x = image.width ~/ 2 - image.width ~/ 12 + i * image.width ~/ 120;
+        final y = (image.height * row).round();
+        final o = (y * image.width + x) * 4;
+        final (r, g, b) = (
+          rgba.getUint8(o),
+          rgba.getUint8(o + 1),
+          rgba.getUint8(o + 2),
+        );
+        if (r > 200 && g > 200 && b > 200) white++;
+      }
+      return white;
     }
-    expect(white, greaterThan(samples ~/ 3), reason: 'text box in the export');
+
+    expect(
+      await whiteAcross(frames[0]!, 0.5),
+      greaterThan(6),
+      reason: 'text box in the middle at the start',
+    );
+    expect(
+      await whiteAcross(frames[1]!, 0.8),
+      greaterThan(6),
+      reason: 'text box moved down by its keyframes',
+    );
+    expect(
+      await whiteAcross(frames[1]!, 0.5),
+      lessThan(4),
+      reason: 'and no longer in the middle',
+    );
     expect(
       (info.durationUs! - edited.layout.durationUs).abs(),
       lessThan(100000),

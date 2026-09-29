@@ -101,9 +101,11 @@ class ClipEffect(
   private val overlays: List<EngineDocument.Overlay> = emptyList(),
   private val opacity: Double = 1.0,
   private val keyframes: Keyframes = Keyframes.NONE,
+  /** Told the time of each frame drawn (export progress). */
+  private val onFrame: ((Long) -> Unit)? = null,
 ) : GlEffect {
   override fun toGlShaderProgram(context: Context, useHdr: Boolean): GlShaderProgram =
-    ClipProgram(look, framing, incoming, overlays, opacity, keyframes, useHdr)
+    ClipProgram(look, framing, incoming, overlays, opacity, keyframes, onFrame, useHdr)
 
   override fun isNoOp(inputWidth: Int, inputHeight: Int) = false
 }
@@ -116,6 +118,7 @@ private class ClipProgram(
   private val overlays: List<EngineDocument.Overlay>,
   private val opacity: Double,
   private val keyframes: Keyframes,
+  private val onFrame: ((Long) -> Unit)?,
   useHdr: Boolean,
 ) : BaseGlShaderProgram(useHdr, /* texturePoolCapacity= */ 1) {
   private val blur = look.background.type == "blur"
@@ -219,6 +222,7 @@ private class ClipProgram(
       GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
       drawOverlays(presentationTimeUs)
       GlUtil.checkGlError()
+      onFrame?.invoke(presentationTimeUs)
     } catch (e: GlUtil.GlException) {
       throw VideoFrameProcessingException(e, presentationTimeUs)
     }

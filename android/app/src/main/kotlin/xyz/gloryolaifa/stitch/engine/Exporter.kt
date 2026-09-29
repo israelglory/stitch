@@ -53,6 +53,14 @@ class Exporter(
   private val handler = Handler(Looper.getMainLooper())
   private var transformer: Transformer? = null
   private var finished = false
+
+  /**
+   * Timeline time of the last video frame drawn. Media3's own progress for
+   * a composition trails the real one (it read 49 percent with 70 percent
+   * done), so the further of the two is shown.
+   */
+  private val drawnUs = java.util.concurrent.atomic.AtomicLong(0)
+  private var durationUs = 0L
   private val output = File(request.outputPath)
   private val temp = File(output.parentFile, output.nameWithoutExtension + ".part.mp4")
 
@@ -63,8 +71,10 @@ class Exporter(
         forExport = true,
         outputSize = Size(request.width.toInt(), request.height.toInt()),
         outputEffects = outputEffects(),
+        onVideoFrame = { us -> drawnUs.accumulateAndGet(us) { a, b -> maxOf(a, b) } },
       )
       if (built.durationUs <= 0) throw EngineException.exportFailed("Nothing to export")
+      durationUs = built.durationUs
       built.composition
     } catch (e: EngineException) {
       finish(listener) { it.onFailed(e) }
@@ -131,11 +141,16 @@ class Exporter(
       override fun run() {
         val t = transformer ?: return
         if (finished) return
-        if (t.getProgress(holder) == Transformer.PROGRESS_STATE_AVAILABLE &&
-          holder.progress > last
-        ) {
-          // Percent steps, like iOS.
-          last = holder.progress
+        val reported = if (t.getProgress(holder) == Transformer.PROGRESS_STATE_AVAILABLE) {
+          holder.progress
+        } else {
+          0
+        }
+        val drawn = if (durationUs > 0) (drawnUs.get() * 100 / durationUs).toInt() else 0
+        // Percent steps, like iOS; 100 only once the file is written.
+        val percent = minOf(99, maxOf(reported, drawn))
+        if (percent > last) {
+          last = percent
           listener.onProgress(last / 100.0)
         }
         handler.postDelayed(this, PROGRESS_INTERVAL_MS)

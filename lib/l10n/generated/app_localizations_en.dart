@@ -315,6 +315,38 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get trimStart => 'Trim start';
+
+  @override
+  String get trimEnd => 'Trim end';
+
+  @override
+  String get keyframeAdded => 'Keyframe added';
+
+  @override
+  String get keyframeRemoved => 'Keyframe removed';
+
+  @override
+  String get toolTransform => 'Transform';
+
+  @override
+  String get transformHorizontal => 'Left and right';
+
+  @override
+  String get transformVertical => 'Up and down';
+
+  @override
+  String get transformZoom => 'Zoom';
+
+  @override
+  String get transformRotation => 'Rotation';
+
+  @override
+  String valueDegrees(int value) {
+    return '$value°';
+  }
+
+  @override
   String get toolOpacity => 'Opacity';
 
   @override

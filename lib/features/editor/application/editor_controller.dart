@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:stitch/app/providers.dart';
@@ -574,6 +575,10 @@ class EditorController extends _$EditorController {
                     t.animationOut == TextAnimation.typewriter,
                 canvasWidth: canvas.width,
                 canvasHeight: canvas.height,
+                zoom: [
+                  t.transform.scale,
+                  for (final k in t.keyframes) k.values.scale,
+                ].reduce(math.max),
               )
               .then<MapEntry<String, TextRaster>?>(
                 (raster) => MapEntry(t.id, raster),

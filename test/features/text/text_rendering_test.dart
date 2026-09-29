@@ -42,6 +42,49 @@ void main() {
     expect(file.lastModifiedSync(), modified);
   });
 
+  test('zoomed text is drawn with more pixels, within limits', () async {
+    Future<int> heightAt(double zoom, {String text = 'Zoom'}) async {
+      final raster = await PngTextRasterizer(dir).render(
+        text: text,
+        style: const TextStyleSpec(),
+        typewriter: false,
+        canvasWidth: 1080,
+        canvasHeight: 1920,
+        zoom: zoom,
+      );
+      final bytes = await File(raster.paths.single).readAsBytes();
+      final image = (await (await ui.instantiateImageCodec(
+        bytes,
+      )).getNextFrame()).image;
+      return (image.height / raster.height).round();
+    }
+
+    expect(await heightAt(1), 2);
+    expect(await heightAt(1.6), 4);
+    expect(await heightAt(8), 8, reason: 'at most four times the detail');
+    expect(
+      PngTextRasterizer.detailFor(8, typewriter: true),
+      PngTextRasterizer.maxTypewriterDetail,
+    );
+    // Long text stays within the GPU's texture size.
+    final raster = await PngTextRasterizer(dir).render(
+      text: 'A long line of text ' * 12,
+      style: const TextStyleSpec(),
+      typewriter: false,
+      canvasWidth: 1080,
+      canvasHeight: 1920,
+      zoom: 8,
+    );
+    final bytes = await File(raster.paths.single).readAsBytes();
+    final image = (await (await ui.instantiateImageCodec(
+      bytes,
+    )).getNextFrame()).image;
+    expect(
+      image.width > image.height ? image.width : image.height,
+      lessThanOrEqualTo(PngTextRasterizer.maxImageSide + 1),
+    );
+  });
+
   test('a typewriter gets a frame per step, at most 24', () async {
     expect((await render('Hi', typewriter: true)).paths, hasLength(2));
     final long = await render('A' * 60, typewriter: true);

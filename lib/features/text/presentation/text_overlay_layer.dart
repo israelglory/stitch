@@ -81,8 +81,12 @@ class _TextOverlayLayerState extends ConsumerState<TextOverlayLayer> {
     final selection = state.selection;
     if (selection is! ClipSelected) return;
     final owner = (kind: KeyframeOwnerKind.clip, id: selection.id);
-    final values = state.timeline.valuesAt(owner, playhead);
-    final sourceUs = state.timeline.keyframeTimeAt(owner, playhead);
+    final values = state.timeline.valuesAt(owner, playhead, state.layout);
+    final sourceUs = state.timeline.keyframeTimeAt(
+      owner,
+      playhead,
+      state.layout,
+    );
     if (values == null || sourceUs == null) return;
     final playback = ref.read(playbackControllerProvider.notifier);
     if (ref.read(playbackControllerProvider).isPlaying) {
@@ -206,10 +210,11 @@ class _TextOverlayLayerState extends ConsumerState<TextOverlayLayer> {
             if (playhead >= t.startUs && playhead < t.endUs)
               () {
                 final duration = t.endUs - t.startUs;
-                final v = state.timeline.valuesAt((
-                  kind: KeyframeOwnerKind.text,
-                  id: t.id,
-                ), playhead);
+                final v = state.timeline.valuesAt(
+                  (kind: KeyframeOwnerKind.text, id: t.id),
+                  playhead,
+                  state.layout,
+                );
                 return _Shown(
                   t,
                   _layout(t, canvas.width.toDouble(), canvas.height.toDouble()),
@@ -247,7 +252,10 @@ class _TextOverlayLayerState extends ConsumerState<TextOverlayLayer> {
             if (widget.drawAll || state.liveTexts.contains(s.text.id)) s,
         ];
 
+        // The preview's Play button speaks for taps here; text boxes have
+        // their own nodes below.
         return GestureDetector(
+          excludeFromSemantics: true,
           behavior: HitTestBehavior.opaque,
           onTapUp: (d) {
             final hit = _hit(shown, d.localPosition, preview, unit);
@@ -271,10 +279,11 @@ class _TextOverlayLayerState extends ConsumerState<TextOverlayLayer> {
             final id = hit ?? (d.pointerCount > 1 ? selectedId : null);
             final values = id == null
                 ? null
-                : state.timeline.valuesAt((
-                    kind: KeyframeOwnerKind.text,
-                    id: id,
-                  ), playhead);
+                : state.timeline.valuesAt(
+                    (kind: KeyframeOwnerKind.text, id: id),
+                    playhead,
+                    state.layout,
+                  );
             if (id == null || values == null) {
               _startClipDrag(state, playhead, d.localFocalPoint);
               return;

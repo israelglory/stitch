@@ -217,6 +217,7 @@ During the transition into its clip, the effect also draws the outgoing clip and
 - This replaces Media3's compositor, which cannot run custom shaders and stops drawing when previewing two video sequences.
 
 **Preview (`PreviewPlayer`):** a `CompositionPlayer` drawing into a Flutter `SurfaceProducer`.
+- The player runs on its own thread (`setLooper`). On the main thread, where Flutter draws its UI, `setComposition` blocked for 25 to 41 ms on a Redmi Note 11 at every edit. Calls are posted to the player thread, and for documents and seeks only the newest waiting one is applied. The Flutter surface is only touched on the main thread; when Flutter takes it back, the main thread waits (up to 2 s) until the player has let go of it.
 - Rendering is capped at 1280 px on the long side.
 - Scrubbing seeks use the player's scrubbing mode. Audio focus is handled, so calls pause the preview.
 - Pausing seeks exactly to the paused position, so the frame shown matches the playhead even when video fell behind the audio clock.
@@ -226,7 +227,8 @@ During the transition into its clip, the effect also draws the outgoing clip and
 - Video is H.264 or HEVC at the requested bitrate. The frame rate is capped at the requested rate: frames are dropped above it and never duplicated below it.
 - Audio is AAC at 192 kbps, resampled to 48 kHz.
 - The file is written to `*.part.mp4`, then renamed. A cancelled or failed export leaves no file behind.
-- **In the background:** `ExportService`, a foreground service, keeps the app running with a progress notification (type `mediaProcessing` on Android 15 and later, `dataSync` before). It starts and stops with the export; the notification text comes from Dart (`progressTitle`).
+- **Progress:** Media3's own progress for a composition trails the real one (49 percent with 70 percent done), so `ClipEffect` reports the time of each frame it draws and the further of the two is shown.
+- **In the background:** `ExportService`, a foreground service, keeps the app running with a progress notification (type `mediaProcessing` on Android 15 and later, `dataSync` before). Without a title from Dart, the notification channel takes the app's name: an empty name throws, which took the app down. It starts and stops with the export; the notification text comes from Dart (`progressTitle`).
 
 **Probe, thumbnails, and proxies:** in `MediaTools.kt`.
 - `MediaExtractor` reads durations, rotation, frame rate, and HDR transfer. `ExifInterface` reads photo orientation.

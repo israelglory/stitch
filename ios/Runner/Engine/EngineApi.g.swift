@@ -217,6 +217,10 @@ struct MediaInfoMessage: Hashable, CustomStringConvertible {
   var hasVideo: Bool
   var hasAudio: Bool
   var isHdr: Bool
+  /// Whether the device plays the video in hardware at its size and frame
+  /// rate. False (4K at 60 fps on a mid-range phone, say) means only a
+  /// slow software decoder can. True for photos and audio.
+  var hardwareDecodable: Bool
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -229,6 +233,7 @@ struct MediaInfoMessage: Hashable, CustomStringConvertible {
     let hasVideo = pigeonVar_list[5] as! Bool
     let hasAudio = pigeonVar_list[6] as! Bool
     let isHdr = pigeonVar_list[7] as! Bool
+    let hardwareDecodable = pigeonVar_list[8] as! Bool
 
     return MediaInfoMessage(
       durationUs: durationUs,
@@ -238,7 +243,8 @@ struct MediaInfoMessage: Hashable, CustomStringConvertible {
       frameRate: frameRate,
       hasVideo: hasVideo,
       hasAudio: hasAudio,
-      isHdr: isHdr
+      isHdr: isHdr,
+      hardwareDecodable: hardwareDecodable
     )
   }
   func toList() -> [Any?] {
@@ -251,13 +257,14 @@ struct MediaInfoMessage: Hashable, CustomStringConvertible {
       hasVideo,
       hasAudio,
       isHdr,
+      hardwareDecodable,
     ]
   }
   static func == (lhs: MediaInfoMessage, rhs: MediaInfoMessage) -> Bool {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return EngineApiPigeonInternal.deepEquals(lhs.durationUs, rhs.durationUs) && EngineApiPigeonInternal.deepEquals(lhs.width, rhs.width) && EngineApiPigeonInternal.deepEquals(lhs.height, rhs.height) && EngineApiPigeonInternal.deepEquals(lhs.rotationDeg, rhs.rotationDeg) && EngineApiPigeonInternal.deepEquals(lhs.frameRate, rhs.frameRate) && EngineApiPigeonInternal.deepEquals(lhs.hasVideo, rhs.hasVideo) && EngineApiPigeonInternal.deepEquals(lhs.hasAudio, rhs.hasAudio) && EngineApiPigeonInternal.deepEquals(lhs.isHdr, rhs.isHdr)
+    return EngineApiPigeonInternal.deepEquals(lhs.durationUs, rhs.durationUs) && EngineApiPigeonInternal.deepEquals(lhs.width, rhs.width) && EngineApiPigeonInternal.deepEquals(lhs.height, rhs.height) && EngineApiPigeonInternal.deepEquals(lhs.rotationDeg, rhs.rotationDeg) && EngineApiPigeonInternal.deepEquals(lhs.frameRate, rhs.frameRate) && EngineApiPigeonInternal.deepEquals(lhs.hasVideo, rhs.hasVideo) && EngineApiPigeonInternal.deepEquals(lhs.hasAudio, rhs.hasAudio) && EngineApiPigeonInternal.deepEquals(lhs.isHdr, rhs.isHdr) && EngineApiPigeonInternal.deepEquals(lhs.hardwareDecodable, rhs.hardwareDecodable)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -270,10 +277,11 @@ struct MediaInfoMessage: Hashable, CustomStringConvertible {
     EngineApiPigeonInternal.deepHash(value: hasVideo, hasher: &hasher)
     EngineApiPigeonInternal.deepHash(value: hasAudio, hasher: &hasher)
     EngineApiPigeonInternal.deepHash(value: isHdr, hasher: &hasher)
+    EngineApiPigeonInternal.deepHash(value: hardwareDecodable, hasher: &hasher)
   }
 
   public var description: String {
-    return "MediaInfoMessage(durationUs: \(String(describing: durationUs)), width: \(String(describing: width)), height: \(String(describing: height)), rotationDeg: \(String(describing: rotationDeg)), frameRate: \(String(describing: frameRate)), hasVideo: \(String(describing: hasVideo)), hasAudio: \(String(describing: hasAudio)), isHdr: \(String(describing: isHdr)))"
+    return "MediaInfoMessage(durationUs: \(String(describing: durationUs)), width: \(String(describing: width)), height: \(String(describing: height)), rotationDeg: \(String(describing: rotationDeg)), frameRate: \(String(describing: frameRate)), hasVideo: \(String(describing: hasVideo)), hasAudio: \(String(describing: hasAudio)), isHdr: \(String(describing: isHdr)), hardwareDecodable: \(String(describing: hardwareDecodable)))"
   }
 }
 

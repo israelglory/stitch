@@ -179,6 +179,36 @@ class EditorController extends _$EditorController {
   /// Sends the document again, after another screen used the preview.
   void resync() => _syncEngine(_current.project, immediate: true);
 
+  /// Records the preview copy of [mediaId], made in the background, or
+  /// that none could be made ([failed]). Not an edit: no undo step, and
+  /// every step in the history (and a drag in progress) gets it, so undo
+  /// cannot take it away.
+  void setPreviewCopy(
+    String mediaId, {
+    String? proxyPath,
+    bool failed = false,
+  }) {
+    Project update(Project p) {
+      final asset = p.media[mediaId];
+      if (asset == null) return p;
+      return p.copyWith(
+        media: {
+          ...p.media,
+          mediaId: asset.copyWith(
+            proxyPath: proxyPath ?? asset.proxyPath,
+            previewCopyFailed: failed,
+          ),
+        },
+      );
+    }
+
+    if (_gestureBase case final base?) _gestureBase = update(base);
+    final current = _current;
+    _emit(current.copyWith(history: current.history.map(update)));
+    _syncEngine(_current.project, immediate: true);
+    _scheduleSave();
+  }
+
   void undo() => _restore(_current.history.undo());
 
   void redo() => _restore(_current.history.redo());

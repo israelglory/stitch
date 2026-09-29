@@ -262,52 +262,58 @@ class ConfirmDialog extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: _dialogMaxWidth),
-          child: Semantics(
-            scopesRoute: true,
-            namesRoute: true,
-            explicitChildNodes: true,
-            label: title,
-            child: Container(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              decoration: BoxDecoration(
-                color: colors.surface,
-                border: Border.all(color: colors.border),
-                borderRadius: BorderRadius.circular(AppRadius.card),
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      title,
-                      style: AppTypography.bodyLarge.semibold.copyWith(
-                        color: colors.textPrimary,
+          // A dialog route has no Material above it: this gives the text
+          // its default style (without it, debug builds underline it in
+          // yellow) and the buttons an ink surface.
+          child: Material(
+            type: MaterialType.transparency,
+            child: Semantics(
+              scopesRoute: true,
+              namesRoute: true,
+              explicitChildNodes: true,
+              label: title,
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                decoration: BoxDecoration(
+                  color: colors.surface,
+                  border: Border.all(color: colors.border),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        title,
+                        style: AppTypography.bodyLarge.semibold.copyWith(
+                          color: colors.textPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      message,
-                      style: AppTypography.body.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    if (onCancel == null)
-                      confirm
-                    else if (stacked) ...[
-                      confirm,
                       const SizedBox(height: AppSpacing.sm),
-                      cancel,
-                    ] else
-                      Row(
-                        children: [
-                          Expanded(child: cancel),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(child: confirm),
-                        ],
+                      Text(
+                        message,
+                        style: AppTypography.body.copyWith(
+                          color: colors.textSecondary,
+                        ),
                       ),
-                  ],
+                      const SizedBox(height: AppSpacing.xl),
+                      if (onCancel == null)
+                        confirm
+                      else if (stacked) ...[
+                        confirm,
+                        const SizedBox(height: AppSpacing.sm),
+                        cancel,
+                      ] else
+                        Row(
+                          children: [
+                            Expanded(child: cancel),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(child: confirm),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
 
@@ -80,9 +82,25 @@ abstract class MediaAsset with _$MediaAsset {
     /// A 720p copy for preview, relative to the project folder, when the
     /// source is larger than 1080p. Export always uses [path].
     String? proxyPath,
+
+    /// The preview copy could not be made, even with a software decoder:
+    /// this device cannot play the file.
+    @Default(false) bool previewCopyFailed,
   }) = _MediaAsset;
 
   factory fromJson(Map<String, dynamic> json) => _$MediaAssetFromJson(json);
+}
+
+/// Videos with a longer side above this get a 720p preview copy.
+const int previewCopyAbove = 1920;
+
+extension PreviewCopy on MediaAsset {
+  /// Whether preview should read a smaller copy of this file.
+  bool get wantsPreviewCopy =>
+      kind == MediaKind.video && math.max(width, height) > previewCopyAbove;
+
+  /// Where its preview copy goes, relative to the project folder.
+  String get previewCopyPath => 'proxies/$id.mp4';
 }
 
 /// A saved project: one JSON document per project.

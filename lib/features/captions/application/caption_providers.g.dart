@@ -151,7 +151,7 @@ final class CaptionModelsProvider
   }
 }
 
-String _$captionModelsHash() => r'cfc1e55a3f9f8722f0d5924bc29221410b397174';
+String _$captionModelsHash() => r'9a14b1ab3d643a3929e9a884acde4e813a77a221';
 
 /// Each caption model's status, and its download. Downloads carry on
 /// while the captions sheet is closed.

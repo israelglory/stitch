@@ -25,6 +25,7 @@ class MediaInfoMessage {
     required this.hasVideo,
     required this.hasAudio,
     required this.isHdr,
+    required this.hardwareDecodable,
   });
 
   /// Null for still images.
@@ -40,6 +41,11 @@ class MediaInfoMessage {
   bool hasVideo;
   bool hasAudio;
   bool isHdr;
+
+  /// Whether the device plays the video in hardware at its size and frame
+  /// rate. False (4K at 60 fps on a mid-range phone, say) means only a
+  /// slow software decoder can. True for photos and audio.
+  bool hardwareDecodable;
 }
 
 class CapabilitiesMessage {

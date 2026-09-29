@@ -64,6 +64,7 @@ object MediaProbe {
       var rotation = 0
       var fps = 0.0
       var hdr = false
+      var hardware = true
       if (video != null) {
         rotation = video.intOr(MediaFormat.KEY_ROTATION, 0).let { ((it % 360) + 360) % 360 }
         val w = video.getInteger(MediaFormat.KEY_WIDTH)
@@ -75,6 +76,7 @@ object MediaProbe {
         val transfer = video.intOr(MediaFormat.KEY_COLOR_TRANSFER, 0)
         hdr = transfer == MediaFormat.COLOR_TRANSFER_ST2084 ||
           transfer == MediaFormat.COLOR_TRANSFER_HLG
+        hardware = runCatching { Decoders.hardwareCanDecode(video, fps) }.getOrDefault(true)
       }
       MediaInfoMessage(
         durationUs = durationUs,
@@ -85,6 +87,7 @@ object MediaProbe {
         hasVideo = video != null,
         hasAudio = hasAudio,
         isHdr = hdr,
+        hardwareDecodable = hardware,
       )
     } finally {
       extractor.release()
@@ -127,6 +130,7 @@ object MediaProbe {
       hasVideo = true,
       hasAudio = false,
       isHdr = false,
+      hardwareDecodable = true,
     )
   }
 
@@ -259,8 +263,12 @@ object ProxyMaker {
       .build()
     // A proxy only speeds up preview, so import never waits on a stuck
     // encoder: past the limit it gives up and preview reads the original.
-    val durationUs = MediaProbe.probe(path).durationUs ?: 0
-    val limitMs = max(MIN_PROXY_TIMEOUT_MS, durationUs / 1000 * PROXY_TIMEOUT_FACTOR)
+    val info = MediaProbe.probe(path)
+    val durationUs = info.durationUs ?: 0
+    // A software decoder (the hardware cannot play the file) is much
+    // slower than real time; give it the time it needs.
+    val factor = if (info.hardwareDecodable) PROXY_TIMEOUT_FACTOR else SOFTWARE_PROXY_TIMEOUT_FACTOR
+    val limitMs = max(MIN_PROXY_TIMEOUT_MS, durationUs / 1000 * factor)
     val finished = withTimeoutOrNull(limitMs) { transform(context, item, temp) }
     if (finished == null) {
       temp.delete()
@@ -278,6 +286,7 @@ object ProxyMaker {
     withContext(Dispatchers.Main) {
       suspendCancellableCoroutine { cont ->
         val transformer = Transformer.Builder(context)
+          .setAssetLoaderFactory(Decoders.assetLoaderFactory(context))
           .setVideoMimeType(MimeTypes.VIDEO_H264)
           .setAudioMimeType(MimeTypes.AUDIO_AAC)
           .addListener(object : Transformer.Listener {
@@ -306,6 +315,7 @@ object ProxyMaker {
   private const val PROXY_SHORT_SIDE = 720
   private const val MIN_PROXY_TIMEOUT_MS = 30_000L
   private const val PROXY_TIMEOUT_FACTOR = 3
+  private const val SOFTWARE_PROXY_TIMEOUT_FACTOR = 30
 }
 
 /** Loudness over time for the timeline's audio tiles. */

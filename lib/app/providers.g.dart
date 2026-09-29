@@ -360,7 +360,7 @@ final class MediaImporterProvider
   }
 }
 
-String _$mediaImporterHash() => r'59fc5888359dfcb0596f923640e7220000cff805';
+String _$mediaImporterHash() => r'ed8581756b35e3855229965fdaa51d7bfaf600bb';
 
 /// App cache folder (thumbnails, filmstrips). Overridden in bootstrap and
 /// in tests. Everything in it can be deleted and regenerated.

@@ -54,6 +54,7 @@ _MediaAsset _$MediaAssetFromJson(Map<String, dynamic> json) => _MediaAsset(
   displayName: json['displayName'] as String? ?? '',
   hasAudio: json['hasAudio'] as bool? ?? true,
   proxyPath: json['proxyPath'] as String?,
+  previewCopyFailed: json['previewCopyFailed'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$MediaAssetToJson(_MediaAsset instance) =>
@@ -68,6 +69,7 @@ Map<String, dynamic> _$MediaAssetToJson(_MediaAsset instance) =>
       'displayName': instance.displayName,
       'hasAudio': instance.hasAudio,
       'proxyPath': ?instance.proxyPath,
+      'previewCopyFailed': instance.previewCopyFailed,
     };
 
 const _$MediaKindEnumMap = {

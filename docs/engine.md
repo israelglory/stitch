@@ -19,6 +19,7 @@ That writes `lib/engine/pigeon/engine_api.g.dart`, `ios/Runner/Engine/EngineApi.
 - `probe(path)` returns the exact duration, the display size after rotation, fps, and whether the file has sound or HDR video.
 - `thumbnails(path, times, maxSize, outDir)` writes filmstrip JPEGs.
 - `createProxy(path, out)` writes a 720p copy for preview.
+- `probe` also reports `hardwareDecodable`: whether the device plays the video in hardware at its size and frame rate (always true on iOS).
 - `capabilities` reports HEVC support and whether 4K is available.
 - `startExport(request)` and `cancelExport(id)`.
 - `startSpeechAudio(json, out)` renders a document's sound for speech recognition (see Speech audio). It reports through the export callbacks and is cancelled with `cancelExport`.
@@ -212,6 +213,12 @@ During the transition into its clip, the effect also draws the outgoing clip and
 - `MediaExtractor` reads durations, rotation, frame rate, and HDR transfer. `ExifInterface` reads photo orientation.
 - Filmstrip frames use `MediaMetadataRetriever` and the same stable file names as iOS.
 - Proxies are 720p (short side) H.264, made by `Transformer`.
+- **Clips the hardware cannot decode** (4K at 60 fps on a mid-range phone, say): proxies and exports use `Decoders.assetLoaderFactory`, which falls back to the next decoder, in the end a software one, when one fails to start. That is slow, so a proxy made in software gets 30 times the clip's length before it times out (3 times otherwise). `Decoders.hardwareCanDecode` answers `hardwareDecodable`.
+
+**Media3 workarounds (1.11.1):**
+- **Preview stopping at clip boundaries.** `CompositionPlayer` fails a check (`AudioGraphInput.onMediaItemChanged`, `positionOffsetUs >= 0`) when playback flows into a sequence item whose first audio frame starts before the item. Phone recordings do that at almost every boundary: their AAC audio starts slightly before 0 (encoder delay in the edit list), and mid-file cuts land inside an audio frame. The build patches `AudioGraphInputAudioSink` (`ClampAudioOffset` in `android/app/build.gradle.kts`) to clamp that offset to 0, so such an item's sound starts at most one audio frame (about 23 ms) late. Exports are unaffected. `EngineTests.previewPlaysAcrossClipBoundaries` covers it with `test_media/audio_delay.mp4`; `-Pstitch.noAudioClamp=true` builds without the patch. Remove it when Media3 handles this.
+- **Any other preview error:** `CompositionPlayer` never clears an error; it stays idle whatever is prepared or set next. So `PreviewPlayer` reports itself paused and replaces the player with a new one at the same position, once per document. The next document (a preview copy arriving, any edit) or pressing Play always gets a new player. `EngineTests.previewPlaysAgainAfterAFailure` covers it.
+- **R8 and newer-Android types.** `proguard-rules.pro` keeps the declared types of Media3's fields; otherwise R8's class merging added a check-cast to `LogSessionId` (Android 12) on a path Android 11 runs.
 
 ## Dart
 

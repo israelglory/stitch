@@ -127,6 +127,7 @@ class MediaInfoMessage {
     required this.hasVideo,
     required this.hasAudio,
     required this.isHdr,
+    required this.hardwareDecodable,
   });
 
   /// Null for still images.
@@ -148,6 +149,11 @@ class MediaInfoMessage {
 
   bool isHdr;
 
+  /// Whether the device plays the video in hardware at its size and frame
+  /// rate. False (4K at 60 fps on a mid-range phone, say) means only a
+  /// slow software decoder can. True for photos and audio.
+  bool hardwareDecodable;
+
   List<Object?> _toList() {
     return <Object?>[
       durationUs,
@@ -158,6 +164,7 @@ class MediaInfoMessage {
       hasVideo,
       hasAudio,
       isHdr,
+      hardwareDecodable,
     ];
   }
 
@@ -176,6 +183,7 @@ class MediaInfoMessage {
       hasVideo: result[5]! as bool,
       hasAudio: result[6]! as bool,
       isHdr: result[7]! as bool,
+      hardwareDecodable: result[8]! as bool,
     );
   }
 
@@ -195,7 +203,8 @@ class MediaInfoMessage {
         _deepEquals(frameRate, other.frameRate) &&
         _deepEquals(hasVideo, other.hasVideo) &&
         _deepEquals(hasAudio, other.hasAudio) &&
-        _deepEquals(isHdr, other.isHdr);
+        _deepEquals(isHdr, other.isHdr) &&
+        _deepEquals(hardwareDecodable, other.hardwareDecodable);
   }
 
   @override
@@ -204,7 +213,7 @@ class MediaInfoMessage {
 
   @override
   String toString() {
-    return 'MediaInfoMessage(durationUs: $durationUs, width: $width, height: $height, rotationDeg: $rotationDeg, frameRate: $frameRate, hasVideo: $hasVideo, hasAudio: $hasAudio, isHdr: $isHdr)';
+    return 'MediaInfoMessage(durationUs: $durationUs, width: $width, height: $height, rotationDeg: $rotationDeg, frameRate: $frameRate, hasVideo: $hasVideo, hasAudio: $hasAudio, isHdr: $isHdr, hardwareDecodable: $hardwareDecodable)';
   }
 }
 

@@ -600,7 +600,9 @@ mixin _$MediaAsset {
  String get displayName;/// False for videos without a sound track and for photos.
  bool get hasAudio;/// A 720p copy for preview, relative to the project folder, when the
 /// source is larger than 1080p. Export always uses [path].
- String? get proxyPath;
+ String? get proxyPath;/// The preview copy could not be made, even with a software decoder:
+/// this device cannot play the file.
+ bool get previewCopyFailed;
 /// Create a copy of MediaAsset
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -614,20 +616,20 @@ $MediaAssetCopyWith<MediaAsset> get copyWith => _$MediaAssetCopyWithImpl<MediaAs
 @override
 bool operator ==(Object other) {
   final _this = this as MediaAsset;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MediaAsset&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.path, _this.path) || other.path == _this.path)&&(identical(other.width, _this.width) || other.width == _this.width)&&(identical(other.height, _this.height) || other.height == _this.height)&&(identical(other.durationUs, _this.durationUs) || other.durationUs == _this.durationUs)&&(identical(other.posterPath, _this.posterPath) || other.posterPath == _this.posterPath)&&(identical(other.displayName, _this.displayName) || other.displayName == _this.displayName)&&(identical(other.hasAudio, _this.hasAudio) || other.hasAudio == _this.hasAudio)&&(identical(other.proxyPath, _this.proxyPath) || other.proxyPath == _this.proxyPath));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MediaAsset&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.path, _this.path) || other.path == _this.path)&&(identical(other.width, _this.width) || other.width == _this.width)&&(identical(other.height, _this.height) || other.height == _this.height)&&(identical(other.durationUs, _this.durationUs) || other.durationUs == _this.durationUs)&&(identical(other.posterPath, _this.posterPath) || other.posterPath == _this.posterPath)&&(identical(other.displayName, _this.displayName) || other.displayName == _this.displayName)&&(identical(other.hasAudio, _this.hasAudio) || other.hasAudio == _this.hasAudio)&&(identical(other.proxyPath, _this.proxyPath) || other.proxyPath == _this.proxyPath)&&(identical(other.previewCopyFailed, _this.previewCopyFailed) || other.previewCopyFailed == _this.previewCopyFailed));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as MediaAsset;
-  return Object.hash(runtimeType,_this.id,_this.kind,_this.path,_this.width,_this.height,_this.durationUs,_this.posterPath,_this.displayName,_this.hasAudio,_this.proxyPath);
+  return Object.hash(runtimeType,_this.id,_this.kind,_this.path,_this.width,_this.height,_this.durationUs,_this.posterPath,_this.displayName,_this.hasAudio,_this.proxyPath,_this.previewCopyFailed);
 }
 
 @override
 String toString() {
   final _this = this as MediaAsset;
-  return 'MediaAsset(id: ${_this.id}, kind: ${_this.kind}, path: ${_this.path}, width: ${_this.width}, height: ${_this.height}, durationUs: ${_this.durationUs}, posterPath: ${_this.posterPath}, displayName: ${_this.displayName}, hasAudio: ${_this.hasAudio}, proxyPath: ${_this.proxyPath})';
+  return 'MediaAsset(id: ${_this.id}, kind: ${_this.kind}, path: ${_this.path}, width: ${_this.width}, height: ${_this.height}, durationUs: ${_this.durationUs}, posterPath: ${_this.posterPath}, displayName: ${_this.displayName}, hasAudio: ${_this.hasAudio}, proxyPath: ${_this.proxyPath}, previewCopyFailed: ${_this.previewCopyFailed})';
 }
 
 
@@ -638,7 +640,7 @@ abstract mixin class $MediaAssetCopyWith<$Res>  {
   factory $MediaAssetCopyWith(MediaAsset value, $Res Function(MediaAsset) _then) = _$MediaAssetCopyWithImpl;
 @useResult
 $Res call({
- String id, MediaKind kind, String path, int width, int height, int? durationUs, String? posterPath, String displayName, bool hasAudio, String? proxyPath
+ String id, MediaKind kind, String path, int width, int height, int? durationUs, String? posterPath, String displayName, bool hasAudio, String? proxyPath, bool previewCopyFailed
 });
 
 
@@ -655,7 +657,7 @@ class _$MediaAssetCopyWithImpl<$Res>
 
 /// Create a copy of MediaAsset
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? kind = null,Object? path = null,Object? width = null,Object? height = null,Object? durationUs = freezed,Object? posterPath = freezed,Object? displayName = null,Object? hasAudio = null,Object? proxyPath = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? kind = null,Object? path = null,Object? width = null,Object? height = null,Object? durationUs = freezed,Object? posterPath = freezed,Object? displayName = null,Object? hasAudio = null,Object? proxyPath = freezed,Object? previewCopyFailed = null,}) {
   return _then(MediaAsset(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
@@ -667,7 +669,8 @@ as int?,posterPath: freezed == posterPath ? _self.posterPath : posterPath // ign
 as String?,displayName: null == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
 as String,hasAudio: null == hasAudio ? _self.hasAudio : hasAudio // ignore: cast_nullable_to_non_nullable
 as bool,proxyPath: freezed == proxyPath ? _self.proxyPath : proxyPath // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,previewCopyFailed: null == previewCopyFailed ? _self.previewCopyFailed : previewCopyFailed // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -752,10 +755,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  MediaKind kind,  String path,  int width,  int height,  int? durationUs,  String? posterPath,  String displayName,  bool hasAudio,  String? proxyPath)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  MediaKind kind,  String path,  int width,  int height,  int? durationUs,  String? posterPath,  String displayName,  bool hasAudio,  String? proxyPath,  bool previewCopyFailed)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MediaAsset() when $default != null:
-return $default(_that.id,_that.kind,_that.path,_that.width,_that.height,_that.durationUs,_that.posterPath,_that.displayName,_that.hasAudio,_that.proxyPath);case _:
+return $default(_that.id,_that.kind,_that.path,_that.width,_that.height,_that.durationUs,_that.posterPath,_that.displayName,_that.hasAudio,_that.proxyPath,_that.previewCopyFailed);case _:
   return orElse();
 
 }
@@ -773,10 +776,10 @@ return $default(_that.id,_that.kind,_that.path,_that.width,_that.height,_that.du
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  MediaKind kind,  String path,  int width,  int height,  int? durationUs,  String? posterPath,  String displayName,  bool hasAudio,  String? proxyPath)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  MediaKind kind,  String path,  int width,  int height,  int? durationUs,  String? posterPath,  String displayName,  bool hasAudio,  String? proxyPath,  bool previewCopyFailed)  $default,) {final _that = this;
 switch (_that) {
 case _MediaAsset():
-return $default(_that.id,_that.kind,_that.path,_that.width,_that.height,_that.durationUs,_that.posterPath,_that.displayName,_that.hasAudio,_that.proxyPath);case _:
+return $default(_that.id,_that.kind,_that.path,_that.width,_that.height,_that.durationUs,_that.posterPath,_that.displayName,_that.hasAudio,_that.proxyPath,_that.previewCopyFailed);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -793,10 +796,10 @@ return $default(_that.id,_that.kind,_that.path,_that.width,_that.height,_that.du
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  MediaKind kind,  String path,  int width,  int height,  int? durationUs,  String? posterPath,  String displayName,  bool hasAudio,  String? proxyPath)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  MediaKind kind,  String path,  int width,  int height,  int? durationUs,  String? posterPath,  String displayName,  bool hasAudio,  String? proxyPath,  bool previewCopyFailed)?  $default,) {final _that = this;
 switch (_that) {
 case _MediaAsset() when $default != null:
-return $default(_that.id,_that.kind,_that.path,_that.width,_that.height,_that.durationUs,_that.posterPath,_that.displayName,_that.hasAudio,_that.proxyPath);case _:
+return $default(_that.id,_that.kind,_that.path,_that.width,_that.height,_that.durationUs,_that.posterPath,_that.displayName,_that.hasAudio,_that.proxyPath,_that.previewCopyFailed);case _:
   return null;
 
 }
@@ -808,7 +811,7 @@ return $default(_that.id,_that.kind,_that.path,_that.width,_that.height,_that.du
 @JsonSerializable()
 
 class _MediaAsset implements MediaAsset {
-  const _MediaAsset({required this.id, required this.kind, required this.path, this.width = 0, this.height = 0, this.durationUs, this.posterPath, this.displayName = '', this.hasAudio = true, this.proxyPath});
+  const _MediaAsset({required this.id, required this.kind, required this.path, this.width = 0, this.height = 0, this.durationUs, this.posterPath, this.displayName = '', this.hasAudio = true, this.proxyPath, this.previewCopyFailed = false});
   factory _MediaAsset.fromJson(Map<String, dynamic> json) => _$MediaAssetFromJson(json);
 
 @override final  String id;
@@ -829,6 +832,9 @@ class _MediaAsset implements MediaAsset {
 /// A 720p copy for preview, relative to the project folder, when the
 /// source is larger than 1080p. Export always uses [path].
 @override final  String? proxyPath;
+/// The preview copy could not be made, even with a software decoder:
+/// this device cannot play the file.
+@override@JsonKey() final  bool previewCopyFailed;
 
 /// Create a copy of MediaAsset
 /// with the given fields replaced by the non-null parameter values.
@@ -843,18 +849,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MediaAsset&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.path, path) || other.path == path)&&(identical(other.width, width) || other.width == width)&&(identical(other.height, height) || other.height == height)&&(identical(other.durationUs, durationUs) || other.durationUs == durationUs)&&(identical(other.posterPath, posterPath) || other.posterPath == posterPath)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.hasAudio, hasAudio) || other.hasAudio == hasAudio)&&(identical(other.proxyPath, proxyPath) || other.proxyPath == proxyPath));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MediaAsset&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.path, path) || other.path == path)&&(identical(other.width, width) || other.width == width)&&(identical(other.height, height) || other.height == height)&&(identical(other.durationUs, durationUs) || other.durationUs == durationUs)&&(identical(other.posterPath, posterPath) || other.posterPath == posterPath)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.hasAudio, hasAudio) || other.hasAudio == hasAudio)&&(identical(other.proxyPath, proxyPath) || other.proxyPath == proxyPath)&&(identical(other.previewCopyFailed, previewCopyFailed) || other.previewCopyFailed == previewCopyFailed));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,kind,path,width,height,durationUs,posterPath,displayName,hasAudio,proxyPath);
+    return Object.hash(runtimeType,id,kind,path,width,height,durationUs,posterPath,displayName,hasAudio,proxyPath,previewCopyFailed);
 }
 
 @override
 String toString() {
-    return 'MediaAsset(id: $id, kind: $kind, path: $path, width: $width, height: $height, durationUs: $durationUs, posterPath: $posterPath, displayName: $displayName, hasAudio: $hasAudio, proxyPath: $proxyPath)';
+    return 'MediaAsset(id: $id, kind: $kind, path: $path, width: $width, height: $height, durationUs: $durationUs, posterPath: $posterPath, displayName: $displayName, hasAudio: $hasAudio, proxyPath: $proxyPath, previewCopyFailed: $previewCopyFailed)';
 }
 
 
@@ -865,7 +871,7 @@ abstract mixin class _$MediaAssetCopyWith<$Res> implements $MediaAssetCopyWith<$
   factory _$MediaAssetCopyWith(_MediaAsset value, $Res Function(_MediaAsset) _then) = __$MediaAssetCopyWithImpl;
 @override @useResult
 $Res call({
- String id, MediaKind kind, String path, int width, int height, int? durationUs, String? posterPath, String displayName, bool hasAudio, String? proxyPath
+ String id, MediaKind kind, String path, int width, int height, int? durationUs, String? posterPath, String displayName, bool hasAudio, String? proxyPath, bool previewCopyFailed
 });
 
 
@@ -882,7 +888,7 @@ class __$MediaAssetCopyWithImpl<$Res>
 
 /// Create a copy of MediaAsset
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? kind = null,Object? path = null,Object? width = null,Object? height = null,Object? durationUs = freezed,Object? posterPath = freezed,Object? displayName = null,Object? hasAudio = null,Object? proxyPath = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? kind = null,Object? path = null,Object? width = null,Object? height = null,Object? durationUs = freezed,Object? posterPath = freezed,Object? displayName = null,Object? hasAudio = null,Object? proxyPath = freezed,Object? previewCopyFailed = null,}) {
   return _then(_MediaAsset(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
@@ -894,7 +900,8 @@ as int?,posterPath: freezed == posterPath ? _self.posterPath : posterPath // ign
 as String?,displayName: null == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
 as String,hasAudio: null == hasAudio ? _self.hasAudio : hasAudio // ignore: cast_nullable_to_non_nullable
 as bool,proxyPath: freezed == proxyPath ? _self.proxyPath : proxyPath // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,previewCopyFailed: null == previewCopyFailed ? _self.previewCopyFailed : previewCopyFailed // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

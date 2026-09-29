@@ -490,6 +490,12 @@ abstract class AppLocalizations {
   /// **'Video, {duration}'**
   String videoItemSemantics(String duration);
 
+  /// Accessibility label for a video in the picker whose length the gallery does not know.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get videoItemSemanticsNoDuration;
+
   /// Accessibility label for a photo in the picker.
   ///
   /// In en, this message translates to:
@@ -657,6 +663,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Some media files are missing.'**
   String get missingMediaNote;
+
+  /// Editor banner while smaller copies of large clips (4K on a phone that cannot play them, say) are made in the background.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Preparing a clip for smooth playback. Until then, preview may stop at it.} other{Preparing {count} clips for smooth playback. Until then, preview may stop at them.}}'**
+  String previewCopiesPreparing(int count);
+
+  /// Editor banner when a clip could not be prepared for this device, even slowly. Retry tries again.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{This phone can\'t play one of the clips. It may be too large; try a smaller version.} other{This phone can\'t play {count} of the clips. They may be too large; try smaller versions.}}'**
+  String previewCopyFailedNote(int count);
 
   /// Tool.
   ///

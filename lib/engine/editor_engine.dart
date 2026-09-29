@@ -83,6 +83,7 @@ final class MediaInfo {
     this.rotationDeg = 0,
     this.frameRate = 0,
     this.isHdr = false,
+    this.hardwareDecodable = true,
   });
 
   /// Null for still images.
@@ -96,6 +97,11 @@ final class MediaInfo {
   final bool hasVideo;
   final bool hasAudio;
   final bool isHdr;
+
+  /// Whether the device plays the video in hardware. False means only a
+  /// slow software decoder can: its preview copy is made in the background
+  /// (see `PreviewCopies`) rather than during import.
+  final bool hardwareDecodable;
 }
 
 @immutable

@@ -8,7 +8,9 @@ import 'package:stitch/app/router.dart';
 import 'package:stitch/design/design.dart';
 import 'package:stitch/features/captions/presentation/caption_progress.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
+import 'package:stitch/features/editor/application/editor_state.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
+import 'package:stitch/features/editor/application/preview_copies.dart';
 import 'package:stitch/features/editor/presentation/editor_toolbar.dart';
 import 'package:stitch/features/editor/presentation/preview.dart';
 import 'package:stitch/features/editor/presentation/sheets/tool_sheets.dart';
@@ -18,8 +20,12 @@ import 'package:stitch/features/media/domain/library_item.dart';
 import 'package:stitch/features/projects/presentation/import_progress_sheet.dart';
 import 'package:stitch/l10n/generated/app_localizations.dart';
 
-/// Tallest the timeline gets before its lanes scroll vertically.
-const double _maxTimelineHeight = 260;
+/// How the height left after the fixed rows is shared: 3 parts preview,
+/// 2 parts timeline. The timeline keeps room to work in (several lanes
+/// without scrolling) instead of shrinking to its content; full screen
+/// shows the preview large.
+const int _previewFlex = 3;
+const int _timelineFlex = 2;
 
 /// The editor: top bar, preview, playback row, timeline, tools.
 class EditorScreen extends ConsumerStatefulWidget {
@@ -87,6 +93,38 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       AppRoutes.editorExport(widget.projectId),
       extra: options,
     );
+  }
+
+  /// Clips being prepared for this device, and clips it cannot play.
+  List<Widget> _previewCopyBanners(EditorState state) {
+    final l10n = AppLocalizations.of(context);
+    final preparing = ref.watch(previewCopiesProvider(widget.projectId));
+    final inUse = {for (final c in state.timeline.videoClips) c.mediaId};
+    final failed = state.project.media.values
+        .where((m) => m.previewCopyFailed && inUse.contains(m.id))
+        .length;
+    Widget padded(Widget banner) => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+      child: banner,
+    );
+    return [
+      if (preparing > 0)
+        padded(
+          NoticeBanner(
+            message: l10n.previewCopiesPreparing(preparing),
+            busy: true,
+          ),
+        ),
+      if (failed > 0)
+        padded(
+          ErrorBanner(
+            message: l10n.previewCopyFailedNote(failed),
+            onRetry: ref
+                .read(previewCopiesProvider(widget.projectId).notifier)
+                .retry,
+          ),
+        ),
+    ];
   }
 
   /// Picks a file to stand in for the first missing one.
@@ -191,6 +229,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                     onRetry: () => unawaited(_controller.flush()),
                   ),
                 ),
+              ..._previewCopyBanners(state),
               if (state.missingInUse.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -205,6 +244,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                   ),
                 ),
               Expanded(
+                flex: _previewFlex,
                 child: Padding(
                   padding: const EdgeInsets.all(AppSpacing.screen),
                   child: EditorPreview(projectId: widget.projectId),
@@ -234,10 +274,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                 ),
               ),
               CaptionProgress(projectId: widget.projectId),
-              ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxHeight: _maxTimelineHeight,
-                ),
+              Expanded(
+                flex: _timelineFlex,
                 child: TimelineView(
                   projectId: widget.projectId,
                   onAddMedia: _addMedia,
@@ -286,14 +324,21 @@ class _EditorSkeleton extends StatelessWidget {
         children: [
           SizedBox(height: AppHeader.height),
           Expanded(
+            flex: _previewFlex,
             child: Padding(
               padding: EdgeInsets.all(AppSpacing.xxl),
               child: Skeleton(),
             ),
           ),
-          Padding(
-            padding: EdgeInsets.all(AppSpacing.screen),
-            child: Skeleton(height: AppSizes.videoTrackHeight),
+          Expanded(
+            flex: _timelineFlex,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: EdgeInsets.all(AppSpacing.screen),
+                child: Skeleton(height: AppSizes.videoTrackHeight),
+              ),
+            ),
           ),
           Padding(
             padding: EdgeInsets.all(AppSpacing.screen),

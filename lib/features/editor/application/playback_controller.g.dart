@@ -51,7 +51,7 @@ final class PlaybackControllerProvider
 }
 
 String _$playbackControllerHash() =>
-    r'b185767f824f02c1db986a7dd9dfa7afe7dfffe6';
+    r'49aedd1fc087af11271a3ae84d8d7502a9d18934';
 
 /// Playhead and play state, mirrored from the engine. Updates at display
 /// rate while playing, so widgets must `select` what they need; the

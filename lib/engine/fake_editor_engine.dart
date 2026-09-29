@@ -30,6 +30,14 @@ class FakeEditorEngine implements EditorEngine {
   /// Paths passed to [createProxy], for assertions.
   final proxies = <String>[];
 
+  /// Whether [createProxy] writes a (tiny) file at its output path, as the
+  /// real engine does. Off by default: most tests only count the calls.
+  bool writeProxies = false;
+
+  /// When set, [createProxy] fails with it (a device that cannot decode
+  /// the source).
+  Failure? proxyFailure;
+
   /// Answers [waveform]; by default, a gentle wave for any file.
   List<double> Function(String path, int peaksPerSecond)? waveformHandler;
 
@@ -183,6 +191,8 @@ class FakeEditorEngine implements EditorEngine {
   @override
   Future<void> createProxy(String path, String outPath) async {
     proxies.add(path);
+    if (proxyFailure case final failure?) throw failure;
+    if (writeProxies) await File(outPath).writeAsBytes(const [0]);
   }
 
   @override

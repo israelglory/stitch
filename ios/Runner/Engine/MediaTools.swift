@@ -38,7 +38,9 @@ enum MediaProbe {
       durationUs: duration.microseconds,
       width: Int64(width), height: Int64(height),
       rotationDeg: Int64(rotation), frameRate: fps,
-      hasVideo: video != nil, hasAudio: hasAudio, isHdr: hdr)
+      hasVideo: video != nil, hasAudio: hasAudio, isHdr: hdr,
+      // AVFoundation picks decoders itself; proxies cover large sources.
+      hardwareDecodable: true)
   }
 
   private static func probeImage(url: URL) -> MediaInfoMessage? {
@@ -54,7 +56,8 @@ enum MediaProbe {
     let swap = (5...8).contains(orientation)
     return MediaInfoMessage(
       durationUs: nil, width: Int64(swap ? h : w), height: Int64(swap ? w : h),
-      rotationDeg: 0, frameRate: 0, hasVideo: true, hasAudio: false, isHdr: false)
+      rotationDeg: 0, frameRate: 0, hasVideo: true, hasAudio: false, isHdr: false,
+      hardwareDecodable: true)
   }
 }
 

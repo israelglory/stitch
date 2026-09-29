@@ -315,6 +315,10 @@
       }
     }
   },
+  "videoItemSemanticsNoDuration": "Video",
+  "@videoItemSemanticsNoDuration": {
+    "description": "Accessibility label for a video in the picker whose length the gallery does not know."
+  },
   "photoItemSemantics": "Photo",
   "@photoItemSemantics": {
     "description": "Accessibility label for a photo in the picker."
@@ -458,6 +462,24 @@
   "missingMediaNote": "Some media files are missing.",
   "@missingMediaNote": {
     "description": "Shown in the editor when imported files were deleted."
+  },
+  "previewCopiesPreparing": "{count, plural, =1{Preparing a clip for smooth playback. Until then, preview may stop at it.} other{Preparing {count} clips for smooth playback. Until then, preview may stop at them.}}",
+  "@previewCopiesPreparing": {
+    "description": "Editor banner while smaller copies of large clips (4K on a phone that cannot play them, say) are made in the background.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "previewCopyFailedNote": "{count, plural, =1{This phone can't play one of the clips. It may be too large; try a smaller version.} other{This phone can't play {count} of the clips. They may be too large; try smaller versions.}}",
+  "@previewCopyFailedNote": {
+    "description": "Editor banner when a clip could not be prepared for this device, even slowly. Retry tries again.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "toolEdit": "Edit",
   "@toolEdit": {

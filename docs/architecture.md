@@ -55,6 +55,7 @@ projects/<id>/posters/       one still per media item
 - The index is rebuilt from the project documents when it is missing or unreadable. An unreadable project is skipped, not fatal.
 - Media is copied on import, so projects keep working when the gallery changes.
 - The editor autosaves 500 ms after the last edit. It also saves when you leave the editor or the app goes to the background.
+- Videos larger than 1080p get a 720p preview copy. Import makes it when the device decodes the source in hardware (seconds). Otherwise a software decoder must, which takes minutes, so `PreviewCopies` makes it in the background while the project is open, one at a time, with a banner; the same worker remakes copies that are missing. A copy is not an edit: it goes into every history step, with no undo step. A clip that cannot be decoded even in software is marked (`previewCopyFailed`) and the banner says so, with Retry.
 - A clip whose copy has gone missing shows a banner with Relink: a new pick replaces the file for every clip and sound that used it, as one undo step. Trims and speed are kept (cut back if the new file is shorter). Export is disabled while any media in use is missing.
 
 The cache folder holds what can be made again, and Settings shows its size and clears it:

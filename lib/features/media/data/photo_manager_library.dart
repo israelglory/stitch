@@ -14,6 +14,15 @@ final class PhotoManagerLibrary implements MediaLibrary {
   /// Images and videos; location metadata is never requested.
   static const _option = PermissionRequestOption();
 
+  /// Android gallery query: no conditions beyond the media type.
+  static final _androidFilter = CustomFilter.sql(
+    where: '',
+    orderBy: [
+      OrderByItem.desc(CustomColumns.base.createDate),
+      const OrderByItem.desc('_id'),
+    ],
+  );
+
   @override
   Future<LibraryAccess> access() async =>
       _map(await PhotoManager.getPermissionState(requestOption: _option));
@@ -39,16 +48,28 @@ final class PhotoManagerLibrary implements MediaLibrary {
       LibraryFilter.photos => RequestType.image,
       LibraryFilter.all => RequestType.common,
     };
-    final paths = await PhotoManager.getAssetPathList(
-      onlyAll: true,
-      type: type,
-      filterOption: FilterOptionGroup(orders: [const OrderOption()]),
-    );
-    if (paths.isEmpty) return const [];
-    final assets = await paths.first.getAssetListPaged(
-      page: page,
-      size: pageSize,
-    );
+    final List<AssetEntity> assets;
+    if (Platform.isAndroid) {
+      // Straight from MediaStore, filtered by media type only. The default
+      // filters also require an album, a date, a duration, and a size, and
+      // some phones (seen on MIUI) leave those columns empty for every
+      // file, which hid the whole gallery. Newest first; the row id orders
+      // files without a date.
+      assets = await PhotoManager.getAssetListPaged(
+        page: page,
+        pageCount: pageSize,
+        type: type,
+        filterOption: _androidFilter,
+      );
+    } else {
+      final paths = await PhotoManager.getAssetPathList(
+        onlyAll: true,
+        type: type,
+        filterOption: FilterOptionGroup(orders: [const OrderOption()]),
+      );
+      if (paths.isEmpty) return const [];
+      assets = await paths.first.getAssetListPaged(page: page, size: pageSize);
+    }
     return [
       for (final a in assets)
         if (a.type == AssetType.video || a.type == AssetType.image)
@@ -58,8 +79,9 @@ final class PhotoManagerLibrary implements MediaLibrary {
             width: a.orientatedWidth,
             height: a.orientatedHeight,
             // Whole seconds, rounded down so a clip never claims more than
-            // the file holds. The engine probes exact durations (M5).
-            durationUs: a.type == AssetType.video
+            // the file holds. The engine probes exact durations (M5). Null
+            // when the gallery does not know it, so no wrong 0:00 shows.
+            durationUs: a.type == AssetType.video && a.duration > 0
                 ? a.duration * usPerSecond
                 : null,
           ),

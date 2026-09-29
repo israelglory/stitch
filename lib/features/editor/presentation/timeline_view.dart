@@ -240,7 +240,11 @@ class _TimelineViewState extends ConsumerState<TimelineView>
           child: SingleChildScrollView(
             physics: const ClampingScrollPhysics(),
             child: SizedBox(
-              height: contentHeight,
+              // At least the whole area: the playhead runs to the bottom,
+              // and the space below the lanes is part of the timeline.
+              height: box.maxHeight.isFinite
+                  ? math.max(contentHeight, box.maxHeight)
+                  : contentHeight,
               child: Stack(
                 children: [
                   // Scrolling content, positioned by the playhead. It is

@@ -248,6 +248,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get videoItemSemanticsNoDuration => 'Video';
+
+  @override
   String get photoItemSemantics => 'Photo';
 
   @override
@@ -338,6 +341,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get missingMediaNote => 'Some media files are missing.';
+
+  @override
+  String previewCopiesPreparing(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Preparing $count clips for smooth playback. Until then, preview may stop at them.',
+      one: 'Preparing a clip for smooth playback. Until then, preview may stop at it.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String previewCopyFailedNote(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'This phone can\'t play $count of the clips. They may be too large; try smaller versions.',
+      one: 'This phone can\'t play one of the clips. It may be too large; try a smaller version.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get toolEdit => 'Edit';

@@ -286,9 +286,11 @@ class _Grid extends ConsumerWidget {
               ? null
               : formatDuration(item.durationUs!);
           return MediaThumbnail(
-            semanticLabel: item.kind == MediaKind.video
-                ? l10n.videoItemSemantics(duration ?? '')
-                : l10n.photoItemSemantics,
+            semanticLabel: switch ((item.kind, duration)) {
+              (MediaKind.video, final String d) => l10n.videoItemSemantics(d),
+              (MediaKind.video, null) => l10n.videoItemSemanticsNoDuration,
+              _ => l10n.photoItemSemantics,
+            },
             image: Image(
               image: LibraryThumbnail(
                 library,

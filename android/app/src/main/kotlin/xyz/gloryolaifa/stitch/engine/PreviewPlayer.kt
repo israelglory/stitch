@@ -67,10 +67,49 @@ class PreviewPlayer(
 
     override fun onPlayerError(error: PlaybackException) {
       Log.e(TAG, "Preview failed", error)
+      // CompositionPlayer (Media3 1.11.1) never clears an error: it stays
+      // idle for good, whatever is prepared or set next. Only a new player
+      // plays again (leaving and reopening the editor did that). Start
+      // over at the same spot, paused; not from inside this callback.
+      val at = player?.currentPosition ?: 0
+      failed = true
       publish()
+      handler.post { replaceFailedPlayer(at) }
     }
 
     override fun onRenderedFirstFrame() = markShown()
+  }
+
+  /** The last document set, to rebuild a player that failed. */
+  private var document: EngineDocument? = null
+
+  /** The player failed and is idle for good (see [Player.Listener.onPlayerError]). */
+  private var failed = false
+
+  /** Whether the current document was already given a new player. */
+  private var rebuiltForDocument = false
+
+  /**
+   * Replaces a failed player with a new one showing the same document at
+   * [atMs], paused. Once per document: if that one fails too (the
+   * document itself cannot play, like a clip this device cannot decode),
+   * it stays paused until the next document, which gets a new player.
+   */
+  private fun replaceFailedPlayer(atMs: Long) {
+    if (!failed || rebuiltForDocument) return
+    val doc = document ?: return
+    rebuiltForDocument = true
+    discardPlayer()
+    setDocument(doc, positionMs = atMs)
+  }
+
+  private fun discardPlayer() {
+    handler.removeCallbacks(ticker)
+    player?.removeListener(listener)
+    player?.release()
+    player = null
+    surfaceAttached = false
+    failed = false
   }
 
   /** Version of the document on screen (see `EngineDocument.version`). */
@@ -130,11 +169,20 @@ class PreviewPlayer(
     .build()
     .also {
       it.addListener(listener)
+      if (level != 1f) applyVolume(it)
       player = it
     }
 
-  /** Replaces what is played, keeping the position and play state. */
-  fun setDocument(doc: EngineDocument) {
+  /**
+   * Replaces what is played, keeping the position (or starting at
+   * [positionMs]) and play state.
+   */
+  fun setDocument(doc: EngineDocument, positionMs: Long? = null) {
+    if (doc !== document) rebuiltForDocument = false
+    document = doc
+    // A failed player cannot take a new document; a new one can.
+    val keepFromFailed = if (failed) player?.currentPosition else null
+    if (failed) discardPlayer()
     val previewSize = previewSize(doc.canvas)
     val built = try {
       CompositionBuilder.build(doc, forExport = false, outputSize = previewSize)
@@ -154,7 +202,7 @@ class PreviewPlayer(
       return
     }
     val p = ensurePlayer()
-    val keepMs = min(p.currentPosition, built.durationUs / 1000)
+    val keepMs = min(positionMs ?: keepFromFailed ?: p.currentPosition, built.durationUs / 1000)
     durationUs = built.durationUs
     if (previewSize != size || !surfaceAttached) {
       size = previewSize
@@ -172,6 +220,11 @@ class PreviewPlayer(
   }
 
   fun play() {
+    // Play is the way to try a failed document again: on a new player.
+    if (failed) {
+      val doc = document ?: return
+      setDocument(doc, positionMs = player?.currentPosition)
+    }
     val p = player ?: return
     p.isScrubbingModeEnabled = false
     if (p.currentPosition * 1000 >= durationUs - END_TOLERANCE_US) p.seekTo(0)
@@ -185,8 +238,14 @@ class PreviewPlayer(
    * taking it would end the recording, which holds focus itself.
    */
   fun setVolume(volume: Double) {
-    val p = player ?: return
-    val level = volume.toFloat().coerceIn(0f, 1f)
+    level = volume.toFloat().coerceIn(0f, 1f)
+    player?.let(::applyVolume)
+  }
+
+  /** Preview volume, kept for players made later. */
+  private var level = 1f
+
+  private fun applyVolume(p: CompositionPlayer) {
     p.volume = level
     p.setAudioAttributes(audioAttributes, handleAudioFocus && level > 0f)
   }
@@ -212,12 +271,12 @@ class PreviewPlayer(
 
   private fun publish() {
     val p = player
-    val buffering = p?.playbackState == Player.STATE_BUFFERING
+    val buffering = !failed && p?.playbackState == Player.STATE_BUFFERING
     onState(
       PlaybackStateMessage(
         positionUs = min((p?.currentPosition ?: 0) * 1000, durationUs),
         durationUs = durationUs,
-        isPlaying = p?.isPlaying == true || (p?.playWhenReady == true && buffering),
+        isPlaying = !failed && (p?.isPlaying == true || (p?.playWhenReady == true && buffering)),
         isBuffering = buffering,
         documentVersion = shownVersion,
       ),
@@ -226,11 +285,8 @@ class PreviewPlayer(
 
   /** Stops playback and frees decoders. The texture stays usable. */
   fun release() {
-    handler.removeCallbacks(ticker)
-    player?.removeListener(listener)
-    player?.release()
-    player = null
-    surfaceAttached = false
+    discardPlayer()
+    document = null
     durationUs = 0
     publish()
   }

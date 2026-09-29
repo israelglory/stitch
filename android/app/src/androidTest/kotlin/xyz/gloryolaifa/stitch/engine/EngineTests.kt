@@ -519,6 +519,81 @@ class EngineTests {
     assertTrue("a frame was drawn", textures.latest != null)
   }
 
+  @Test
+  fun previewPlaysAcrossClipBoundaries() = runBlocking<Unit> {
+    // Two clips whose sound starts a little before 0, as phone recordings'
+    // does: Media3 1.11.1 stopped the preview where the second one begins
+    // until the build clamped the offset (see ClampAudioOffset in
+    // build.gradle.kts).
+    val doc = EngineDocument.decode(
+      """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190080},
+       "media": {"a": {"path": "${media("audio_delay.mp4")}", "kind": "video", "durationUs": 3499000}},
+       "composition": {"durationUs": 3000000, "clips": [
+         {"clipId": "c1", "mediaId": "a", "kind": "video", "startUs": 0, "endUs": 1500000,
+          "sourceInUs": 0, "sourceOutUs": 1500000, "speed": 1, "volume": 1,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}},
+         {"clipId": "c2", "mediaId": "a", "kind": "video", "startUs": 1500000, "endUs": 3000000,
+          "sourceInUs": 0, "sourceOutUs": 1500000, "speed": 1, "volume": 1,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}}]}}
+      """,
+    )
+    var latest: PlaybackStateMessage? = null
+    val player = withContext(Dispatchers.Main) {
+      PreviewPlayer(context, FakeTextures(), handleAudioFocus = false) { latest = it }
+        .apply { setDocument(doc) }
+    }
+    withContext(Dispatchers.Main) { player.play() }
+    val start = System.currentTimeMillis()
+    while (System.currentTimeMillis() - start < 15_000 && (latest?.positionUs ?: 0) < 2_400_000) {
+      kotlinx.coroutines.delay(100)
+    }
+    val reached = latest?.positionUs ?: 0
+    withContext(Dispatchers.Main) { player.dispose() }
+    assertTrue("played past the boundary, reached $reached us", reached >= 2_400_000)
+  }
+
+  @Test
+  fun previewPlaysAgainAfterAFailure() = runBlocking<Unit> {
+    // A clip the device cannot decode fails the player; its preview copy
+    // then arrives as a new document. CompositionPlayer never clears an
+    // error, so that document must go to a new player.
+    val broken = File(tempDir, "broken.mp4").apply { writeBytes(ByteArray(4096) { 7 }) }
+    fun doc(path: String) = EngineDocument.decode(
+      """
+      {"version": ${if (path == broken.path) 1 else 2},
+       "canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190080},
+       "media": {"a": {"path": "$path", "kind": "video", "durationUs": 3000000}},
+       "composition": {"durationUs": 3000000, "clips": [
+         {"clipId": "c1", "mediaId": "a", "kind": "video", "startUs": 0, "endUs": 3000000,
+          "sourceInUs": 0, "sourceOutUs": 3000000, "speed": 1, "volume": 1,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}}]}}
+      """,
+    )
+    var latest: PlaybackStateMessage? = null
+    val player = withContext(Dispatchers.Main) {
+      PreviewPlayer(context, FakeTextures(), handleAudioFocus = false) { latest = it }
+        .apply { setDocument(doc(broken.path)) }
+    }
+    withContext(Dispatchers.Main) { player.play() }
+    kotlinx.coroutines.delay(2_000)
+    assertFalse("a failed preview is not shown as playing", latest?.isPlaying == true)
+
+    withContext(Dispatchers.Main) {
+      player.setDocument(doc(media("speech.mp4")))
+      player.play()
+    }
+    val start = System.currentTimeMillis()
+    while (System.currentTimeMillis() - start < 15_000 && (latest?.positionUs ?: 0) < 1_000_000) {
+      kotlinx.coroutines.delay(100)
+    }
+    val reached = latest?.positionUs ?: 0
+    withContext(Dispatchers.Main) { player.dispose() }
+    assertTrue("plays after the failure, reached $reached us", reached >= 1_000_000)
+  }
+
   // Sound
 
   @Test

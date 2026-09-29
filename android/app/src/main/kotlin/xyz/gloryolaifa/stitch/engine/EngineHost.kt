@@ -122,8 +122,10 @@ class EngineHost(
     scope.launch {
       try {
         job.start(listener)
-      } catch (e: Exception) {
-        // Anything unexpected ends this job, not the app.
+      } catch (e: Throwable) {
+        // Anything unexpected ends this job, not the app. Errors too: a
+        // library reaching for a class this Android version lacks throws
+        // NoClassDefFoundError, which is not an Exception.
         Log.e(TAG, "Job failed to start", e)
         listener.onFailed(EngineException.exportFailed(e.message ?: "Could not start"))
       }

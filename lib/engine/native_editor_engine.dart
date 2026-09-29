@@ -65,6 +65,7 @@ class NativeEditorEngine implements EditorEngine, EngineFlutterApi {
       hasVideo: m.hasVideo,
       hasAudio: m.hasAudio,
       isHdr: m.isHdr,
+      hardwareDecodable: m.hardwareDecodable,
     );
   });
 

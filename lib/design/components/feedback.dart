@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:stitch/design/components/buttons.dart';
+import 'package:stitch/design/components/progress.dart';
 import 'package:stitch/design/icons.dart';
 import 'package:stitch/design/tokens.dart';
 import 'package:stitch/l10n/generated/app_localizations.dart';
@@ -120,6 +121,54 @@ class ErrorBanner extends StatelessWidget {
               )
             else
               const SizedBox(width: AppSpacing.sm),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Inline note about work going on (or done) that the user may want to
+/// know about. Neutral surface; [busy] shows a small spinner.
+class NoticeBanner extends StatelessWidget {
+  const new({required this.message, this.busy = false, super.key});
+
+  final String message;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final iconSize = scaledIconSize(context);
+    return Semantics(
+      liveRegion: true,
+      container: true,
+      child: Container(
+        padding: const EdgeInsetsDirectional.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xs,
+        ),
+        constraints: const BoxConstraints(minHeight: AppSizes.buttonHeight),
+        decoration: BoxDecoration(
+          color: colors.surfaceRaised,
+          borderRadius: BorderRadius.circular(AppRadius.control),
+        ),
+        child: Row(
+          children: [
+            if (busy)
+              ProgressRing(size: iconSize)
+            else
+              Icon(AppIcons.info, size: iconSize, color: colors.textSecondary),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: Text(
+                  message,
+                  style: AppTypography.body.copyWith(color: colors.textPrimary),
+                ),
+              ),
+            ),
           ],
         ),
       ),

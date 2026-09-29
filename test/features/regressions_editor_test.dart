@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stitch/app/router.dart';
 import 'package:stitch/core/ids/ids.dart';
-import 'package:stitch/design/design.dart';
+import 'package:stitch/design/design.dart' hide AudioKind;
 import 'package:stitch/engine/engine_provider.dart';
 import 'package:stitch/engine/fake_editor_engine.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
@@ -149,6 +149,62 @@ void main() {
         (selection as ClipSelected).id,
         stateOf(tester, id).timeline.videoClips.first.id,
       );
+      await tester.pump(autosaveDelay * 2);
+      await settle(tester);
+    });
+
+    testWidgets('new audio of every kind starts with no fades', (tester) async {
+      env = await createEnv(tester);
+      final id = await createProject(tester, env, seconds: [10]);
+      await pumpApp(tester, env, location: AppRoutes.editor(id));
+      await settleUntil(tester, find.byType(VideoClipTile));
+      final controller = ProviderScope.containerOf(
+        tester.element(find.byType(EditorScreen)),
+      ).read(editorControllerProvider(id).notifier);
+      final clipId = stateOf(tester, id).timeline.videoClips.first.id;
+      controller.apply(
+        (t) => t
+            .addAudio(
+              id: 'music',
+              mediaId: 'm',
+              kind: AudioKind.music,
+              name: 'Music',
+              mediaDurationUs: s(30),
+              atUs: 0,
+            )
+            .addAudio(
+              id: 'sfx',
+              mediaId: 's',
+              kind: AudioKind.soundEffect,
+              name: 'Pop',
+              mediaDurationUs: s(1),
+              atUs: s(2),
+              lane: 1,
+            )
+            .addAudio(
+              id: 'voice',
+              mediaId: 'v',
+              kind: AudioKind.voiceover,
+              name: 'Voiceover',
+              mediaDurationUs: s(4),
+              atUs: s(4),
+              lane: 2,
+            )
+            .extractAudio(clipId, newId: 'extracted', name: 'Extracted'),
+      );
+      await settle(tester);
+      for (final audioId in ['music', 'sfx', 'voice', 'extracted']) {
+        final item = stateOf(tester, id).timeline.audioById(audioId)!;
+        expect((item.fadeInUs, item.fadeOutUs), (0, 0), reason: audioId);
+        controller.select(AudioSelected(audioId));
+        await settle(tester);
+        await tester.tap(find.text('Fade'));
+        await settle(tester);
+        // Both sliders read zero.
+        expect(find.text('0.0s'), findsNWidgets(2), reason: audioId);
+        await tester.tapAt(const Offset(20, 20));
+        await settle(tester);
+      }
       await tester.pump(autosaveDelay * 2);
       await settle(tester);
     });

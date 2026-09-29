@@ -28,9 +28,6 @@ final class ImportProgress {
 
 const _log = Logger('import');
 
-/// Sources with a longer side above this get a preview proxy.
-const int _proxyAbove = 1920;
-
 /// Longest side of stored posters, in pixels.
 const int _posterSize = 720;
 
@@ -39,7 +36,9 @@ const int _posterSize = 720;
 ///
 /// The engine reads each copy for exact duration, size, and sound (the
 /// gallery only knows whole seconds), and sources larger than 1080p get a
-/// 720p proxy for smooth preview.
+/// 720p proxy for smooth preview. Only when the device decodes them in
+/// hardware, though: otherwise the copy takes minutes, and `PreviewCopies`
+/// makes it in the background once the project is open.
 class MediaImporter {
   new({
     required this.store,
@@ -125,7 +124,8 @@ class MediaImporter {
 
         String? proxyPath;
         if (item.kind == MediaKind.video &&
-            math.max(width, height) > _proxyAbove) {
+            math.max(width, height) > previewCopyAbove &&
+            (info?.hardwareDecodable ?? true)) {
           final path = p.join('proxies', '$mediaId.mp4');
           final file = File(store.resolve(projectId, path));
           created.add(file);

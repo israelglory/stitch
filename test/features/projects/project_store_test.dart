@@ -235,6 +235,27 @@ void main() {
       expect(asset.proxyPath, isNull);
     });
 
+    test(
+      'large videos the hardware cannot play wait for the background',
+      () async {
+        final video = library.addVideo('big');
+        engine.probeHandler = (_) => const MediaInfo(
+          durationUs: 1000000,
+          width: 2160,
+          height: 3840,
+          frameRate: 60,
+          hasVideo: true,
+          hasAudio: true,
+          hardwareDecodable: false,
+        );
+        final asset = (await importer.import(project.id, [video])).single;
+        // A software decoder would take minutes: PreviewCopies makes it.
+        expect(engine.proxies, isEmpty);
+        expect(asset.proxyPath, isNull);
+        expect(asset.wantsPreviewCopy, isTrue);
+      },
+    );
+
     test('a failed probe falls back to gallery values', () async {
       final video = library.addVideo('v', seconds: 7);
       final asset = (await importer.import(project.id, [video])).single;

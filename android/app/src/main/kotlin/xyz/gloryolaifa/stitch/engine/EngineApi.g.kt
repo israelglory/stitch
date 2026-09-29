@@ -243,7 +243,13 @@ data class MediaInfoMessage (
   val frameRate: Double,
   val hasVideo: Boolean,
   val hasAudio: Boolean,
-  val isHdr: Boolean
+  val isHdr: Boolean,
+  /**
+   * Whether the device plays the video in hardware at its size and frame
+   * rate. False (4K at 60 fps on a mid-range phone, say) means only a
+   * slow software decoder can. True for photos and audio.
+   */
+  val hardwareDecodable: Boolean
 )
  {
   companion object {
@@ -256,7 +262,8 @@ data class MediaInfoMessage (
       val hasVideo = pigeonVar_list[5] as Boolean
       val hasAudio = pigeonVar_list[6] as Boolean
       val isHdr = pigeonVar_list[7] as Boolean
-      return MediaInfoMessage(durationUs, width, height, rotationDeg, frameRate, hasVideo, hasAudio, isHdr)
+      val hardwareDecodable = pigeonVar_list[8] as Boolean
+      return MediaInfoMessage(durationUs, width, height, rotationDeg, frameRate, hasVideo, hasAudio, isHdr, hardwareDecodable)
     }
   }
   fun toList(): List<Any?> {
@@ -269,6 +276,7 @@ data class MediaInfoMessage (
       hasVideo,
       hasAudio,
       isHdr,
+      hardwareDecodable,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -279,7 +287,7 @@ data class MediaInfoMessage (
       return true
     }
     val other = other as MediaInfoMessage
-    return EngineApiPigeonUtils.deepEquals(this.durationUs, other.durationUs) && EngineApiPigeonUtils.deepEquals(this.width, other.width) && EngineApiPigeonUtils.deepEquals(this.height, other.height) && EngineApiPigeonUtils.deepEquals(this.rotationDeg, other.rotationDeg) && EngineApiPigeonUtils.deepEquals(this.frameRate, other.frameRate) && EngineApiPigeonUtils.deepEquals(this.hasVideo, other.hasVideo) && EngineApiPigeonUtils.deepEquals(this.hasAudio, other.hasAudio) && EngineApiPigeonUtils.deepEquals(this.isHdr, other.isHdr)
+    return EngineApiPigeonUtils.deepEquals(this.durationUs, other.durationUs) && EngineApiPigeonUtils.deepEquals(this.width, other.width) && EngineApiPigeonUtils.deepEquals(this.height, other.height) && EngineApiPigeonUtils.deepEquals(this.rotationDeg, other.rotationDeg) && EngineApiPigeonUtils.deepEquals(this.frameRate, other.frameRate) && EngineApiPigeonUtils.deepEquals(this.hasVideo, other.hasVideo) && EngineApiPigeonUtils.deepEquals(this.hasAudio, other.hasAudio) && EngineApiPigeonUtils.deepEquals(this.isHdr, other.isHdr) && EngineApiPigeonUtils.deepEquals(this.hardwareDecodable, other.hardwareDecodable)
   }
 
   override fun hashCode(): Int {
@@ -292,10 +300,11 @@ data class MediaInfoMessage (
     result = 31 * result + EngineApiPigeonUtils.deepHash(this.hasVideo)
     result = 31 * result + EngineApiPigeonUtils.deepHash(this.hasAudio)
     result = 31 * result + EngineApiPigeonUtils.deepHash(this.isHdr)
+    result = 31 * result + EngineApiPigeonUtils.deepHash(this.hardwareDecodable)
     return result
   }
   override fun toString(): String {
-    return "MediaInfoMessage(durationUs=$durationUs, width=$width, height=$height, rotationDeg=$rotationDeg, frameRate=$frameRate, hasVideo=$hasVideo, hasAudio=$hasAudio, isHdr=$isHdr)"
+    return "MediaInfoMessage(durationUs=$durationUs, width=$width, height=$height, rotationDeg=$rotationDeg, frameRate=$frameRate, hasVideo=$hasVideo, hasAudio=$hasAudio, isHdr=$isHdr, hardwareDecodable=$hardwareDecodable)"
   }
 }
 

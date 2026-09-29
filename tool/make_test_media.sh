@@ -48,6 +48,13 @@ ffmpeg $q -f lavfi -i "testsrc2=size=1200x1600" -frames:v 1 -q:v 5 still.jpg
 
 # Speech for captions (macOS only: uses the system voice). The .f32 file is
 # the same sound as speech recognition takes it: 16 kHz mono float, raw.
+# Audio that starts a little before 0, as in phone recordings (encoder
+# delay in the edit list): cut from a clip with a key frame on every frame.
+ffmpeg $q -f lavfi -i "testsrc2=size=360x640:rate=30" -f lavfi -i "sine=frequency=440:sample_rate=44100" \
+  -t 4 -c:v libx264 -g 1 -pix_fmt yuv420p -c:a aac -ac 1 _whole.mp4
+ffmpeg $q -ss 0.5015 -i _whole.mp4 -c copy -avoid_negative_ts disabled audio_delay.mp4
+rm _whole.mp4
+
 if command -v say >/dev/null; then
   say -v Samantha -o _speech.aiff "Stitch makes captions on your phone. Everything stays on your device."
   afconvert -f m4af -d aac@48000 -b 96000 _speech.aiff speech.m4a

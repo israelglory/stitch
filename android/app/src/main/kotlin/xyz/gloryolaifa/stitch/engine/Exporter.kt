@@ -72,6 +72,9 @@ class Exporter(
     }
     temp.delete()
     val t = Transformer.Builder(context)
+      // Clips the hardware cannot decode (4K at 60 fps on a mid-range
+      // phone) fall back to a software decoder: slow, but the export ends.
+      .setAssetLoaderFactory(Decoders.assetLoaderFactory(context))
       .setAudioMixerFactory(LimitingAudioMixer.Factory())
       .setVideoMimeType(if (request.hevc) MimeTypes.VIDEO_H265 else MimeTypes.VIDEO_H264)
       .setAudioMimeType(MimeTypes.AUDIO_AAC)

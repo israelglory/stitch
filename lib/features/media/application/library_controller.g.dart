@@ -107,7 +107,7 @@ final class LibraryItemsProvider
   }
 }
 
-String _$libraryItemsHash() => r'b2d79f42a5b24cc2dfad0f5b61013ff0560bdc93';
+String _$libraryItemsHash() => r'92aaf8d250a3e32b19f1f338d9b73d5ac11fb2da';
 
 /// Library items for [filter], loaded a page at a time as the grid scrolls.
 

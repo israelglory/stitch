@@ -19,6 +19,7 @@ That writes `lib/engine/pigeon/engine_api.g.dart`, `ios/Runner/Engine/EngineApi.
 - `probe(path)` returns the exact duration, the display size after rotation, fps, and whether the file has sound or HDR video.
 - `thumbnails(path, times, maxSize, outDir)` writes filmstrip JPEGs.
 - `createProxy(path, out)` writes a 720p copy for preview.
+- `previewFrame(path, timeUs, maxSize, exact)` returns one JPEG frame, for the preview while a trim handle is dragged. The file stays open between calls (`PreviewFrames` on both platforms). Quick frames are the nearest key frame; exact ones decode to the time.
 - `probe` also reports `hardwareDecodable`: whether the device plays the video in hardware at its size and frame rate (always true on iOS).
 - `capabilities` reports HEVC support and whether 4K is available.
 - `startExport(request)` and `cancelExport(id)`.
@@ -214,6 +215,8 @@ During the transition into its clip, the effect also draws the outgoing clip and
 - Filmstrip frames use `MediaMetadataRetriever` and the same stable file names as iOS.
 - Proxies are 720p (short side) H.264, made by `Transformer`.
 - **Clips the hardware cannot decode** (4K at 60 fps on a mid-range phone, say): proxies and exports use `Decoders.assetLoaderFactory`, which falls back to the next decoder, in the end a software one, when one fails to start. That is slow, so a proxy made in software gets 30 times the clip's length before it times out (3 times otherwise). `Decoders.hardwareCanDecode` answers `hardwareDecodable`.
+
+**Transitions in preview:** the frame of the clip being left comes from a second decoder (`OutgoingFrames`). While the preview plays, a frame waits for it at most 300 ms (`PreviewPlayback`): a missed frame shows less of that clip, while a long wait looked like playback had stopped. Paused, it waits up to 3 s so the frame shown is right. A decoder whose frames cannot be read as images (some vendor decoders ignore the flexible YUV request) is given up on for that transition. Redraws after a missed frame happen only when paused by the user, not while Play waits for buffering.
 
 **Media3 workarounds (1.11.1):**
 - **Preview stopping at clip boundaries.** `CompositionPlayer` fails a check (`AudioGraphInput.onMediaItemChanged`, `positionOffsetUs >= 0`) when playback flows into a sequence item whose first audio frame starts before the item. Phone recordings do that at almost every boundary: their AAC audio starts slightly before 0 (encoder delay in the edit list), and mid-file cuts land inside an audio frame. The build patches `AudioGraphInputAudioSink` (`ClampAudioOffset` in `android/app/build.gradle.kts`) to clamp that offset to 0, so such an item's sound starts at most one audio frame (about 23 ms) late. Exports are unaffected. `EngineTests.previewPlaysAcrossClipBoundaries` covers it with `test_media/audio_delay.mp4`; `-Pstitch.noAudioClamp=true` builds without the patch. Remove it when Media3 handles this.

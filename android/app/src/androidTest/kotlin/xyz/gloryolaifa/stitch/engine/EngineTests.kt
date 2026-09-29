@@ -594,6 +594,89 @@ class EngineTests {
     assertTrue("plays after the failure, reached $reached us", reached >= 1_000_000)
   }
 
+  @Test
+  fun previewPlaysFromAnywhereAroundATransition() = runBlocking<Unit> {
+    // Two clips with sound; with a crossfade from 1.5 s to 2.5 s. Playback
+    // must start wherever the playhead is, also right after the transition
+    // is added there (a new document at that position).
+    val path = media("audio_delay.mp4")
+    fun doc(version: Int, transition: Boolean): EngineDocument {
+      val c2Start = if (transition) 1500000 else 2500000
+      val transitions = if (transition) {
+        """, "transitions": [{"type": "crossfade", "fromClipId": "c1", "toClipId": "c2",
+          "startUs": 1500000, "durationUs": 1000000}]"""
+      } else {
+        ""
+      }
+      return EngineDocument.decode(
+        """
+        {"version": $version, "canvas": {"width": 360, "height": 640, "frameRate": 30},
+         "background": {"type": "solid", "color": 4278190080},
+         "media": {"a": {"path": "$path", "kind": "video", "durationUs": 3499000}},
+         "composition": {"durationUs": ${c2Start + 3000000}, "clips": [
+           {"clipId": "c1", "mediaId": "a", "kind": "video", "startUs": 0, "endUs": 2500000,
+            "sourceInUs": 0, "sourceOutUs": 2500000, "speed": 1, "volume": 1,
+            "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}},
+           {"clipId": "c2", "mediaId": "a", "kind": "video", "startUs": $c2Start,
+            "endUs": ${c2Start + 3000000}, "sourceInUs": 400000, "sourceOutUs": 3400000,
+            "speed": 1, "volume": 1, "audioFadeInUs": 0, "audioFadeOutUs": 0,
+            "framing": ${framing("fit")}}]$transitions}}
+        """,
+      )
+    }
+    var latest: PlaybackStateMessage? = null
+    val player = withContext(Dispatchers.Main) {
+      PreviewPlayer(context, FakeTextures(), handleAudioFocus = false) { latest = it }
+        .apply { setDocument(doc(1, transition = true)) }
+    }
+    var version = 1
+    val stuck = mutableListOf<String>()
+    suspend fun playsFrom(fromUs: Long, label: String) {
+      withContext(Dispatchers.Main) { player.play() }
+      val start = System.currentTimeMillis()
+      while (System.currentTimeMillis() - start < 5_000 &&
+        (latest?.positionUs ?: 0) < fromUs + 600_000
+      ) {
+        kotlinx.coroutines.delay(100)
+      }
+      val reached = latest?.positionUs ?: 0
+      if (reached < fromUs + 600_000) stuck += "$label from $fromUs us: reached $reached us"
+      withContext(Dispatchers.Main) { player.pause() }
+      kotlinx.coroutines.delay(300)
+    }
+    for (fromUs in listOf(300_000L, 1_800_000L, 2_600_000L, 3_300_000L)) {
+      withContext(Dispatchers.Main) { player.seek(fromUs, exact = true) }
+      kotlinx.coroutines.delay(300)
+      playsFrom(fromUs, "seek")
+    }
+    for (fromUs in listOf(1_500_000L, 1_800_000L, 2_400_000L)) {
+      withContext(Dispatchers.Main) {
+        player.setDocument(doc(++version, transition = false))
+        player.seek(fromUs, exact = true)
+      }
+      kotlinx.coroutines.delay(500)
+      withContext(Dispatchers.Main) { player.setDocument(doc(++version, transition = true)) }
+      kotlinx.coroutines.delay(300)
+      playsFrom(fromUs, "added")
+    }
+    withContext(Dispatchers.Main) { player.dispose() }
+    assertTrue("did not play: $stuck", stuck.isEmpty())
+  }
+
+  @Test
+  fun previewFramesFollowATrim() = runBlocking<Unit> {
+    // As a trim drag asks: quick frames while moving, then exact ones.
+    val path = media("speech.mp4")
+    for ((timeUs, exact) in listOf(0L to false, 1_000_000L to false, 1_234_000L to true, 2_000_000L to true)) {
+      val jpeg = PreviewFrames.frame(path, timeUs, maxSize = 320, exact = exact)
+      assertTrue("frame at $timeUs us (exact $exact)", jpeg != null && jpeg.size > 100)
+      assertEquals("JPEG", 0xFF.toByte(), jpeg!![0])
+      val bitmap = BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size)
+      assertTrue("at most 320 px: ${bitmap.width}x${bitmap.height}", max(bitmap.width, bitmap.height) <= 320)
+    }
+    assertNull(PreviewFrames.frame(File(tempDir, "missing.mp4").path, 0, 320, exact = true))
+  }
+
   // Sound
 
   @Test

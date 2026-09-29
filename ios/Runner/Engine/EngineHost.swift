@@ -85,6 +85,14 @@ final class EngineHost: EngineHostApi {
 
   func setPreviewVolume(volume: Double) throws { preview?.setVolume(volume) }
 
+  func previewFrame(path: String, timeUs: Int64, maxSize: Int64, exact: Bool) async throws
+    -> FlutterStandardTypedData?
+  {
+    let data = await PreviewFrames.shared.frame(
+      path: path, timeUs: timeUs, maxSize: Int(maxSize), exact: exact)
+    return data.map { FlutterStandardTypedData(bytes: $0) }
+  }
+
   func startExport(request: ExportRequestMessage) throws -> String {
     guard let document else {
       throw PigeonError(code: "bad_document", message: "No document to export", details: nil)

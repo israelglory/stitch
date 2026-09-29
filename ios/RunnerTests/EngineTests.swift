@@ -662,6 +662,23 @@ final class EngineTests: XCTestCase {
     XCTAssertEqual(still[0], still[1], "a still has one frame")
   }
 
+  func testPreviewFramesFollowATrim() async throws {
+    // As a trim drag asks: quick frames while moving, then exact ones.
+    let path = media("rotated_portrait.mp4")
+    for (timeUs, exact) in [(Int64(0), false), (1_000_000, false), (1_234_000, true), (2_000_000, true)] {
+      let jpeg = await PreviewFrames.shared.frame(
+        path: path, timeUs: timeUs, maxSize: 320, exact: exact)
+      let data = try XCTUnwrap(jpeg, "frame at \(timeUs) us (exact \(exact))")
+      let image = try XCTUnwrap(UIImage(data: data))
+      XCTAssertLessThanOrEqual(max(image.size.width, image.size.height), 320)
+      XCTAssertGreaterThan(image.size.height, image.size.width, "upright portrait")
+    }
+    let missing = await PreviewFrames.shared.frame(
+      path: tempDir.appendingPathComponent("missing.mp4").path, timeUs: 0, maxSize: 320,
+      exact: true)
+    XCTAssertNil(missing)
+  }
+
   func testProxyIsSmaller() async throws {
     let out = tempDir.appendingPathComponent("proxy.mp4").path
     try await ProxyMaker.createProxy(path: media("large_1440p.mp4"), outPath: out)

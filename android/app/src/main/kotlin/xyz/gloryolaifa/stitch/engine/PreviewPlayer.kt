@@ -56,6 +56,7 @@ class PreviewPlayer(
 
   private val listener = object : Player.Listener {
     override fun onIsPlayingChanged(isPlaying: Boolean) {
+      PreviewPlayback.playing = player?.playWhenReady == true
       handler.removeCallbacks(ticker)
       if (isPlaying) handler.post(ticker) else publish()
     }
@@ -132,10 +133,15 @@ class PreviewPlayer(
   /** Redraws left for the current position after missed transition frames. */
   private var redrawsLeft = MAX_REDRAWS
 
-  /** Redraws a paused frame that was drawn while a decoder was starting. */
+  /**
+   * Redraws a paused frame that was drawn while a decoder was starting.
+   * Only when paused by the user: while Play waits for buffering the
+   * player is not playing either, and a seek then restarted the wait
+   * (playback near a transition could keep not starting).
+   */
   private val redraw = Runnable {
     val p = player ?: return@Runnable
-    if (!p.isPlaying && redrawsLeft > 0) {
+    if (!p.playWhenReady && redrawsLeft > 0) {
       redrawsLeft--
       p.seekTo(p.currentPosition)
     }
@@ -228,6 +234,7 @@ class PreviewPlayer(
     val p = player ?: return
     p.isScrubbingModeEnabled = false
     if (p.currentPosition * 1000 >= durationUs - END_TOLERANCE_US) p.seekTo(0)
+    PreviewPlayback.playing = true
     p.play()
     publish()
   }
@@ -251,6 +258,7 @@ class PreviewPlayer(
   }
 
   fun pause() {
+    PreviewPlayback.playing = false
     val p = player ?: return
     p.pause()
     // Video can trail the audio clock on slow devices; show the frame at the
@@ -285,6 +293,7 @@ class PreviewPlayer(
 
   /** Stops playback and frees decoders. The texture stays usable. */
   fun release() {
+    PreviewPlayback.playing = false
     discardPlayer()
     document = null
     durationUs = 0

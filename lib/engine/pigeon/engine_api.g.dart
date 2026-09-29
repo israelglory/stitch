@@ -976,6 +976,37 @@ class EngineHostApi {
       isNullValid: true,
     );
   }
+
+  /// A frame of [path] at [timeUs], as JPEG, at most [maxSize] pixels on
+  /// its long side and upright; null when none can be read. [exact] asks
+  /// for the frame at that time; otherwise the nearest quick one (a key
+  /// frame), for following a finger. The file stays open between calls,
+  /// so a trim drag can ask many times.
+  Future<Uint8List?> previewFrame(
+    String path,
+    int timeUs,
+    int maxSize,
+    bool exact,
+  ) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.EngineHostApi.previewFrame$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[path, timeUs, maxSize, exact],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+    return pigeonVar_replyValue as Uint8List?;
+  }
 }
 
 /// Device features used by the editor.

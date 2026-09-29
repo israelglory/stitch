@@ -32,8 +32,12 @@ const _log = Logger('editor');
 /// Delay before saving after the last edit.
 const autosaveDelay = Duration(milliseconds: 500);
 
-/// Delay before sending the composition to the engine; coalesces the many
-/// updates of a drag.
+/// Delay before sending the composition to the engine; coalesces edits
+/// that arrive together. During a gesture nothing is sent until it ends:
+/// on Android every document rebuilds the preview's players, and a drag
+/// sending one per frame made editing lag. Nothing needs them meanwhile:
+/// a trim shows the frame at its handle (TrimPreview), and text being
+/// dragged or typed is drawn by the editor.
 const engineSyncDelay = Duration(milliseconds: 32);
 
 /// Owns an open project. All edits go through [apply] (or a gesture),
@@ -138,7 +142,11 @@ class EditorController extends _$EditorController {
   }
 
   void endGesture() {
+    final base = _gestureBase;
     _gestureBase = null;
+    if (base != null && !identical(base, _current.project)) {
+      _syncEngine(_current.project, immediate: true);
+    }
     _scheduleSave();
     final waiting = [..._afterGesture];
     _afterGesture.clear();
@@ -457,7 +465,8 @@ class EditorController extends _$EditorController {
     final previous = _current;
     _emit(_keepSelectionValid(next));
     // Canvas, background, and media changes matter to the engine too.
-    if (!identical(previous.project, next.project)) {
+    // A gesture sends its result when it ends (see [engineSyncDelay]).
+    if (!identical(previous.project, next.project) && !duringGesture) {
       _syncEngine(next.project);
     }
     if (!duringGesture) _scheduleSave();

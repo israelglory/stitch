@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
 
@@ -43,6 +44,18 @@ abstract interface class EditorEngine {
 
   /// Reads what a media file contains.
   Future<MediaInfo> probe(String path);
+
+  /// A frame of [path] at [timeUs] as JPEG, at most [maxSize] pixels on
+  /// its long side; null when none can be read. [exact] asks for the frame
+  /// at that time, otherwise the nearest quick one (a key frame). For the
+  /// preview while a trim handle is dragged; the engine keeps the file
+  /// open between calls.
+  Future<Uint8List?> previewFrame(
+    String path,
+    int timeUs, {
+    required int maxSize,
+    required bool exact,
+  });
 
   /// Filmstrip frames of [path] at [timesUs], as JPEG paths in [outDir]
   /// (null where a frame could not be made).

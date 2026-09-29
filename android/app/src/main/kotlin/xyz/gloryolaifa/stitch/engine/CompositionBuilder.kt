@@ -264,6 +264,8 @@ object CompositionBuilder {
   // Under Media3's 10 s export watchdog: a stuck decoder repeats the last
   // frame instead of failing the export.
   private const val EXPORT_FRAME_TIMEOUT_MS = 8_000L
+  // Paused, the frame shown should be right; while playing, the wait is
+  // PreviewPlayback.PLAYING_FRAME_TIMEOUT_MS (see ClipEffect).
   private const val PREVIEW_FRAME_TIMEOUT_MS = 3_000L
 
   /** [clip] up to [endUs] on the timeline, drawn by a [ClipEffect]. */

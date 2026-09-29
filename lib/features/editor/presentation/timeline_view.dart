@@ -14,6 +14,7 @@ import 'package:stitch/features/audio/domain/waveform_slice.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/editor_state.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
+import 'package:stitch/features/editor/application/trim_preview.dart';
 import 'package:stitch/features/editor/presentation/clip_frame.dart';
 import 'package:stitch/features/editor/presentation/editor_media.dart';
 import 'package:stitch/features/timeline/domain/audio_ops.dart';
@@ -366,24 +367,30 @@ final class _TimelineActions {
   }
 
   /// Trim callbacks for an item whose edges on the base timeline are
-  /// given by [edges], applied with [trim].
+  /// given by [edges], applied with [trim]. [preview] shows the frame at
+  /// the dragged edge (video clips).
   TrimCallbacks trimFor({
     required String id,
     required (int, int) Function(m.Timeline base) edges,
     required m.Timeline Function(m.Timeline base, ClipEdge edge, int deltaUs)
     trim,
     bool keepEndInPlace = false,
+    bool preview = false,
   }) => TrimCallbacks(
-    onStart: (_) => _begin(),
+    onStart: (edge) {
+      _begin();
+      if (preview) _previewEdge(id, _domainEdge(edge));
+    },
     onUpdate: (edge, dx) {
       final base = _base;
       if (base == null) return;
       _dragPx += dx;
       final (start, end) = edges(base);
-      final domainEdge = edge == TrimEdge.start ? ClipEdge.start : ClipEdge.end;
+      final domainEdge = _domainEdge(edge);
       final original = domainEdge == ClipEdge.start ? start : end;
       final target = _snap(original + scale.pxToUs(_dragPx), id);
       _editor.updateGesture((b) => trim(b, domainEdge, target - original));
+      if (preview) _previewEdge(id, domainEdge);
 
       if (keepEndInPlace && domainEdge == ClipEdge.start) {
         // Main-track start trims ripple the clip's end instead of moving
@@ -396,8 +403,35 @@ final class _TimelineActions {
         _view._position.value = math.max(0, _basePositionUs - (end - newEnd));
       }
     },
-    onEnd: (_) => _end(),
+    onEnd: (_) {
+      if (preview) _trimPreview.end();
+      _end();
+    },
   );
+
+  static ClipEdge _domainEdge(TrimEdge edge) =>
+      edge == TrimEdge.start ? ClipEdge.start : ClipEdge.end;
+
+  TrimPreview get _trimPreview =>
+      _view.ref.read(trimPreviewProvider(_view.widget.projectId).notifier);
+
+  /// Shows the frame at [clipId]'s dragged edge: its first frame, or its
+  /// last one.
+  void _previewEdge(String clipId, ClipEdge edge) {
+    final clip = _view.ref
+        .read(editorControllerProvider(_view.widget.projectId))
+        .requireValue
+        .timeline
+        .clipById(clipId);
+    if (clip == null || clip.isPhoto) return;
+    final sourceUs = edge == ClipEdge.start
+        ? clip.sourceInUs
+        : math.max(clip.sourceInUs, clip.sourceOutUs - _lastFrameUs);
+    _trimPreview.follow(clipId, sourceUs);
+  }
+
+  /// Back from a clip's end to its last frame (at 30 fps).
+  static const int _lastFrameUs = 33333;
 
   // Moving items by long-press drag.
 
@@ -633,6 +667,7 @@ class _ContentState extends ConsumerState<_Content> {
                     ? actions.trimFor(
                         id: clip.id,
                         keepEndInPlace: true,
+                        preview: true,
                         edges: (b) {
                           final s = TimelineLayout.of(b).span(clip.id);
                           return (s?.startUs ?? 0, s?.endUs ?? 0);

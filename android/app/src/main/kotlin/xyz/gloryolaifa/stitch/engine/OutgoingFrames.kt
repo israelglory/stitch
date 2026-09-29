@@ -53,7 +53,7 @@ interface OutgoingFrames {
      * skipped (the previous one shows): long for export, short for preview
      * so playback never freezes.
      */
-    fun open(path: String, kind: String, timeoutMs: Long): OutgoingFrames? = try {
+    fun open(path: String, kind: String, timeoutMs: () -> Long): OutgoingFrames? = try {
       if (kind == "photo") OutgoingPhoto(path) else OutgoingVideo(path, timeoutMs)
     } catch (e: Exception) {
       Log.w(TAG, "Cannot read outgoing clip $path", e)
@@ -114,7 +114,7 @@ private class OutgoingPhoto(path: String) : OutgoingFrames {
  * previous sync frame first.
  */
 @OptIn(UnstableApi::class)
-private class OutgoingVideo(path: String, private val timeoutMs: Long) : OutgoingFrames {
+private class OutgoingVideo(path: String, private val timeoutMs: () -> Long) : OutgoingFrames {
   private val extractor = MediaExtractor()
   private val planes = IntArray(3) { GlUtil.generateTexture() }
   private val planeSizes = arrayOfNulls<IntArray>(3)
@@ -130,6 +130,14 @@ private class OutgoingVideo(path: String, private val timeoutMs: Long) : Outgoin
   private var inputDone = false
   private var outputDone = false
   private var shownPts: Long? = null
+
+  /**
+   * The decoder hands out frames we cannot read (some vendor decoders
+   * ignore the flexible YUV request, and their frames come without an
+   * Image). Nothing more is tried: waiting on every frame stalled
+   * transitions.
+   */
+  private var unreadable = false
   private var lastDecodedPts = Long.MIN_VALUE
   private var scratch = ByteArray(0)
 
@@ -181,13 +189,14 @@ private class OutgoingVideo(path: String, private val timeoutMs: Long) : Outgoin
   }
 
   override fun frameAt(sourceUs: Long): SourceFrame? {
+    if (unreadable) return null
     val shown = shownPts
     if (shown != null && abs(sourceUs - shown) <= halfFrameUs) return current()
     if ((shown != null && sourceUs < shown) || sourceUs > lastDecodedPts + SEEK_AHEAD_US) {
       seek(sourceUs)
     }
     if (decodeTo(sourceUs)) return current()
-    Log.w(OutgoingFrames.TAG, "No frame at $sourceUs us within $timeoutMs ms")
+    Log.w(OutgoingFrames.TAG, "No frame at $sourceUs us within ${timeoutMs()} ms")
     return shownPts?.let { current() }
   }
 
@@ -214,7 +223,7 @@ private class OutgoingVideo(path: String, private val timeoutMs: Long) : Outgoin
   /** Decodes until a frame near [targetUs] is uploaded. */
   private fun decodeTo(targetUs: Long): Boolean {
     val info = MediaCodec.BufferInfo()
-    val deadline = System.nanoTime() + timeoutMs * 1_000_000
+    val deadline = System.nanoTime() + timeoutMs() * 1_000_000
     while (!outputDone && System.nanoTime() < deadline) {
       if (!inputDone) {
         val input = codec.dequeueInputBuffer(0)
@@ -238,7 +247,14 @@ private class OutgoingVideo(path: String, private val timeoutMs: Long) : Outgoin
       val show = hasFrame && (info.presentationTimeUs >= targetUs - halfFrameUs || outputDone)
       var uploaded = false
       if (show) {
-        codec.getOutputImage(output)?.use { uploaded = upload(it) }
+        val image = codec.getOutputImage(output)
+        if (image == null) {
+          codec.releaseOutputBuffer(output, false)
+          unreadable = true
+          Log.w(OutgoingFrames.TAG, "Decoder frames cannot be read as images; transition shows less")
+          return false
+        }
+        image.use { uploaded = upload(it) }
       }
       codec.releaseOutputBuffer(output, false)
       if (uploaded) {

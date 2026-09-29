@@ -61,6 +61,51 @@ enum MediaProbe {
   }
 }
 
+/// Single frames of a file, for the preview while a trim handle is
+/// dragged: the frame at the handle. Mirrors PreviewFrames.kt.
+///
+/// The last file's generator stays around between calls. Quick frames may
+/// be the nearest key frame, which decodes at once; exact ones are the
+/// frame at the time asked.
+actor PreviewFrames {
+  static let shared = PreviewFrames()
+
+  private var generator: AVAssetImageGenerator?
+  private var openPath: String?
+
+  func frame(path: String, timeUs: Int64, maxSize: Int, exact: Bool) async -> Data? {
+    guard FileManager.default.fileExists(atPath: path) else { return nil }
+    let generator = generator(for: path)
+    generator.maximumSize = CGSize(width: maxSize, height: maxSize)
+    let tolerance: CMTime = exact ? .zero : .positiveInfinity
+    generator.requestedTimeToleranceBefore = tolerance
+    generator.requestedTimeToleranceAfter = tolerance
+    let time = CMTime(value: timeUs, timescale: 1_000_000)
+    guard let image = try? await generator.image(at: time).image else { return nil }
+    return Self.jpeg(image)
+  }
+
+  private func generator(for path: String) -> AVAssetImageGenerator {
+    if path == openPath, let generator { return generator }
+    let made = AVAssetImageGenerator(asset: AVURLAsset(url: URL(fileURLWithPath: path)))
+    made.appliesPreferredTrackTransform = true
+    generator = made
+    openPath = path
+    return made
+  }
+
+  private static func jpeg(_ image: CGImage) -> Data? {
+    let data = NSMutableData()
+    guard
+      let destination = CGImageDestinationCreateWithData(
+        data, UTType.jpeg.identifier as CFString, 1, nil)
+    else { return nil }
+    CGImageDestinationAddImage(
+      destination, image, [kCGImageDestinationLossyCompressionQuality: 0.85] as CFDictionary)
+    return CGImageDestinationFinalize(destination) ? data as Data : nil
+  }
+}
+
 /// Frames for the timeline filmstrip, written as small JPEGs.
 enum Thumbnailer {
   static func thumbnails(

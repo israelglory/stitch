@@ -36,7 +36,7 @@ Still to come: transitions, text, captions, audio, export.
 
 ## Engine boundary
 
-`EditorEngine` receives the whole serialized composition. The same document drives preview and export, so they cannot drift apart. Updates are debounced while dragging. Native implementations use AVFoundation and Metal on iOS, and Media3 and OpenGL ES on Android. Both sit behind Pigeon. `FakeEditorEngine` backs tests and UI work.
+`EditorEngine` receives the whole serialized composition. The same document drives preview and export, so they cannot drift apart. During a drag nothing is sent; the result goes once, when the drag ends (on Android every document rebuilds the preview's players). While a clip's trim handle is dragged, the preview shows the frame at the handle instead (`TrimPreview`, from the engine's `previewFrame`). Native implementations use AVFoundation and Metal on iOS, and Media3 and OpenGL ES on Android. Both sit behind Pigeon. `FakeEditorEngine` backs tests and UI work.
 
 ## Storage
 

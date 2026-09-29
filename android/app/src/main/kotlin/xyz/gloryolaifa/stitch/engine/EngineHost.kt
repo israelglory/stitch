@@ -75,6 +75,13 @@ class EngineHost(
     preview?.setVolume(volume)
   }
 
+  override suspend fun previewFrame(
+    path: String,
+    timeUs: Long,
+    maxSize: Long,
+    exact: Boolean,
+  ): ByteArray? = PreviewFrames.frame(path, timeUs, maxSize.toInt(), exact)
+
   override fun startExport(request: ExportRequestMessage): String {
     val doc = document ?: throw FlutterError("bad_document", "No document to export")
     ExportService.start(context, request.progressTitle)

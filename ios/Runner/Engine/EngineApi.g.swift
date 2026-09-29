@@ -700,6 +700,12 @@ protocol EngineHostApi {
   func waveform(path: String, peaksPerSecond: Int64) async throws -> [Double]
   /// Volume of the preview, 0 to 1 (muted while recording a voiceover).
   func setPreviewVolume(volume: Double) throws
+  /// A frame of [path] at [timeUs], as JPEG, at most [maxSize] pixels on
+  /// its long side and upright; null when none can be read. [exact] asks
+  /// for the frame at that time; otherwise the nearest quick one (a key
+  /// frame), for following a finger. The file stays open between calls,
+  /// so a trim drag can ask many times.
+  func previewFrame(path: String, timeUs: Int64, maxSize: Int64, exact: Bool) async throws -> FlutterStandardTypedData?
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -954,6 +960,31 @@ class EngineHostApiSetup {
       }
     } else {
       setPreviewVolumeChannel.setMessageHandler(nil)
+    }
+    /// A frame of [path] at [timeUs], as JPEG, at most [maxSize] pixels on
+    /// its long side and upright; null when none can be read. [exact] asks
+    /// for the frame at that time; otherwise the nearest quick one (a key
+    /// frame), for following a finger. The file stays open between calls,
+    /// so a trim drag can ask many times.
+    let previewFrameChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.EngineHostApi.previewFrame\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      previewFrameChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let pathArg = args[0] as! String
+        let timeUsArg = args[1] as! Int64
+        let maxSizeArg = args[2] as! Int64
+        let exactArg = args[3] as! Bool
+        Task { @MainActor in
+          do {
+            let result = try await api.previewFrame(path: pathArg, timeUs: timeUsArg, maxSize: maxSizeArg, exact: exactArg)
+            reply(wrapResult(result))
+          } catch {
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      previewFrameChannel.setMessageHandler(nil)
     }
   }
 }

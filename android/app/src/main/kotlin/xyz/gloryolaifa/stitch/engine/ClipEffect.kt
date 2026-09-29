@@ -50,6 +50,19 @@ data class Outgoing(
  * transition: its decoder was still starting. Paused, the preview draws
  * nothing more on its own, so it redraws once the decoder has caught up.
  */
+/**
+ * Whether the preview is playing (or about to), set by [PreviewPlayer].
+ * While it plays, a transition never waits long for a frame of the clip
+ * being left: a missed frame only shows less of that clip, while a wait
+ * looks like playback stopped. Paused, the frame shown should be right,
+ * so the wait is the document's.
+ */
+object PreviewPlayback {
+  @Volatile var playing = false
+
+  const val PLAYING_FRAME_TIMEOUT_MS = 300L
+}
+
 object FrameMisses {
   @Volatile var listener: (() -> Unit)? = null
 
@@ -239,7 +252,14 @@ private class ClipProgram(
     if (!outgoingOpened) {
       outgoingOpened = true
       outgoing = transition.from.path?.let {
-        OutgoingFrames.open(it, transition.from.kind, transition.from.timeoutMs)
+        val from = transition.from
+        OutgoingFrames.open(it, from.kind) {
+          if (from.reportMisses && PreviewPlayback.playing) {
+            min(from.timeoutMs, PreviewPlayback.PLAYING_FRAME_TIMEOUT_MS)
+          } else {
+            from.timeoutMs
+          }
+        }
       }
     }
     return outgoing

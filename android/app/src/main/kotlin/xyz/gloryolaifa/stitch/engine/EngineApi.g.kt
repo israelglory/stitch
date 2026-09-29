@@ -740,6 +740,14 @@ interface EngineHostApi {
   suspend fun waveform(path: String, peaksPerSecond: Long): List<Double>
   /** Volume of the preview, 0 to 1 (muted while recording a voiceover). */
   fun setPreviewVolume(volume: Double)
+  /**
+   * A frame of [path] at [timeUs], as JPEG, at most [maxSize] pixels on
+   * its long side and upright; null when none can be read. [exact] asks
+   * for the frame at that time; otherwise the nearest quick one (a key
+   * frame), for following a finger. The file stays open between calls,
+   * so a trim drag can ask many times.
+   */
+  suspend fun previewFrame(path: String, timeUs: Long, maxSize: Long, exact: Boolean): ByteArray?
 
   companion object {
     /** The codec used by EngineHostApi. */
@@ -1013,6 +1021,28 @@ interface EngineHostApi {
               EngineApiPigeonUtils.wrapError(exception)
             }
             reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.EngineHostApi.previewFrame$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val pathArg = args[0] as String
+            val timeUsArg = args[1] as Long
+            val maxSizeArg = args[2] as Long
+            val exactArg = args[3] as Boolean
+            CoroutineScope(Dispatchers.Main).launch {
+              val wrapped: List<Any?> = try {
+                listOf(api.previewFrame(pathArg, timeUsArg, maxSizeArg, exactArg))
+              } catch (exception: Throwable) {
+                EngineApiPigeonUtils.wrapError(exception)
+              }
+              reply.reply(wrapped)
+            }
           }
         } else {
           channel.setMessageHandler(null)

@@ -78,6 +78,14 @@ class NativeEditorEngine implements EditorEngine, EngineFlutterApi {
   }) => _guard(() => _host.thumbnails(path, timesUs, maxSize, outDir));
 
   @override
+  Future<Uint8List?> previewFrame(
+    String path,
+    int timeUs, {
+    required int maxSize,
+    required bool exact,
+  }) => _guard(() => _host.previewFrame(path, timeUs, maxSize, exact));
+
+  @override
   Future<void> createProxy(String path, String outPath) =>
       _guard(() => _host.createProxy(path, outPath));
 

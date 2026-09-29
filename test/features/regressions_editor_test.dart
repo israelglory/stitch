@@ -234,6 +234,37 @@ void main() {
     });
   });
 
+  test('a drag sends the engine one document, when it ends', () async {
+    final env = await TestEnv.create();
+    final id = await createProjectDirect(env, [4, 4]);
+    final controller = env.container.read(
+      editorControllerProvider(id).notifier,
+    );
+    final clipId = env.container
+        .read(editorControllerProvider(id))
+        .requireValue
+        .timeline
+        .videoClips
+        .first
+        .id;
+    await Future<void>.delayed(engineSyncDelay * 3);
+    final before = env.engine.documentCount;
+
+    controller.beginGesture();
+    for (var i = 1; i <= 10; i++) {
+      controller.updateGesture(
+        (t) => t.trimClip(clipId, ClipEdge.end, -s(0.1) * i),
+      );
+      await Future<void>.delayed(engineSyncDelay * 2);
+    }
+    // Each document rebuilds the Android preview's players: none mid-drag.
+    expect(env.engine.documentCount, before);
+
+    controller.endGesture();
+    await Future<void>.delayed(engineSyncDelay * 3);
+    expect(env.engine.documentCount, before + 1);
+  });
+
   group('editing', () {
     test('relinking keeps every clip trim and moves its sound too', () {
       final base = Timeline(

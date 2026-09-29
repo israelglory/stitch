@@ -189,6 +189,14 @@ abstract class EngineHostApi {
 
   /// Volume of the preview, 0 to 1 (muted while recording a voiceover).
   void setPreviewVolume(double volume);
+
+  /// A frame of [path] at [timeUs], as JPEG, at most [maxSize] pixels on
+  /// its long side and upright; null when none can be read. [exact] asks
+  /// for the frame at that time; otherwise the nearest quick one (a key
+  /// frame), for following a finger. The file stays open between calls,
+  /// so a trim drag can ask many times.
+  @async
+  Uint8List? previewFrame(String path, int timeUs, int maxSize, bool exact);
 }
 
 /// Device features used by the editor.

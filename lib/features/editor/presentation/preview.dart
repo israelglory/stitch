@@ -11,6 +11,7 @@ import 'package:stitch/features/captions/presentation/caption_preview_layer.dart
 import 'package:stitch/features/editor/application/current_clip.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
+import 'package:stitch/features/editor/application/trim_preview.dart';
 import 'package:stitch/features/editor/presentation/editor_media.dart';
 import 'package:stitch/features/projects/domain/project.dart';
 import 'package:stitch/features/text/presentation/text_overlay_layer.dart';
@@ -41,7 +42,11 @@ class EditorPreview extends ConsumerWidget {
     final playing = ref.watch(
       playbackControllerProvider.select((p) => p.isPlaying),
     );
+    final trimFrame = ref.watch(trimPreviewProvider(projectId));
     if (project == null) return const SizedBox.shrink();
+    final trimmed = trimFrame == null
+        ? null
+        : project.timeline.clipById(trimFrame.clipId);
 
     return Semantics(
       button: true,
@@ -73,6 +78,13 @@ class EditorPreview extends ConsumerWidget {
                     projectId: projectId,
                     drawAll: texture == null,
                   ),
+                  // While a trim handle is dragged: the frame at the handle.
+                  if (trimFrame != null && trimmed != null)
+                    _Canvas(
+                      project: project,
+                      clip: trimmed,
+                      image: MemoryImage(trimFrame.image),
+                    ),
                 ],
               ),
             ),
@@ -83,11 +95,20 @@ class EditorPreview extends ConsumerWidget {
   }
 }
 
+/// One clip drawn as the engine would: its framing over the project's
+/// background. Shows the clip's poster, or [image] (a frame of it).
 class _Canvas extends StatelessWidget {
-  const new({required this.project, required this.clip});
+  const new({required this.project, required this.clip, this.image});
 
   final Project project;
   final VideoClip? clip;
+  final ImageProvider? image;
+
+  Widget _picture(VideoClip clip, {BoxFit fit = BoxFit.cover}) =>
+      switch (image) {
+        final image? => Image(image: image, fit: fit, gaplessPlayback: true),
+        null => MediaPoster(project: project, mediaId: clip.mediaId, fit: fit),
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +122,7 @@ class _Canvas extends StatelessWidget {
           sigmaX: _backgroundBlur,
           sigmaY: _backgroundBlur,
         ),
-        child: MediaPoster(project: project, mediaId: clip.mediaId),
+        child: _picture(clip),
       ),
       BlurBackground() => ColoredBox(color: context.colors.background),
     };
@@ -124,9 +145,8 @@ class _Canvas extends StatelessWidget {
               )
               ..rotateZ(framing.rotationDeg * math.pi / 180)
               ..scaleByDouble(framing.scale, framing.scale, 1, 1),
-            child: MediaPoster(
-              project: project,
-              mediaId: clip.mediaId,
+            child: _picture(
+              clip,
               fit: framing.mode == FramingMode.fill
                   ? BoxFit.cover
                   : BoxFit.contain,

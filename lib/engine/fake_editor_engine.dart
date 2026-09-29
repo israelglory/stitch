@@ -23,9 +23,19 @@ class FakeEditorEngine implements EditorEngine {
   /// Last document received, for assertions in tests.
   String? lastDocument;
 
+  /// How many documents [setDocument] received.
+  int documentCount = 0;
+
   /// Answers [probe]; null makes probing fail, as when the engine cannot
   /// read a file. Tests set this to describe their media.
   MediaInfo? Function(String path)? probeHandler;
+
+  /// Frames asked for with [previewFrame]: (path, time, exact).
+  final previewFrames = <(String, int, bool)>[];
+
+  /// Answers [previewFrame]; null (no frame) by default.
+  Uint8List? Function(String path, int timeUs, {required bool exact})?
+  previewFrameHandler;
 
   /// Paths passed to [createProxy], for assertions.
   final proxies = <String>[];
@@ -87,6 +97,7 @@ class FakeEditorEngine implements EditorEngine {
   @override
   Future<void> setDocument(String documentJson) async {
     lastDocument = documentJson;
+    documentCount++;
     var version = _current.documentVersion;
     try {
       final json = jsonDecode(documentJson);
@@ -187,6 +198,17 @@ class FakeEditorEngine implements EditorEngine {
     required int maxSize,
     required String outDir,
   }) async => [for (final _ in timesUs) null];
+
+  @override
+  Future<Uint8List?> previewFrame(
+    String path,
+    int timeUs, {
+    required int maxSize,
+    required bool exact,
+  }) async {
+    previewFrames.add((path, timeUs, exact));
+    return previewFrameHandler?.call(path, timeUs, exact: exact);
+  }
 
   @override
   Future<void> createProxy(String path, String outPath) async {

@@ -88,7 +88,11 @@ final class StitchCompositor: NSObject, AVVideoCompositing {
       let frame = source(for: layer, request: request)
       let back = background(instruction, frame: frame, canvas: canvas)
       guard let frame else { return back }
-      return place(frame, framing: layer.framing, in: canvas).composited(over: back)
+      let values = layer.keyframes.values(at: timeUs)
+      let framing = values.map(layer.framing.animated(by:)) ?? layer.framing
+      let placed = place(frame, framing: framing, in: canvas)
+      return Self.faded(placed, alpha: values?.opacity ?? layer.opacity)
+        .composited(over: back)
         .cropped(to: canvas)
     }
     guard let last = images.last else {
@@ -117,39 +121,44 @@ final class StitchCompositor: NSObject, AVVideoCompositing {
     var result = image
     for overlay in overlays where timeUs >= overlay.startUs && timeUs < overlay.endUs {
       let motion = TextMotion.at(overlay, tUs: timeUs - overlay.startUs)
-      guard motion.alpha > 0.001,
+      let values = overlay.values(at: timeUs)
+      let alpha = motion.alpha * values.opacity
+      guard alpha > 0.001,
         let index = TextMotion.frame(reveal: motion.reveal, count: overlay.images.count),
         let picture = overlayCache.image(at: overlay.images[index])
       else { continue }
       let extent = picture.extent
       guard extent.width > 0, extent.height > 0 else { continue }
-      let scale = overlay.scale * motion.scale
+      let scale = values.scale * motion.scale
       // Canvas pixels have y up here; the document's y runs down.
       let center = CGPoint(
-        x: overlay.x * canvas.width, y: (1 - overlay.y - motion.dy) * canvas.height)
+        x: values.x * canvas.width, y: (1 - values.y - motion.dy) * canvas.height)
       let transform = CGAffineTransform(translationX: -extent.midX, y: -extent.midY)
         .concatenating(
           CGAffineTransform(
             scaleX: overlay.width * scale / extent.width,
             y: overlay.height * scale / extent.height))
-        .concatenating(CGAffineTransform(rotationAngle: -overlay.rotationDeg * .pi / 180))
+        .concatenating(CGAffineTransform(rotationAngle: -values.rotationDeg * .pi / 180))
         .concatenating(CGAffineTransform(translationX: center.x, y: center.y))
-      var placed = picture.transformed(by: transform, highQualityDownsample: true)
-      if motion.alpha < 0.999 {
-        // Premultiplied: scale color and alpha together.
-        let a = CGFloat(motion.alpha)
-        placed = placed.applyingFilter(
-          "CIColorMatrix",
-          parameters: [
-            "inputRVector": CIVector(x: a, y: 0, z: 0, w: 0),
-            "inputGVector": CIVector(x: 0, y: a, z: 0, w: 0),
-            "inputBVector": CIVector(x: 0, y: 0, z: a, w: 0),
-            "inputAVector": CIVector(x: 0, y: 0, z: 0, w: a),
-          ])
-      }
-      result = placed.composited(over: result)
+      let placed = picture.transformed(by: transform, highQualityDownsample: true)
+      result = Self.faded(placed, alpha: alpha).composited(over: result)
     }
     return result.cropped(to: canvas)
+  }
+
+  /// [image] at [alpha] opacity. Premultiplied: color and alpha scale
+  /// together.
+  static func faded(_ image: CIImage, alpha: Double) -> CIImage {
+    if alpha >= 0.999 { return image }
+    let a = CGFloat(max(0, alpha))
+    return image.applyingFilter(
+      "CIColorMatrix",
+      parameters: [
+        "inputRVector": CIVector(x: a, y: 0, z: 0, w: 0),
+        "inputGVector": CIVector(x: 0, y: a, z: 0, w: 0),
+        "inputBVector": CIVector(x: 0, y: 0, z: a, w: 0),
+        "inputAVector": CIVector(x: 0, y: 0, z: 0, w: a),
+      ])
   }
 
   /// The source frame for a layer, upright, with its origin at zero.

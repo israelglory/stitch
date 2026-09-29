@@ -26,6 +26,8 @@ class ConstantSpeed(private val speed: Float) : SpeedProvider {
  * items), so the clip's own fades are placed on the clip: the item starts
  * [offsetUs] into a clip [clipDurationUs] long. [rampInUs] and [rampOutUs]
  * are crossfades at the item's own start and end. Times are timeline time.
+ * [keyframes], when there are any, replace [volume]; the item starts at
+ * [timelineStartUs] on the timeline.
  */
 data class Gain(
   val volume: Float,
@@ -36,11 +38,16 @@ data class Gain(
   val offsetUs: Long = 0,
   val rampInUs: Long = 0,
   val rampOutUs: Long = 0,
+  val keyframes: Keyframes = Keyframes.NONE,
+  val timelineStartUs: Long = 0,
 ) {
+  /** The loudest the item gets, before fades. */
+  val peak: Float get() = keyframes.maxVolume?.toFloat() ?: volume
+
   /** Gain at [itemTimeUs] from the item's start. Silent after the item. */
   fun at(itemTimeUs: Long): Float {
     if (itemTimeUs < 0 || itemTimeUs >= itemDurationUs) return 0f
-    var g = volume
+    var g = keyframes.volumeAt(timelineStartUs + itemTimeUs)?.toFloat() ?: volume
     val t = offsetUs + itemTimeUs
     if (fadeInUs > 0 && t < fadeInUs) g *= t.toFloat() / fadeInUs
     val fromClipEnd = clipDurationUs - t
@@ -93,7 +100,7 @@ class GainProcessor(private val gain: Gain) : BaseAudioProcessor() {
   override fun onFlush(streamMetadata: AudioProcessor.StreamMetadata) {
     framesSinceFlush = 0
     startUs = max(0, streamMetadata.positionOffsetUs)
-    limiter = if (gain.volume > 1f) {
+    limiter = if (gain.peak > 1f) {
       Limiter(inputAudioFormat.channelCount, inputAudioFormat.sampleRate, ceiling = 1f)
     } else {
       null

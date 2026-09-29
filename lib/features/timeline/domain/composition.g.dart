@@ -20,6 +20,12 @@ _ResolvedClip _$ResolvedClipFromJson(Map<String, dynamic> json) =>
       audioFadeInUs: (json['audioFadeInUs'] as num).toInt(),
       audioFadeOutUs: (json['audioFadeOutUs'] as num).toInt(),
       framing: ClipFraming.fromJson(json['framing'] as Map<String, dynamic>),
+      opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
+      keyframes:
+          (json['keyframes'] as List<dynamic>?)
+              ?.map((e) => Keyframe.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <Keyframe>[],
     );
 
 Map<String, dynamic> _$ResolvedClipToJson(_ResolvedClip instance) =>
@@ -36,6 +42,8 @@ Map<String, dynamic> _$ResolvedClipToJson(_ResolvedClip instance) =>
       'audioFadeInUs': instance.audioFadeInUs,
       'audioFadeOutUs': instance.audioFadeOutUs,
       'framing': instance.framing.toJson(),
+      'opacity': instance.opacity,
+      'keyframes': instance.keyframes.map((e) => e.toJson()).toList(),
     };
 
 const _$MediaKindEnumMap = {
@@ -91,6 +99,12 @@ _ResolvedText _$ResolvedTextFromJson(Map<String, dynamic> json) =>
       ),
       animationIn: $enumDecode(_$TextAnimationEnumMap, json['animationIn']),
       animationOut: $enumDecode(_$TextAnimationEnumMap, json['animationOut']),
+      opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
+      keyframes:
+          (json['keyframes'] as List<dynamic>?)
+              ?.map((e) => Keyframe.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <Keyframe>[],
     );
 
 Map<String, dynamic> _$ResolvedTextToJson(_ResolvedText instance) =>
@@ -104,6 +118,8 @@ Map<String, dynamic> _$ResolvedTextToJson(_ResolvedText instance) =>
       'transform': instance.transform.toJson(),
       'animationIn': _$TextAnimationEnumMap[instance.animationIn]!,
       'animationOut': _$TextAnimationEnumMap[instance.animationOut]!,
+      'opacity': instance.opacity,
+      'keyframes': instance.keyframes.map((e) => e.toJson()).toList(),
     };
 
 const _$TextAnimationEnumMap = {
@@ -166,6 +182,12 @@ _ResolvedAudio _$ResolvedAudioFromJson(Map<String, dynamic> json) =>
       fadeInUs: (json['fadeInUs'] as num).toInt(),
       fadeOutUs: (json['fadeOutUs'] as num).toInt(),
       cutAtVideoEnd: json['cutAtVideoEnd'] as bool,
+      keyframes:
+          (json['keyframes'] as List<dynamic>?)
+              ?.map((e) => Keyframe.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <Keyframe>[],
+      keyframeLoopUs: (json['keyframeLoopUs'] as num?)?.toInt() ?? 0,
     );
 
 Map<String, dynamic> _$ResolvedAudioToJson(_ResolvedAudio instance) =>
@@ -183,6 +205,8 @@ Map<String, dynamic> _$ResolvedAudioToJson(_ResolvedAudio instance) =>
       'fadeInUs': instance.fadeInUs,
       'fadeOutUs': instance.fadeOutUs,
       'cutAtVideoEnd': instance.cutAtVideoEnd,
+      'keyframes': instance.keyframes.map((e) => e.toJson()).toList(),
+      'keyframeLoopUs': instance.keyframeLoopUs,
     };
 
 const _$AudioKindEnumMap = {

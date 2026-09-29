@@ -64,6 +64,8 @@ String engineDocumentJson(
             rotationDeg: t.transform.rotationDeg,
             animationIn: t.animationIn,
             animationOut: t.animationOut,
+            opacity: t.opacity,
+            keyframes: t.keyframes,
           ),
       for (final c in captions)
         _overlay(
@@ -84,7 +86,9 @@ String engineDocumentJson(
 
 /// An image to place on the canvas: centered at ([x], [y]) (fractions of
 /// the canvas, y down), [raster]'s size times [scale], turned [rotationDeg]
-/// clockwise, entering and leaving as the animations say.
+/// clockwise, entering and leaving as the animations say. With
+/// [keyframes] (times on the timeline), their values replace the place,
+/// scale, turn, and [opacity].
 Map<String, Object> _overlay({
   required String id,
   required int startUs,
@@ -96,6 +100,8 @@ Map<String, Object> _overlay({
   required double rotationDeg,
   required TextAnimation animationIn,
   required TextAnimation animationOut,
+  double opacity = 1,
+  List<Keyframe> keyframes = const [],
 }) {
   final durationUs = endUs - startUs;
   return {
@@ -109,6 +115,8 @@ Map<String, Object> _overlay({
     'y': y,
     'scale': scale,
     'rotationDeg': rotationDeg,
+    'opacity': opacity,
+    'keyframes': [for (final k in keyframes) k.toJson()],
     'animationIn': {
       'type': animationIn.name,
       'durationUs': textAnimationUs(animationIn, durationUs),

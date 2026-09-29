@@ -38,7 +38,14 @@ data class EngineDocument(
     val rotationDeg: Double,
     val animationIn: Animation,
     val animationOut: Animation,
-  )
+    val opacity: Double = 1.0,
+    /** Replace the place, scale, turn, and opacity over time. */
+    val keyframes: Keyframes = Keyframes.NONE,
+  ) {
+    /** Place, scale, turn, and opacity at timeline time [timeUs]. */
+    fun valuesAt(timeUs: Long): KeyframeValues =
+      keyframes.valuesAt(timeUs) ?: KeyframeValues(x, y, scale, rotationDeg, opacity)
+  }
 
   data class Canvas(val width: Int, val height: Int, val frameRate: Int)
 
@@ -60,7 +67,11 @@ data class EngineDocument(
     val offsetX: Double,
     val offsetY: Double,
     val rotationDeg: Double,
-  )
+  ) {
+    /** This framing moved, zoomed, and turned by keyframe [values]. */
+    fun animated(values: KeyframeValues) =
+      copy(scale = values.scale, offsetX = values.x, offsetY = values.y, rotationDeg = values.rotationDeg)
+  }
 
   data class Clip(
     val clipId: String,
@@ -75,6 +86,9 @@ data class EngineDocument(
     val audioFadeInUs: Long,
     val audioFadeOutUs: Long,
     val framing: Framing,
+    val opacity: Double = 1.0,
+    /** Replace [framing], [opacity], and [volume] over time. */
+    val keyframes: Keyframes = Keyframes.NONE,
   )
 
   data class Transition(
@@ -97,6 +111,8 @@ data class EngineDocument(
     val volume: Double,
     val fadeInUs: Long,
     val fadeOutUs: Long,
+    /** Replace [volume] over time, repeating with each pass of a loop. */
+    val keyframes: Keyframes = Keyframes.NONE,
   )
 
   data class Composition(
@@ -141,6 +157,11 @@ data class EngineDocument(
               it.getLong("endUs"), it.getLong("sourceInUs"), it.getLong("sourceOutUs"),
               it.getDouble("speed"), it.getBoolean("loop"), it.getDouble("volume"),
               it.getLong("fadeInUs"), it.getLong("fadeOutUs"),
+              Keyframes.decode(
+                it.optJSONArray("keyframes"),
+                loopStartUs = it.getLong("startUs"),
+                loopUs = it.optLong("keyframeLoopUs", 0),
+              ),
             )
           },
         ),
@@ -168,6 +189,8 @@ data class EngineDocument(
         rotationDeg = o.getDouble("rotationDeg"),
         animationIn = animation(o.optJSONObject("animationIn")),
         animationOut = animation(o.optJSONObject("animationOut")),
+        opacity = o.optDouble("opacity", 1.0),
+        keyframes = Keyframes.decode(o.optJSONArray("keyframes")),
       )
     }
 
@@ -189,6 +212,8 @@ data class EngineDocument(
           f.getString("mode"), f.getDouble("scale"), f.getDouble("offsetX"),
           f.getDouble("offsetY"), f.getDouble("rotationDeg"),
         ),
+        opacity = o.optDouble("opacity", 1.0),
+        keyframes = Keyframes.decode(o.optJSONArray("keyframes")),
       )
     }
 

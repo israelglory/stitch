@@ -39,6 +39,9 @@ data class Outgoing(
   val sourceStartUs: Long,
   val speed: Double,
   val framing: EngineDocument.Framing,
+  val opacity: Double = 1.0,
+  /** Replace [framing] and [opacity] over time. */
+  val keyframes: Keyframes = Keyframes.NONE,
   /** How long to wait for a frame of it; see [OutgoingFrames.open]. */
   val timeoutMs: Long,
   /** Report frames drawn without it (preview), so a paused preview redraws. */
@@ -80,9 +83,11 @@ data class Incoming(
 )
 
 /**
- * Draws a clip on the canvas: fitted or filled, framed, over the background
- * (a solid color or a blurred copy of the clip). During [incoming] it also
- * draws the clip being left and mixes the two with the transition shader.
+ * Draws a clip on the canvas: fitted or filled, framed, at its opacity, over
+ * the background (a solid color or a blurred copy of the clip). Keyframes,
+ * when there are any, replace the framing and opacity over time. During
+ * [incoming] it also draws the clip being left and mixes the two with the
+ * transition shader.
  *
  * One effect per clip replaces Media3's compositor, which has no way to
  * run a custom shader and stalls when previewing two sequences.
@@ -94,9 +99,11 @@ class ClipEffect(
   private val incoming: Incoming?,
   /** Every overlay of the document; those showing are drawn on top. */
   private val overlays: List<EngineDocument.Overlay> = emptyList(),
+  private val opacity: Double = 1.0,
+  private val keyframes: Keyframes = Keyframes.NONE,
 ) : GlEffect {
   override fun toGlShaderProgram(context: Context, useHdr: Boolean): GlShaderProgram =
-    ClipProgram(look, framing, incoming, overlays, useHdr)
+    ClipProgram(look, framing, incoming, overlays, opacity, keyframes, useHdr)
 
   override fun isNoOp(inputWidth: Int, inputHeight: Int) = false
 }
@@ -107,6 +114,8 @@ private class ClipProgram(
   private val framing: EngineDocument.Framing,
   private val incoming: Incoming?,
   private val overlays: List<EngineDocument.Overlay>,
+  private val opacity: Double,
+  private val keyframes: Keyframes,
   useHdr: Boolean,
 ) : BaseGlShaderProgram(useHdr, /* texturePoolCapacity= */ 1) {
   private val blur = look.background.type == "blur"
@@ -162,10 +171,13 @@ private class ClipProgram(
       }
       program.use()
       program.setSamplerTexIdUniform("uTo", inputTexId, 0)
+      val values = keyframes.valuesAt(presentationTimeUs)
+      val toFraming = values?.let(framing::animated) ?: framing
       program.setFloatsUniform(
         "uToPlace",
-        placement(look, inputWidth, inputHeight, framing.mode, framing),
+        placement(look, inputWidth, inputHeight, toFraming.mode, toFraming),
       )
+      program.setFloatUniform("uToOpacity", (values?.opacity ?: opacity).toFloat())
       program.setFloatsUniformIfPresent("uBackground", backgroundRgb())
       if (blur) program.setSamplerTexIdUniform("uToBlur", toBlurTex, 1)
       if (transition != null) {
@@ -180,13 +192,19 @@ private class ClipProgram(
         } else {
           program.setSamplerTexIdUniform("uFrom", from?.textures?.get(0) ?: inputTexId, 2)
         }
+        val fromValues = transition.from.keyframes.valuesAt(presentationTimeUs)
+        val fromFraming = fromValues?.let(transition.from.framing::animated) ?: transition.from.framing
         program.setFloatsUniform(
           "uFromPlace",
           if (from != null) {
-            placement(look, from.width, from.height, transition.from.framing.mode, transition.from.framing)
+            placement(look, from.width, from.height, fromFraming.mode, fromFraming)
           } else {
             Mat3.IDENTITY
           },
+        )
+        program.setFloatUniform(
+          "uFromOpacity",
+          (fromValues?.opacity ?: transition.from.opacity).toFloat(),
         )
         program.setFloatsUniform("uFromTex", from?.texMatrix ?: Mat3.IDENTITY)
         program.setFloatUniform("uFromPresent", if (from != null) 1f else 0f)
@@ -217,13 +235,15 @@ private class ClipProgram(
     try {
       for (overlay in showing) {
         val motion = TextMotion.at(overlay, timeUs - overlay.startUs)
-        if (motion.alpha < 0.001) continue
+        val values = overlay.valuesAt(timeUs)
+        val alpha = motion.alpha * values.opacity
+        if (alpha < 0.001) continue
         val index = TextMotion.frame(motion.reveal, overlay.images.size) ?: continue
         val texture = overlayTextures.get(overlay.images[index]) ?: continue
         program.use()
         program.setSamplerTexIdUniform("uImage", texture, 0)
-        program.setFloatsUniform("uPlace", overlayPlacement(look, overlay, motion))
-        program.setFloatUniform("uAlpha", motion.alpha.toFloat())
+        program.setFloatsUniform("uPlace", overlayPlacement(look, overlay, values, motion))
+        program.setFloatUniform("uAlpha", alpha.toFloat())
         program.bindAttributesAndUniforms()
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
       }
@@ -408,20 +428,25 @@ fun placement(
 
 /**
  * Maps canvas coordinates (0 to 1, y up) to [overlay]'s image coordinates
- * (0 to 1, y up) as it shows with [motion]. Matches `drawOverlays` in
- * StitchCompositor.swift. Column-major mat3.
+ * (0 to 1, y up) as it shows placed by [values] with [motion]. Matches
+ * `drawOverlays` in StitchCompositor.swift. Column-major mat3.
  */
-fun overlayPlacement(look: CanvasLook, overlay: EngineDocument.Overlay, motion: TextMotion): FloatArray {
+fun overlayPlacement(
+  look: CanvasLook,
+  overlay: EngineDocument.Overlay,
+  values: KeyframeValues,
+  motion: TextMotion,
+): FloatArray {
   val cw = look.width.toFloat()
   val ch = look.height.toFloat()
   // Overlay sizes are in document canvas pixels; the output may be smaller.
   val unit = cw / look.documentWidth
-  val scale = (overlay.scale * motion.scale).toFloat() * unit
+  val scale = (values.scale * motion.scale).toFloat() * unit
   val place = Matrix().apply {
     setTranslate(-0.5f, -0.5f)
     postScale(overlay.width.toFloat() * scale, overlay.height.toFloat() * scale)
-    postRotate(-overlay.rotationDeg.toFloat())
-    postTranslate(overlay.x.toFloat() * cw, (1 - overlay.y - motion.dy).toFloat() * ch)
+    postRotate(-values.rotationDeg.toFloat())
+    postTranslate(values.x.toFloat() * cw, (1 - values.y - motion.dy).toFloat() * ch)
   }
   val inverse = Matrix()
   place.invert(inverse)
@@ -487,6 +512,7 @@ private fun mainFragment(transition: Boolean, yuv: Boolean, blur: Boolean): Stri
   return HEADER + defines + """
 uniform sampler2D uTo;
 uniform mat3 uToPlace;
+uniform float uToOpacity;
 uniform vec3 uBackground;
 #ifdef BLUR
 uniform sampler2D uToBlur;
@@ -505,12 +531,13 @@ vec4 getToColor(vec2 uv) {
   vec2 p = (uToPlace * vec3(uv, 1.0)).xy;
   if (!inside(p)) return vec4(bg, 1.0);
   vec4 c = texture2D(uTo, p);
-  return vec4(mix(bg, c.rgb, c.a), 1.0);
+  return vec4(mix(bg, c.rgb, c.a * uToOpacity), 1.0);
 }
 
 #ifdef TRANSITION
 ${sampler("uFrom", yuv)}
 uniform mat3 uFromPlace;
+uniform float uFromOpacity;
 uniform mat3 uFromTex;
 uniform float uFromPresent;
 uniform float uProgress;
@@ -529,7 +556,7 @@ vec4 getFromColor(vec2 uv) {
   vec2 p = (uFromPlace * vec3(uv, 1.0)).xy;
   if (!inside(p)) return vec4(bg, 1.0);
   vec4 c = sampleuFrom((uFromTex * vec3(p, 1.0)).xy);
-  return vec4(mix(bg, c.rgb, c.a), 1.0);
+  return vec4(mix(bg, c.rgb, c.a * uFromOpacity), 1.0);
 }
 
 ${TransitionShader.GLSL}

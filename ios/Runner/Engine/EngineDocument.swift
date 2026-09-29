@@ -32,6 +32,13 @@ struct EngineDocument: Decodable {
     let offsetX: Double
     let offsetY: Double
     let rotationDeg: Double
+
+    /// This framing moved, zoomed, and turned by keyframe [values].
+    func animated(by values: KeyframeValues) -> Framing {
+      Framing(
+        mode: mode, scale: values.scale, offsetX: values.x, offsetY: values.y,
+        rotationDeg: values.rotationDeg)
+    }
   }
 
   struct Clip: Decodable {
@@ -47,6 +54,15 @@ struct EngineDocument: Decodable {
     let audioFadeInUs: Int64
     let audioFadeOutUs: Int64
     let framing: Framing
+    /// Absent in documents from before keyframes.
+    private let opacity: Double?
+    private let keyframes: [Keyframe]?
+
+    var baseOpacity: Double { opacity ?? 1 }
+    var animation: Keyframes { Keyframes(list: keyframes ?? []) }
+
+    /// The loudest the clip's own sound gets.
+    var maxVolume: Double { animation.maxVolume ?? volume }
   }
 
   struct Transition: Decodable {
@@ -69,6 +85,14 @@ struct EngineDocument: Decodable {
     let volume: Double
     let fadeInUs: Int64
     let fadeOutUs: Int64
+    private let keyframes: [Keyframe]?
+    private let keyframeLoopUs: Int64?
+
+    var animation: Keyframes {
+      Keyframes(list: keyframes ?? [], loopStartUs: startUs, loopUs: keyframeLoopUs ?? 0)
+    }
+
+    var maxVolume: Double { animation.maxVolume ?? volume }
   }
 
   struct Composition: Decodable {
@@ -112,6 +136,23 @@ struct EngineDocument: Decodable {
     let rotationDeg: Double
     let animationIn: Animation
     let animationOut: Animation
+    private let opacity: Double?
+    private let keyframes: [Keyframe]?
+
+    var animation: Keyframes { Keyframes(list: keyframes ?? []) }
+
+    /// Place, scale, turn, and opacity at timeline time [timeUs]: its
+    /// keyframes', or its own.
+    func values(at timeUs: Int64) -> KeyframeValues {
+      if let v = animation.values(at: timeUs) { return v }
+      var v = KeyframeValues()
+      v.x = x
+      v.y = y
+      v.scale = scale
+      v.rotationDeg = rotationDeg
+      v.opacity = opacity ?? 1
+      return v
+    }
   }
 
   /// Numbers documents, so Dart can tell when the preview shows one.

@@ -11,6 +11,9 @@ struct CompositorLayer {
   /// Rotation (degrees clockwise) needed to display the source upright.
   let sourceRotationDeg: Int
   let framing: EngineDocument.Framing
+  let opacity: Double
+  /// Replace [framing] and [opacity] over time, when there are any.
+  let keyframes: Keyframes
   /// Clip timeline range, for transition progress.
   let clipStartUs: Int64
   let clipEndUs: Int64
@@ -141,7 +144,7 @@ enum CompositionBuilder {
         usedTrack = videoTrack.trackID
         rotation = try await rotationDegrees(of: source)
 
-        if clip.volume > 0, let audio = try await a.loadTracks(withMediaType: .audio).first {
+        if clip.maxVolume > 0, let audio = try await a.loadTracks(withMediaType: .audio).first {
           let audioTrack = clipAudioTracks[slot]
           try await insert(
             source: audio, sourceRange: sourceRange, into: audioTrack,
@@ -150,8 +153,8 @@ enum CompositionBuilder {
             clipAudioParams[audioTrack.trackID]
             ?? AVMutableAudioMixInputParameters(track: audioTrack)
           applyVolume(
-            to: params, volume: clip.volume, startUs: clip.startUs,
-            endUs: clip.endUs, fadeInUs: clip.audioFadeInUs,
+            to: params, volume: clip.volume, keyframes: clip.animation,
+            startUs: clip.startUs, endUs: clip.endUs, fadeInUs: clip.audioFadeInUs,
             fadeOutUs: clip.audioFadeOutUs)
           clipAudioParams[audioTrack.trackID] = params
         }
@@ -169,6 +172,8 @@ enum CompositionBuilder {
         photoPath: clip.kind == "photo" ? media?.path : nil,
         sourceRotationDeg: rotation,
         framing: clip.framing,
+        opacity: clip.baseOpacity,
+        keyframes: clip.animation,
         clipStartUs: clip.startUs,
         clipEndUs: clip.endUs
       )
@@ -222,8 +227,8 @@ enum CompositionBuilder {
       let params = itemParams[slot]
       params.audioTimePitchAlgorithm = .spectral
       applyVolume(
-        to: params, volume: item.volume, startUs: item.startUs, endUs: item.endUs,
-        fadeInUs: item.fadeInUs, fadeOutUs: item.fadeOutUs)
+        to: params, volume: item.volume, keyframes: item.animation, startUs: item.startUs,
+        endUs: item.endUs, fadeInUs: item.fadeInUs, fadeOutUs: item.fadeOutUs)
     }
 
     let audioMix = AVMutableAudioMix()
@@ -266,31 +271,57 @@ enum CompositionBuilder {
     }
   }
 
-  /// Volume ramps: silent outside [startUs, endUs), fading in and out.
-  private static func applyVolume(
-    to params: AVMutableAudioMixInputParameters, volume: Double,
+  /// Volume ramps: silent outside [startUs, endUs), fading in and out, and
+  /// following [keyframes] (which replace [volume]) when there are any.
+  ///
+  /// AVFoundation ramps are linear, so the loudness is cut where it
+  /// changes course (fade edges, keyframes, loop passes) and each piece
+  /// that still curves (an eased keyframe, a fade over a changing volume)
+  /// is split into steps of [rampStepUs].
+  static func applyVolume(
+    to params: AVMutableAudioMixInputParameters, volume: Double, keyframes: Keyframes,
     startUs: Int64, endUs: Int64, fadeInUs: Int64, fadeOutUs: Int64
   ) {
-    let v = Float(max(0, volume))
+    guard endUs > startUs else { return }
     let fadeInEnd = min(startUs + fadeInUs, endUs)
     let fadeOutStart = max(endUs - fadeOutUs, fadeInEnd)
-    if fadeInUs > 0 {
-      params.setVolumeRamp(
-        fromStartVolume: 0, toEndVolume: v,
-        timeRange: cmRange(startUs: startUs, endUs: fadeInEnd))
-    } else {
-      params.setVolume(v, at: cmTime(us: startUs))
+    func gain(_ t: Int64) -> Float {
+      var g = keyframes.values(at: t)?.volume ?? volume
+      if fadeInUs > 0, t < fadeInEnd { g *= Double(t - startUs) / Double(fadeInEnd - startUs) }
+      if fadeOutUs > 0, t > fadeOutStart {
+        g *= Double(endUs - t) / Double(endUs - fadeOutStart)
+      }
+      return Float(max(0, g))
     }
-    if fadeInEnd < fadeOutStart {
-      params.setVolume(v, at: cmTime(us: fadeInEnd))
-    }
-    if fadeOutUs > 0 {
-      params.setVolumeRamp(
-        fromStartVolume: v, toEndVolume: 0,
-        timeRange: cmRange(startUs: fadeOutStart, endUs: endUs))
+    var cuts = Set([startUs, fadeInEnd, fadeOutStart, endUs])
+    cuts.formUnion(keyframes.breakpoints(fromUs: startUs, toUs: endUs))
+    let times = cuts.filter { $0 >= startUs && $0 <= endUs }.sorted()
+    for (a, b) in zip(times, times.dropFirst()) where b > a {
+      // Just before b: a hold or a loop jumps exactly at b.
+      let from = gain(a)
+      let to = gain(b - 1)
+      let straight = (from + to) / 2
+      let steps =
+        abs(gain(a + (b - a) / 2) - straight) < 0.002
+        ? 1 : Int((b - a + rampStepUs - 1) / rampStepUs)
+      for i in 0..<steps {
+        let s0 = a + (b - a) * Int64(i) / Int64(steps)
+        let s1 = a + (b - a) * Int64(i + 1) / Int64(steps)
+        let v0 = i == 0 ? from : gain(s0)
+        let v1 = i == steps - 1 ? to : gain(s1)
+        if v0 == v1 {
+          params.setVolume(v0, at: cmTime(us: s0))
+        } else {
+          params.setVolumeRamp(
+            fromStartVolume: v0, toEndVolume: v1, timeRange: cmRange(startUs: s0, endUs: s1))
+        }
+      }
     }
     params.setVolume(0, at: cmTime(us: endUs))
   }
+
+  /// Length of the linear steps a curving volume is drawn with.
+  static let rampStepUs: Int64 = 40_000
 
   private static func buildVideoComposition(
     doc: EngineDocument, layers: [String: CompositorLayer], canvas: CGSize,

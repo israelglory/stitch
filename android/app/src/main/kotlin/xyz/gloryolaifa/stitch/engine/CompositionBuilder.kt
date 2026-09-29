@@ -106,6 +106,8 @@ object CompositionBuilder {
             itemDurationUs = t.durationUs,
             offsetUs = t.startUs - clip.startUs,
             rampOutUs = t.durationUs,
+            keyframes = clip.keyframes,
+            timelineStartUs = t.startUs,
           ),
         ),
       )
@@ -139,6 +141,8 @@ object CompositionBuilder {
               clipDurationUs = segmentEnd - t,
               fadeInUs = if (t == item.startUs) item.fadeInUs else 0,
               fadeOutUs = if (segmentEnd == item.endUs) item.fadeOutUs else 0,
+              keyframes = item.keyframes,
+              timelineStartUs = t,
             ),
           ),
         )
@@ -199,6 +203,8 @@ object CompositionBuilder {
               fadeOutUs = clip.audioFadeOutUs,
               itemDurationUs = timelineUs,
               rampInUs = incoming[clip.clipId]?.durationUs ?: 0,
+              keyframes = clip.keyframes,
+              timelineStartUs = clip.startUs,
             ),
           ),
         )
@@ -256,6 +262,8 @@ object CompositionBuilder {
       sourceStartUs = from.sourceInUs + ((t.startUs - from.startUs) * from.speed).toLong(),
       speed = from.speed,
       framing = from.framing,
+      opacity = from.opacity,
+      keyframes = from.keyframes,
       timeoutMs = if (forExport) EXPORT_FRAME_TIMEOUT_MS else PREVIEW_FRAME_TIMEOUT_MS,
       reportMisses = !forExport,
     ),
@@ -280,7 +288,9 @@ object CompositionBuilder {
     val media = doc.media[clip.mediaId] ?: return null
     val path = sourcePath(media, forExport) ?: return null
     val timelineUs = endUs - clip.startUs
-    val effects = listOf(ClipEffect(look, clip.framing, incoming, doc.overlays))
+    val effects = listOf(
+      ClipEffect(look, clip.framing, incoming, doc.overlays, clip.opacity, clip.keyframes),
+    )
 
     if (clip.kind == "photo") {
       val item = MediaItem.Builder()
@@ -311,6 +321,8 @@ object CompositionBuilder {
       fadeOutUs = clip.audioFadeOutUs,
       itemDurationUs = timelineUs,
       rampInUs = incoming?.durationUs ?: 0,
+      keyframes = clip.keyframes,
+      timelineStartUs = clip.startUs,
     )
     return EditedMediaItem.Builder(item)
       .setDurationUs(media.durationUs ?: clip.sourceOutUs)

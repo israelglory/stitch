@@ -14,6 +14,7 @@
 		2A0C8E51F3631A2F28274BD3 /* EngineDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CD21B7812972EE0727A8B22 /* EngineDocument.swift */; };
 		2B117AF95276662373FC4D64 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C78CAF2BD1EF4F3BF0A8428E /* PrivacyInfo.xcprivacy */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
+		35184973273B48B26558B36E /* Keyframes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47B317950902787B27184326 /* Keyframes.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		3CDFAEEA3A23E58EFE4226F3 /* Exporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FE50B1621937DBD2C421360 /* Exporter.swift */; };
 		42806543B8E1468B4510EA80 /* EngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20F52830125834BAFCC625F4 /* EngineTests.swift */; };
@@ -70,6 +71,7 @@
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
 		44B27F7FBEBD75053364E8DE /* blank.mp4 */ = {isa = PBXFileReference; includeInIndex = 1; path = blank.mp4; sourceTree = "<group>"; };
 		461585129628828A65525CDB /* CompositionBuilder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CompositionBuilder.swift; sourceTree = "<group>"; };
+		47B317950902787B27184326 /* Keyframes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Keyframes.swift; sourceTree = "<group>"; };
 		619BB423439B273118698740 /* EngineHost.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EngineHost.swift; sourceTree = "<group>"; };
 		6A5FE6E75178000AC65AEB83 /* MediaTools.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MediaTools.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -190,6 +192,7 @@
 				959372083ED340C761CEAF12 /* Limiter.swift */,
 				85A8A3350530380025DD95D4 /* TextMotion.swift */,
 				A82E6101457536EACA08FA47 /* SpeechAudio.swift */,
+				47B317950902787B27184326 /* Keyframes.swift */,
 			);
 			name = Engine;
 			path = Engine;
@@ -369,6 +372,7 @@
 				4D10868F8F2BCE12C713732F /* Limiter.swift in Sources */,
 				FC4B3C4C12AE130D4DE0DB75 /* TextMotion.swift in Sources */,
 				12C1B0502B93319BB668F673 /* SpeechAudio.swift in Sources */,
+				35184973273B48B26558B36E /* Keyframes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

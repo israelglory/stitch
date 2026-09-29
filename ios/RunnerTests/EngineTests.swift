@@ -572,6 +572,161 @@ final class EngineTests: XCTestCase {
     XCTAssertGreaterThan(pixel(fading, 0.5, 0.25).1, 0.8, "hidden as the fade starts")
   }
 
+  // MARK: Keyframes
+
+  /// A keyframe as the document has it: [values] is JSON fields.
+  private func keyframe(_ us: Int, _ values: String, easing: String = "linear") -> String {
+    #"{"id": "k\#(us)", "timeUs": \#(us), "values": {\#(values)}, "easing": "\#(easing)"}"#
+  }
+
+  func testKeyframesMatchTheSharedTable() throws {
+    struct Sample: Decodable {
+      let timeUs: Int64
+      let values: KeyframeValues
+    }
+    struct Case: Decodable {
+      let name: String
+      let keyframes: [Keyframe]
+      let loopStartUs: Int64
+      let loopUs: Int64
+      let samples: [Sample]
+    }
+    struct Table: Decodable { let cases: [Case] }
+    let data = try Data(contentsOf: URL(fileURLWithPath: media("keyframe_cases.json")))
+    let table = try JSONDecoder().decode(Table.self, from: data)
+    XCTAssertFalse(table.cases.isEmpty)
+    for c in table.cases {
+      let keyframes = Keyframes(list: c.keyframes, loopStartUs: c.loopStartUs, loopUs: c.loopUs)
+      for sample in c.samples {
+        let got = keyframes.values(at: sample.timeUs)!
+        let want = sample.values
+        for (name, g, w) in [
+          ("x", got.x, want.x), ("y", got.y, want.y), ("scale", got.scale, want.scale),
+          ("rotationDeg", got.rotationDeg, want.rotationDeg),
+          ("opacity", got.opacity, want.opacity), ("volume", got.volume, want.volume),
+        ] {
+          XCTAssertEqual(g, w, accuracy: 1e-9, "\(c.name) \(name) at \(sample.timeUs)")
+        }
+      }
+    }
+  }
+
+  private func pixel(_ image: CGImage, _ x: Double, _ y: Double) -> (red: Double, blue: Double) {
+    let p = rgba(image)
+    let i = (Int(y * Double(image.height)) * image.width + Int(x * Double(image.width))) * 4
+    return (Double(p[i]) / 255, Double(p[i + 2]) / 255)
+  }
+
+  private func frames(_ asset: AVURLAsset) -> (Double) async throws -> CGImage {
+    let generator = AVAssetImageGenerator(asset: asset)
+    generator.requestedTimeToleranceBefore = .zero
+    generator.requestedTimeToleranceAfter = .zero
+    return { seconds in
+      try await generator.image(at: CMTime(seconds: seconds, preferredTimescale: 600)).image
+    }
+  }
+
+  func testKeyframesMoveHoldAndFadeAClip() async throws {
+    let red = solidPhoto("red", .red)
+    let framing = #"{"mode": "fit", "scale": 1, "offsetX": 0, "offsetY": 0, "rotationDeg": 0}"#
+    // Slides right a quarter by 0.5 s and half by 1 s, holds, then
+    // jumps back at 1.5 s, invisible.
+    let keyframes = [
+      keyframe(0, #""x": 0"#),
+      keyframe(1_000_000, #""x": 0.5"#, easing: "hold"),
+      keyframe(1_500_000, #""x": 0, "opacity": 0"#),
+    ].joined(separator: ",")
+    let json = """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190335},
+       "media": {"p": {"path": "\(red)", "kind": "photo"}},
+       "composition": {"durationUs": 2000000, "clips": [
+         {"clipId": "c", "mediaId": "p", "kind": "photo", "startUs": 0, "endUs": 2000000,
+          "sourceInUs": 0, "sourceOutUs": 2000000, "speed": 1, "volume": 0,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": \(framing),
+          "opacity": 1, "keyframes": [\(keyframes)]}]}}
+      """
+    let frame = frames(try await export(try EngineDocument.decode(json), name: "moving"))
+
+    let start = try await frame(0)
+    XCTAssertGreaterThan(pixel(start, 0.1, 0.5).red, 0.8, "in place at the start")
+    let quarter = try await frame(0.5)
+    XCTAssertGreaterThan(pixel(quarter, 0.1, 0.5).blue, 0.8, "moved right: background")
+    XCTAssertGreaterThan(pixel(quarter, 0.4, 0.5).red, 0.8)
+    let held = try await frame(1.3)
+    XCTAssertGreaterThan(pixel(held, 0.4, 0.5).blue, 0.8, "half off, held")
+    XCTAssertGreaterThan(pixel(held, 0.6, 0.5).red, 0.8)
+    let gone = try await frame(1.8)
+    XCTAssertGreaterThan(pixel(gone, 0.5, 0.5).blue, 0.8, "faded out")
+  }
+
+  func testKeyframesMoveAnOverlay() async throws {
+    let blue = solidPhoto("blue", .blue)
+    let redPath = solidPhoto("block", .red)
+    let framing = #"{"mode": "fit", "scale": 1, "offsetX": 0, "offsetY": 0, "rotationDeg": 0}"#
+    let keyframes = [
+      keyframe(0, #""x": 0.5, "y": 0.25"#),
+      keyframe(1_000_000, #""x": 0.5, "y": 0.75, "opacity": 1"#),
+    ].joined(separator: ",")
+    let json = """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190080},
+       "media": {"p": {"path": "\(blue)", "kind": "photo"}},
+       "composition": {"durationUs": 2000000, "clips": [
+         {"clipId": "c", "mediaId": "p", "kind": "photo", "startUs": 0, "endUs": 2000000,
+          "sourceInUs": 0, "sourceOutUs": 2000000, "speed": 1, "volume": 0,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": \(framing)}]},
+       "overlays": [{"id": "t", "startUs": 0, "endUs": 2000000, "images": ["\(redPath)"],
+         "width": 90, "height": 64, "x": 0.5, "y": 0.5, "scale": 1, "rotationDeg": 0,
+         "opacity": 1, "keyframes": [\(keyframes)],
+         "animationIn": {"type": "none", "durationUs": 0},
+         "animationOut": {"type": "none", "durationUs": 0}}]}
+      """
+    let frame = frames(try await export(try EngineDocument.decode(json), name: "overlayMoving"))
+    let start = try await frame(0)
+    XCTAssertGreaterThan(pixel(start, 0.5, 0.25).red, 0.8, "at its first keyframe")
+    XCTAssertGreaterThan(pixel(start, 0.5, 0.75).blue, 0.8)
+    let end = try await frame(1.5)
+    XCTAssertGreaterThan(pixel(end, 0.5, 0.75).red, 0.8, "at its last keyframe")
+    XCTAssertGreaterThan(pixel(end, 0.5, 0.25).blue, 0.8)
+  }
+
+  func testKeyframedVolumeShapesTheSound() async throws {
+    let tone = try loudTone()
+    let framing = #"{"mode": "fit", "scale": 1, "offsetX": 0, "offsetY": 0, "rotationDeg": 0}"#
+    // Full, eased down to silence at 1 s, then silent.
+    let keyframes = [
+      keyframe(0, #""volume": 1"#, easing: "easeInOut"),
+      keyframe(1_000_000, #""volume": 0"#),
+    ].joined(separator: ",")
+    let json = """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190080},
+       "media": {"p": {"path": "\(solidPhoto("black", .black))", "kind": "photo"},
+                 "t": {"path": "\(tone)", "kind": "audio"}},
+       "composition": {"durationUs": 2000000, "clips": [
+         {"clipId": "c", "mediaId": "p", "kind": "photo", "startUs": 0, "endUs": 2000000,
+          "sourceInUs": 0, "sourceOutUs": 2000000, "speed": 1, "volume": 0,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": \(framing)}],
+        "audio": [{"id": "a", "mediaId": "t", "startUs": 0, "endUs": 2000000, "sourceInUs": 0,
+          "sourceOutUs": 2000000, "speed": 1, "loop": false, "volume": 1, "fadeInUs": 0,
+          "fadeOutUs": 0, "keyframes": [\(keyframes)], "keyframeLoopUs": 0}]}}
+      """
+    let x = try await samples(try await export(try EngineDocument.decode(json), name: "volume"))
+    // Interleaved stereo at 48 kHz.
+    func window(_ from: Double, _ to: Double) -> [Float] {
+      Array(x[min(x.count, Int(from * 96_000))..<min(x.count, Int(to * 96_000))])
+    }
+    let tone90 = 0.9 / 2.0.squareRoot()
+    let early = rms(window(0.05, 0.15))
+    let middle = rms(window(0.45, 0.55))
+    let late = rms(window(1.2, 1.8))
+    XCTAssertGreaterThan(early, tone90 * 0.85, "full at first: \(early)")
+    // easeInOut is halfway down at halfway.
+    XCTAssertEqual(middle / tone90, 0.5, accuracy: 0.12, "halfway: \(middle)")
+    XCTAssertLessThan(late, 0.01, "silent after: \(late)")
+  }
+
   // MARK: Performance (reported, not a pass/fail gate: simulators are not
   // representative of the iPhone 12 target)
 

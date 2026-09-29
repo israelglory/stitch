@@ -20,7 +20,7 @@ mixin _$ResolvedClip {
 /// switch and level. Zero when muted or extracted.
  double get volume;/// Audio ramps, equal to the transitions on either side, so the sound
 /// crossfades with the picture.
- int get audioFadeInUs; int get audioFadeOutUs; ClipFraming get framing;
+ int get audioFadeInUs; int get audioFadeOutUs; ClipFraming get framing; double get opacity; List<Keyframe> get keyframes;
 /// Create a copy of ResolvedClip
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -34,20 +34,20 @@ $ResolvedClipCopyWith<ResolvedClip> get copyWith => _$ResolvedClipCopyWithImpl<R
 @override
 bool operator ==(Object other) {
   final _this = this as ResolvedClip;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ResolvedClip&&(identical(other.clipId, _this.clipId) || other.clipId == _this.clipId)&&(identical(other.mediaId, _this.mediaId) || other.mediaId == _this.mediaId)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.startUs, _this.startUs) || other.startUs == _this.startUs)&&(identical(other.endUs, _this.endUs) || other.endUs == _this.endUs)&&(identical(other.sourceInUs, _this.sourceInUs) || other.sourceInUs == _this.sourceInUs)&&(identical(other.sourceOutUs, _this.sourceOutUs) || other.sourceOutUs == _this.sourceOutUs)&&(identical(other.speed, _this.speed) || other.speed == _this.speed)&&(identical(other.volume, _this.volume) || other.volume == _this.volume)&&(identical(other.audioFadeInUs, _this.audioFadeInUs) || other.audioFadeInUs == _this.audioFadeInUs)&&(identical(other.audioFadeOutUs, _this.audioFadeOutUs) || other.audioFadeOutUs == _this.audioFadeOutUs)&&(identical(other.framing, _this.framing) || other.framing == _this.framing));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ResolvedClip&&(identical(other.clipId, _this.clipId) || other.clipId == _this.clipId)&&(identical(other.mediaId, _this.mediaId) || other.mediaId == _this.mediaId)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.startUs, _this.startUs) || other.startUs == _this.startUs)&&(identical(other.endUs, _this.endUs) || other.endUs == _this.endUs)&&(identical(other.sourceInUs, _this.sourceInUs) || other.sourceInUs == _this.sourceInUs)&&(identical(other.sourceOutUs, _this.sourceOutUs) || other.sourceOutUs == _this.sourceOutUs)&&(identical(other.speed, _this.speed) || other.speed == _this.speed)&&(identical(other.volume, _this.volume) || other.volume == _this.volume)&&(identical(other.audioFadeInUs, _this.audioFadeInUs) || other.audioFadeInUs == _this.audioFadeInUs)&&(identical(other.audioFadeOutUs, _this.audioFadeOutUs) || other.audioFadeOutUs == _this.audioFadeOutUs)&&(identical(other.framing, _this.framing) || other.framing == _this.framing)&&(identical(other.opacity, _this.opacity) || other.opacity == _this.opacity)&&const DeepCollectionEquality().equals(other.keyframes, _this.keyframes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ResolvedClip;
-  return Object.hash(runtimeType,_this.clipId,_this.mediaId,_this.kind,_this.startUs,_this.endUs,_this.sourceInUs,_this.sourceOutUs,_this.speed,_this.volume,_this.audioFadeInUs,_this.audioFadeOutUs,_this.framing);
+  return Object.hash(runtimeType,_this.clipId,_this.mediaId,_this.kind,_this.startUs,_this.endUs,_this.sourceInUs,_this.sourceOutUs,_this.speed,_this.volume,_this.audioFadeInUs,_this.audioFadeOutUs,_this.framing,_this.opacity,const DeepCollectionEquality().hash(_this.keyframes));
 }
 
 @override
 String toString() {
   final _this = this as ResolvedClip;
-  return 'ResolvedClip(clipId: ${_this.clipId}, mediaId: ${_this.mediaId}, kind: ${_this.kind}, startUs: ${_this.startUs}, endUs: ${_this.endUs}, sourceInUs: ${_this.sourceInUs}, sourceOutUs: ${_this.sourceOutUs}, speed: ${_this.speed}, volume: ${_this.volume}, audioFadeInUs: ${_this.audioFadeInUs}, audioFadeOutUs: ${_this.audioFadeOutUs}, framing: ${_this.framing})';
+  return 'ResolvedClip(clipId: ${_this.clipId}, mediaId: ${_this.mediaId}, kind: ${_this.kind}, startUs: ${_this.startUs}, endUs: ${_this.endUs}, sourceInUs: ${_this.sourceInUs}, sourceOutUs: ${_this.sourceOutUs}, speed: ${_this.speed}, volume: ${_this.volume}, audioFadeInUs: ${_this.audioFadeInUs}, audioFadeOutUs: ${_this.audioFadeOutUs}, framing: ${_this.framing}, opacity: ${_this.opacity}, keyframes: ${_this.keyframes})';
 }
 
 
@@ -58,7 +58,7 @@ abstract mixin class $ResolvedClipCopyWith<$Res>  {
   factory $ResolvedClipCopyWith(ResolvedClip value, $Res Function(ResolvedClip) _then) = _$ResolvedClipCopyWithImpl;
 @useResult
 $Res call({
- String clipId, String mediaId, MediaKind kind, int startUs, int endUs, int sourceInUs, int sourceOutUs, double speed, double volume, int audioFadeInUs, int audioFadeOutUs, ClipFraming framing
+ String clipId, String mediaId, MediaKind kind, int startUs, int endUs, int sourceInUs, int sourceOutUs, double speed, double volume, int audioFadeInUs, int audioFadeOutUs, ClipFraming framing, double opacity, List<Keyframe> keyframes
 });
 
 
@@ -75,7 +75,7 @@ class _$ResolvedClipCopyWithImpl<$Res>
 
 /// Create a copy of ResolvedClip
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? clipId = null,Object? mediaId = null,Object? kind = null,Object? startUs = null,Object? endUs = null,Object? sourceInUs = null,Object? sourceOutUs = null,Object? speed = null,Object? volume = null,Object? audioFadeInUs = null,Object? audioFadeOutUs = null,Object? framing = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? clipId = null,Object? mediaId = null,Object? kind = null,Object? startUs = null,Object? endUs = null,Object? sourceInUs = null,Object? sourceOutUs = null,Object? speed = null,Object? volume = null,Object? audioFadeInUs = null,Object? audioFadeOutUs = null,Object? framing = null,Object? opacity = null,Object? keyframes = null,}) {
   return _then(ResolvedClip(
 clipId: null == clipId ? _self.clipId : clipId // ignore: cast_nullable_to_non_nullable
 as String,mediaId: null == mediaId ? _self.mediaId : mediaId // ignore: cast_nullable_to_non_nullable
@@ -89,7 +89,9 @@ as double,volume: null == volume ? _self.volume : volume // ignore: cast_nullabl
 as double,audioFadeInUs: null == audioFadeInUs ? _self.audioFadeInUs : audioFadeInUs // ignore: cast_nullable_to_non_nullable
 as int,audioFadeOutUs: null == audioFadeOutUs ? _self.audioFadeOutUs : audioFadeOutUs // ignore: cast_nullable_to_non_nullable
 as int,framing: null == framing ? _self.framing : framing // ignore: cast_nullable_to_non_nullable
-as ClipFraming,
+as ClipFraming,opacity: null == opacity ? _self.opacity : opacity // ignore: cast_nullable_to_non_nullable
+as double,keyframes: null == keyframes ? _self.keyframes : keyframes // ignore: cast_nullable_to_non_nullable
+as List<Keyframe>,
   ));
 }
 /// Create a copy of ResolvedClip
@@ -183,10 +185,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String clipId,  String mediaId,  MediaKind kind,  int startUs,  int endUs,  int sourceInUs,  int sourceOutUs,  double speed,  double volume,  int audioFadeInUs,  int audioFadeOutUs,  ClipFraming framing)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String clipId,  String mediaId,  MediaKind kind,  int startUs,  int endUs,  int sourceInUs,  int sourceOutUs,  double speed,  double volume,  int audioFadeInUs,  int audioFadeOutUs,  ClipFraming framing,  double opacity,  List<Keyframe> keyframes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ResolvedClip() when $default != null:
-return $default(_that.clipId,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_that.sourceInUs,_that.sourceOutUs,_that.speed,_that.volume,_that.audioFadeInUs,_that.audioFadeOutUs,_that.framing);case _:
+return $default(_that.clipId,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_that.sourceInUs,_that.sourceOutUs,_that.speed,_that.volume,_that.audioFadeInUs,_that.audioFadeOutUs,_that.framing,_that.opacity,_that.keyframes);case _:
   return orElse();
 
 }
@@ -204,10 +206,10 @@ return $default(_that.clipId,_that.mediaId,_that.kind,_that.startUs,_that.endUs,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String clipId,  String mediaId,  MediaKind kind,  int startUs,  int endUs,  int sourceInUs,  int sourceOutUs,  double speed,  double volume,  int audioFadeInUs,  int audioFadeOutUs,  ClipFraming framing)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String clipId,  String mediaId,  MediaKind kind,  int startUs,  int endUs,  int sourceInUs,  int sourceOutUs,  double speed,  double volume,  int audioFadeInUs,  int audioFadeOutUs,  ClipFraming framing,  double opacity,  List<Keyframe> keyframes)  $default,) {final _that = this;
 switch (_that) {
 case _ResolvedClip():
-return $default(_that.clipId,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_that.sourceInUs,_that.sourceOutUs,_that.speed,_that.volume,_that.audioFadeInUs,_that.audioFadeOutUs,_that.framing);case _:
+return $default(_that.clipId,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_that.sourceInUs,_that.sourceOutUs,_that.speed,_that.volume,_that.audioFadeInUs,_that.audioFadeOutUs,_that.framing,_that.opacity,_that.keyframes);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -224,10 +226,10 @@ return $default(_that.clipId,_that.mediaId,_that.kind,_that.startUs,_that.endUs,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String clipId,  String mediaId,  MediaKind kind,  int startUs,  int endUs,  int sourceInUs,  int sourceOutUs,  double speed,  double volume,  int audioFadeInUs,  int audioFadeOutUs,  ClipFraming framing)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String clipId,  String mediaId,  MediaKind kind,  int startUs,  int endUs,  int sourceInUs,  int sourceOutUs,  double speed,  double volume,  int audioFadeInUs,  int audioFadeOutUs,  ClipFraming framing,  double opacity,  List<Keyframe> keyframes)?  $default,) {final _that = this;
 switch (_that) {
 case _ResolvedClip() when $default != null:
-return $default(_that.clipId,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_that.sourceInUs,_that.sourceOutUs,_that.speed,_that.volume,_that.audioFadeInUs,_that.audioFadeOutUs,_that.framing);case _:
+return $default(_that.clipId,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_that.sourceInUs,_that.sourceOutUs,_that.speed,_that.volume,_that.audioFadeInUs,_that.audioFadeOutUs,_that.framing,_that.opacity,_that.keyframes);case _:
   return null;
 
 }
@@ -239,7 +241,7 @@ return $default(_that.clipId,_that.mediaId,_that.kind,_that.startUs,_that.endUs,
 @JsonSerializable()
 
 class _ResolvedClip implements ResolvedClip {
-  const _ResolvedClip({required this.clipId, required this.mediaId, required this.kind, required this.startUs, required this.endUs, required this.sourceInUs, required this.sourceOutUs, required this.speed, required this.volume, required this.audioFadeInUs, required this.audioFadeOutUs, required this.framing});
+  const _ResolvedClip({required this.clipId, required this.mediaId, required this.kind, required this.startUs, required this.endUs, required this.sourceInUs, required this.sourceOutUs, required this.speed, required this.volume, required this.audioFadeInUs, required this.audioFadeOutUs, required this.framing, this.opacity = 1.0,  List<Keyframe> keyframes = const <Keyframe>[]}): _keyframes = keyframes;
   factory _ResolvedClip.fromJson(Map<String, dynamic> json) => _$ResolvedClipFromJson(json);
 
 @override final  String clipId;
@@ -258,6 +260,14 @@ class _ResolvedClip implements ResolvedClip {
 @override final  int audioFadeInUs;
 @override final  int audioFadeOutUs;
 @override final  ClipFraming framing;
+@override@JsonKey() final  double opacity;
+ final  List<Keyframe> _keyframes;
+@override@JsonKey() List<Keyframe> get keyframes {
+  if (_keyframes is EqualUnmodifiableListView) return _keyframes;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_keyframes);
+}
+
 
 /// Create a copy of ResolvedClip
 /// with the given fields replaced by the non-null parameter values.
@@ -272,18 +282,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ResolvedClip&&(identical(other.clipId, clipId) || other.clipId == clipId)&&(identical(other.mediaId, mediaId) || other.mediaId == mediaId)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.startUs, startUs) || other.startUs == startUs)&&(identical(other.endUs, endUs) || other.endUs == endUs)&&(identical(other.sourceInUs, sourceInUs) || other.sourceInUs == sourceInUs)&&(identical(other.sourceOutUs, sourceOutUs) || other.sourceOutUs == sourceOutUs)&&(identical(other.speed, speed) || other.speed == speed)&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.audioFadeInUs, audioFadeInUs) || other.audioFadeInUs == audioFadeInUs)&&(identical(other.audioFadeOutUs, audioFadeOutUs) || other.audioFadeOutUs == audioFadeOutUs)&&(identical(other.framing, framing) || other.framing == framing));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ResolvedClip&&(identical(other.clipId, clipId) || other.clipId == clipId)&&(identical(other.mediaId, mediaId) || other.mediaId == mediaId)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.startUs, startUs) || other.startUs == startUs)&&(identical(other.endUs, endUs) || other.endUs == endUs)&&(identical(other.sourceInUs, sourceInUs) || other.sourceInUs == sourceInUs)&&(identical(other.sourceOutUs, sourceOutUs) || other.sourceOutUs == sourceOutUs)&&(identical(other.speed, speed) || other.speed == speed)&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.audioFadeInUs, audioFadeInUs) || other.audioFadeInUs == audioFadeInUs)&&(identical(other.audioFadeOutUs, audioFadeOutUs) || other.audioFadeOutUs == audioFadeOutUs)&&(identical(other.framing, framing) || other.framing == framing)&&(identical(other.opacity, opacity) || other.opacity == opacity)&&const DeepCollectionEquality().equals(other.keyframes, _keyframes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,clipId,mediaId,kind,startUs,endUs,sourceInUs,sourceOutUs,speed,volume,audioFadeInUs,audioFadeOutUs,framing);
+    return Object.hash(runtimeType,clipId,mediaId,kind,startUs,endUs,sourceInUs,sourceOutUs,speed,volume,audioFadeInUs,audioFadeOutUs,framing,opacity,const DeepCollectionEquality().hash(_keyframes));
 }
 
 @override
 String toString() {
-    return 'ResolvedClip(clipId: $clipId, mediaId: $mediaId, kind: $kind, startUs: $startUs, endUs: $endUs, sourceInUs: $sourceInUs, sourceOutUs: $sourceOutUs, speed: $speed, volume: $volume, audioFadeInUs: $audioFadeInUs, audioFadeOutUs: $audioFadeOutUs, framing: $framing)';
+    return 'ResolvedClip(clipId: $clipId, mediaId: $mediaId, kind: $kind, startUs: $startUs, endUs: $endUs, sourceInUs: $sourceInUs, sourceOutUs: $sourceOutUs, speed: $speed, volume: $volume, audioFadeInUs: $audioFadeInUs, audioFadeOutUs: $audioFadeOutUs, framing: $framing, opacity: $opacity, keyframes: $keyframes)';
 }
 
 
@@ -294,7 +304,7 @@ abstract mixin class _$ResolvedClipCopyWith<$Res> implements $ResolvedClipCopyWi
   factory _$ResolvedClipCopyWith(_ResolvedClip value, $Res Function(_ResolvedClip) _then) = __$ResolvedClipCopyWithImpl;
 @override @useResult
 $Res call({
- String clipId, String mediaId, MediaKind kind, int startUs, int endUs, int sourceInUs, int sourceOutUs, double speed, double volume, int audioFadeInUs, int audioFadeOutUs, ClipFraming framing
+ String clipId, String mediaId, MediaKind kind, int startUs, int endUs, int sourceInUs, int sourceOutUs, double speed, double volume, int audioFadeInUs, int audioFadeOutUs, ClipFraming framing, double opacity, List<Keyframe> keyframes
 });
 
 
@@ -311,7 +321,7 @@ class __$ResolvedClipCopyWithImpl<$Res>
 
 /// Create a copy of ResolvedClip
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? clipId = null,Object? mediaId = null,Object? kind = null,Object? startUs = null,Object? endUs = null,Object? sourceInUs = null,Object? sourceOutUs = null,Object? speed = null,Object? volume = null,Object? audioFadeInUs = null,Object? audioFadeOutUs = null,Object? framing = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? clipId = null,Object? mediaId = null,Object? kind = null,Object? startUs = null,Object? endUs = null,Object? sourceInUs = null,Object? sourceOutUs = null,Object? speed = null,Object? volume = null,Object? audioFadeInUs = null,Object? audioFadeOutUs = null,Object? framing = null,Object? opacity = null,Object? keyframes = null,}) {
   return _then(_ResolvedClip(
 clipId: null == clipId ? _self.clipId : clipId // ignore: cast_nullable_to_non_nullable
 as String,mediaId: null == mediaId ? _self.mediaId : mediaId // ignore: cast_nullable_to_non_nullable
@@ -325,7 +335,9 @@ as double,volume: null == volume ? _self.volume : volume // ignore: cast_nullabl
 as double,audioFadeInUs: null == audioFadeInUs ? _self.audioFadeInUs : audioFadeInUs // ignore: cast_nullable_to_non_nullable
 as int,audioFadeOutUs: null == audioFadeOutUs ? _self.audioFadeOutUs : audioFadeOutUs // ignore: cast_nullable_to_non_nullable
 as int,framing: null == framing ? _self.framing : framing // ignore: cast_nullable_to_non_nullable
-as ClipFraming,
+as ClipFraming,opacity: null == opacity ? _self.opacity : opacity // ignore: cast_nullable_to_non_nullable
+as double,keyframes: null == keyframes ? _self._keyframes : keyframes // ignore: cast_nullable_to_non_nullable
+as List<Keyframe>,
   ));
 }
 
@@ -636,7 +648,7 @@ as Map<String, double>,
 /// @nodoc
 mixin _$ResolvedText {
 
- String get id; String get text; int get startUs; int get endUs; int get laneIndex; TextStyleSpec get style; ItemTransform get transform; TextAnimation get animationIn; TextAnimation get animationOut;
+ String get id; String get text; int get startUs; int get endUs; int get laneIndex; TextStyleSpec get style; ItemTransform get transform; TextAnimation get animationIn; TextAnimation get animationOut; double get opacity; List<Keyframe> get keyframes;
 /// Create a copy of ResolvedText
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -650,20 +662,20 @@ $ResolvedTextCopyWith<ResolvedText> get copyWith => _$ResolvedTextCopyWithImpl<R
 @override
 bool operator ==(Object other) {
   final _this = this as ResolvedText;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ResolvedText&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.text, _this.text) || other.text == _this.text)&&(identical(other.startUs, _this.startUs) || other.startUs == _this.startUs)&&(identical(other.endUs, _this.endUs) || other.endUs == _this.endUs)&&(identical(other.laneIndex, _this.laneIndex) || other.laneIndex == _this.laneIndex)&&(identical(other.style, _this.style) || other.style == _this.style)&&(identical(other.transform, _this.transform) || other.transform == _this.transform)&&(identical(other.animationIn, _this.animationIn) || other.animationIn == _this.animationIn)&&(identical(other.animationOut, _this.animationOut) || other.animationOut == _this.animationOut));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ResolvedText&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.text, _this.text) || other.text == _this.text)&&(identical(other.startUs, _this.startUs) || other.startUs == _this.startUs)&&(identical(other.endUs, _this.endUs) || other.endUs == _this.endUs)&&(identical(other.laneIndex, _this.laneIndex) || other.laneIndex == _this.laneIndex)&&(identical(other.style, _this.style) || other.style == _this.style)&&(identical(other.transform, _this.transform) || other.transform == _this.transform)&&(identical(other.animationIn, _this.animationIn) || other.animationIn == _this.animationIn)&&(identical(other.animationOut, _this.animationOut) || other.animationOut == _this.animationOut)&&(identical(other.opacity, _this.opacity) || other.opacity == _this.opacity)&&const DeepCollectionEquality().equals(other.keyframes, _this.keyframes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ResolvedText;
-  return Object.hash(runtimeType,_this.id,_this.text,_this.startUs,_this.endUs,_this.laneIndex,_this.style,_this.transform,_this.animationIn,_this.animationOut);
+  return Object.hash(runtimeType,_this.id,_this.text,_this.startUs,_this.endUs,_this.laneIndex,_this.style,_this.transform,_this.animationIn,_this.animationOut,_this.opacity,const DeepCollectionEquality().hash(_this.keyframes));
 }
 
 @override
 String toString() {
   final _this = this as ResolvedText;
-  return 'ResolvedText(id: ${_this.id}, text: ${_this.text}, startUs: ${_this.startUs}, endUs: ${_this.endUs}, laneIndex: ${_this.laneIndex}, style: ${_this.style}, transform: ${_this.transform}, animationIn: ${_this.animationIn}, animationOut: ${_this.animationOut})';
+  return 'ResolvedText(id: ${_this.id}, text: ${_this.text}, startUs: ${_this.startUs}, endUs: ${_this.endUs}, laneIndex: ${_this.laneIndex}, style: ${_this.style}, transform: ${_this.transform}, animationIn: ${_this.animationIn}, animationOut: ${_this.animationOut}, opacity: ${_this.opacity}, keyframes: ${_this.keyframes})';
 }
 
 
@@ -674,7 +686,7 @@ abstract mixin class $ResolvedTextCopyWith<$Res>  {
   factory $ResolvedTextCopyWith(ResolvedText value, $Res Function(ResolvedText) _then) = _$ResolvedTextCopyWithImpl;
 @useResult
 $Res call({
- String id, String text, int startUs, int endUs, int laneIndex, TextStyleSpec style, ItemTransform transform, TextAnimation animationIn, TextAnimation animationOut
+ String id, String text, int startUs, int endUs, int laneIndex, TextStyleSpec style, ItemTransform transform, TextAnimation animationIn, TextAnimation animationOut, double opacity, List<Keyframe> keyframes
 });
 
 
@@ -691,7 +703,7 @@ class _$ResolvedTextCopyWithImpl<$Res>
 
 /// Create a copy of ResolvedText
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? text = null,Object? startUs = null,Object? endUs = null,Object? laneIndex = null,Object? style = null,Object? transform = null,Object? animationIn = null,Object? animationOut = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? text = null,Object? startUs = null,Object? endUs = null,Object? laneIndex = null,Object? style = null,Object? transform = null,Object? animationIn = null,Object? animationOut = null,Object? opacity = null,Object? keyframes = null,}) {
   return _then(ResolvedText(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
@@ -702,7 +714,9 @@ as int,style: null == style ? _self.style : style // ignore: cast_nullable_to_no
 as TextStyleSpec,transform: null == transform ? _self.transform : transform // ignore: cast_nullable_to_non_nullable
 as ItemTransform,animationIn: null == animationIn ? _self.animationIn : animationIn // ignore: cast_nullable_to_non_nullable
 as TextAnimation,animationOut: null == animationOut ? _self.animationOut : animationOut // ignore: cast_nullable_to_non_nullable
-as TextAnimation,
+as TextAnimation,opacity: null == opacity ? _self.opacity : opacity // ignore: cast_nullable_to_non_nullable
+as double,keyframes: null == keyframes ? _self.keyframes : keyframes // ignore: cast_nullable_to_non_nullable
+as List<Keyframe>,
   ));
 }
 /// Create a copy of ResolvedText
@@ -805,10 +819,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String text,  int startUs,  int endUs,  int laneIndex,  TextStyleSpec style,  ItemTransform transform,  TextAnimation animationIn,  TextAnimation animationOut)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String text,  int startUs,  int endUs,  int laneIndex,  TextStyleSpec style,  ItemTransform transform,  TextAnimation animationIn,  TextAnimation animationOut,  double opacity,  List<Keyframe> keyframes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ResolvedText() when $default != null:
-return $default(_that.id,_that.text,_that.startUs,_that.endUs,_that.laneIndex,_that.style,_that.transform,_that.animationIn,_that.animationOut);case _:
+return $default(_that.id,_that.text,_that.startUs,_that.endUs,_that.laneIndex,_that.style,_that.transform,_that.animationIn,_that.animationOut,_that.opacity,_that.keyframes);case _:
   return orElse();
 
 }
@@ -826,10 +840,10 @@ return $default(_that.id,_that.text,_that.startUs,_that.endUs,_that.laneIndex,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String text,  int startUs,  int endUs,  int laneIndex,  TextStyleSpec style,  ItemTransform transform,  TextAnimation animationIn,  TextAnimation animationOut)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String text,  int startUs,  int endUs,  int laneIndex,  TextStyleSpec style,  ItemTransform transform,  TextAnimation animationIn,  TextAnimation animationOut,  double opacity,  List<Keyframe> keyframes)  $default,) {final _that = this;
 switch (_that) {
 case _ResolvedText():
-return $default(_that.id,_that.text,_that.startUs,_that.endUs,_that.laneIndex,_that.style,_that.transform,_that.animationIn,_that.animationOut);case _:
+return $default(_that.id,_that.text,_that.startUs,_that.endUs,_that.laneIndex,_that.style,_that.transform,_that.animationIn,_that.animationOut,_that.opacity,_that.keyframes);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -846,10 +860,10 @@ return $default(_that.id,_that.text,_that.startUs,_that.endUs,_that.laneIndex,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String text,  int startUs,  int endUs,  int laneIndex,  TextStyleSpec style,  ItemTransform transform,  TextAnimation animationIn,  TextAnimation animationOut)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String text,  int startUs,  int endUs,  int laneIndex,  TextStyleSpec style,  ItemTransform transform,  TextAnimation animationIn,  TextAnimation animationOut,  double opacity,  List<Keyframe> keyframes)?  $default,) {final _that = this;
 switch (_that) {
 case _ResolvedText() when $default != null:
-return $default(_that.id,_that.text,_that.startUs,_that.endUs,_that.laneIndex,_that.style,_that.transform,_that.animationIn,_that.animationOut);case _:
+return $default(_that.id,_that.text,_that.startUs,_that.endUs,_that.laneIndex,_that.style,_that.transform,_that.animationIn,_that.animationOut,_that.opacity,_that.keyframes);case _:
   return null;
 
 }
@@ -861,7 +875,7 @@ return $default(_that.id,_that.text,_that.startUs,_that.endUs,_that.laneIndex,_t
 @JsonSerializable()
 
 class _ResolvedText implements ResolvedText {
-  const _ResolvedText({required this.id, required this.text, required this.startUs, required this.endUs, required this.laneIndex, required this.style, required this.transform, required this.animationIn, required this.animationOut});
+  const _ResolvedText({required this.id, required this.text, required this.startUs, required this.endUs, required this.laneIndex, required this.style, required this.transform, required this.animationIn, required this.animationOut, this.opacity = 1.0,  List<Keyframe> keyframes = const <Keyframe>[]}): _keyframes = keyframes;
   factory _ResolvedText.fromJson(Map<String, dynamic> json) => _$ResolvedTextFromJson(json);
 
 @override final  String id;
@@ -873,6 +887,14 @@ class _ResolvedText implements ResolvedText {
 @override final  ItemTransform transform;
 @override final  TextAnimation animationIn;
 @override final  TextAnimation animationOut;
+@override@JsonKey() final  double opacity;
+ final  List<Keyframe> _keyframes;
+@override@JsonKey() List<Keyframe> get keyframes {
+  if (_keyframes is EqualUnmodifiableListView) return _keyframes;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_keyframes);
+}
+
 
 /// Create a copy of ResolvedText
 /// with the given fields replaced by the non-null parameter values.
@@ -887,18 +909,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ResolvedText&&(identical(other.id, id) || other.id == id)&&(identical(other.text, text) || other.text == text)&&(identical(other.startUs, startUs) || other.startUs == startUs)&&(identical(other.endUs, endUs) || other.endUs == endUs)&&(identical(other.laneIndex, laneIndex) || other.laneIndex == laneIndex)&&(identical(other.style, style) || other.style == style)&&(identical(other.transform, transform) || other.transform == transform)&&(identical(other.animationIn, animationIn) || other.animationIn == animationIn)&&(identical(other.animationOut, animationOut) || other.animationOut == animationOut));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ResolvedText&&(identical(other.id, id) || other.id == id)&&(identical(other.text, text) || other.text == text)&&(identical(other.startUs, startUs) || other.startUs == startUs)&&(identical(other.endUs, endUs) || other.endUs == endUs)&&(identical(other.laneIndex, laneIndex) || other.laneIndex == laneIndex)&&(identical(other.style, style) || other.style == style)&&(identical(other.transform, transform) || other.transform == transform)&&(identical(other.animationIn, animationIn) || other.animationIn == animationIn)&&(identical(other.animationOut, animationOut) || other.animationOut == animationOut)&&(identical(other.opacity, opacity) || other.opacity == opacity)&&const DeepCollectionEquality().equals(other.keyframes, _keyframes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,text,startUs,endUs,laneIndex,style,transform,animationIn,animationOut);
+    return Object.hash(runtimeType,id,text,startUs,endUs,laneIndex,style,transform,animationIn,animationOut,opacity,const DeepCollectionEquality().hash(_keyframes));
 }
 
 @override
 String toString() {
-    return 'ResolvedText(id: $id, text: $text, startUs: $startUs, endUs: $endUs, laneIndex: $laneIndex, style: $style, transform: $transform, animationIn: $animationIn, animationOut: $animationOut)';
+    return 'ResolvedText(id: $id, text: $text, startUs: $startUs, endUs: $endUs, laneIndex: $laneIndex, style: $style, transform: $transform, animationIn: $animationIn, animationOut: $animationOut, opacity: $opacity, keyframes: $keyframes)';
 }
 
 
@@ -909,7 +931,7 @@ abstract mixin class _$ResolvedTextCopyWith<$Res> implements $ResolvedTextCopyWi
   factory _$ResolvedTextCopyWith(_ResolvedText value, $Res Function(_ResolvedText) _then) = __$ResolvedTextCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String text, int startUs, int endUs, int laneIndex, TextStyleSpec style, ItemTransform transform, TextAnimation animationIn, TextAnimation animationOut
+ String id, String text, int startUs, int endUs, int laneIndex, TextStyleSpec style, ItemTransform transform, TextAnimation animationIn, TextAnimation animationOut, double opacity, List<Keyframe> keyframes
 });
 
 
@@ -926,7 +948,7 @@ class __$ResolvedTextCopyWithImpl<$Res>
 
 /// Create a copy of ResolvedText
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? text = null,Object? startUs = null,Object? endUs = null,Object? laneIndex = null,Object? style = null,Object? transform = null,Object? animationIn = null,Object? animationOut = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? text = null,Object? startUs = null,Object? endUs = null,Object? laneIndex = null,Object? style = null,Object? transform = null,Object? animationIn = null,Object? animationOut = null,Object? opacity = null,Object? keyframes = null,}) {
   return _then(_ResolvedText(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
@@ -937,7 +959,9 @@ as int,style: null == style ? _self.style : style // ignore: cast_nullable_to_no
 as TextStyleSpec,transform: null == transform ? _self.transform : transform // ignore: cast_nullable_to_non_nullable
 as ItemTransform,animationIn: null == animationIn ? _self.animationIn : animationIn // ignore: cast_nullable_to_non_nullable
 as TextAnimation,animationOut: null == animationOut ? _self.animationOut : animationOut // ignore: cast_nullable_to_non_nullable
-as TextAnimation,
+as TextAnimation,opacity: null == opacity ? _self.opacity : opacity // ignore: cast_nullable_to_non_nullable
+as double,keyframes: null == keyframes ? _self._keyframes : keyframes // ignore: cast_nullable_to_non_nullable
+as List<Keyframe>,
   ));
 }
 
@@ -1533,7 +1557,9 @@ mixin _$ResolvedAudio {
  String get id; String get mediaId; AudioKind get kind; int get startUs; int get endUs; int get sourceInUs; int get sourceOutUs; double get speed;/// Repeat [sourceInUs] to [sourceOutUs] until [endUs].
  bool get loop;/// Final gain including the added-audio level.
  double get volume; int get fadeInUs; int get fadeOutUs;/// The item ran past the end of the video and was cut there.
- bool get cutAtVideoEnd;
+ bool get cutAtVideoEnd;/// Keyframes of the first pass. A looping item repeats them every
+/// [keyframeLoopUs] from [startUs]; 0 when it does not loop.
+ List<Keyframe> get keyframes; int get keyframeLoopUs;
 /// Create a copy of ResolvedAudio
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1547,20 +1573,20 @@ $ResolvedAudioCopyWith<ResolvedAudio> get copyWith => _$ResolvedAudioCopyWithImp
 @override
 bool operator ==(Object other) {
   final _this = this as ResolvedAudio;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ResolvedAudio&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.mediaId, _this.mediaId) || other.mediaId == _this.mediaId)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.startUs, _this.startUs) || other.startUs == _this.startUs)&&(identical(other.endUs, _this.endUs) || other.endUs == _this.endUs)&&(identical(other.sourceInUs, _this.sourceInUs) || other.sourceInUs == _this.sourceInUs)&&(identical(other.sourceOutUs, _this.sourceOutUs) || other.sourceOutUs == _this.sourceOutUs)&&(identical(other.speed, _this.speed) || other.speed == _this.speed)&&(identical(other.loop, _this.loop) || other.loop == _this.loop)&&(identical(other.volume, _this.volume) || other.volume == _this.volume)&&(identical(other.fadeInUs, _this.fadeInUs) || other.fadeInUs == _this.fadeInUs)&&(identical(other.fadeOutUs, _this.fadeOutUs) || other.fadeOutUs == _this.fadeOutUs)&&(identical(other.cutAtVideoEnd, _this.cutAtVideoEnd) || other.cutAtVideoEnd == _this.cutAtVideoEnd));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ResolvedAudio&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.mediaId, _this.mediaId) || other.mediaId == _this.mediaId)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.startUs, _this.startUs) || other.startUs == _this.startUs)&&(identical(other.endUs, _this.endUs) || other.endUs == _this.endUs)&&(identical(other.sourceInUs, _this.sourceInUs) || other.sourceInUs == _this.sourceInUs)&&(identical(other.sourceOutUs, _this.sourceOutUs) || other.sourceOutUs == _this.sourceOutUs)&&(identical(other.speed, _this.speed) || other.speed == _this.speed)&&(identical(other.loop, _this.loop) || other.loop == _this.loop)&&(identical(other.volume, _this.volume) || other.volume == _this.volume)&&(identical(other.fadeInUs, _this.fadeInUs) || other.fadeInUs == _this.fadeInUs)&&(identical(other.fadeOutUs, _this.fadeOutUs) || other.fadeOutUs == _this.fadeOutUs)&&(identical(other.cutAtVideoEnd, _this.cutAtVideoEnd) || other.cutAtVideoEnd == _this.cutAtVideoEnd)&&const DeepCollectionEquality().equals(other.keyframes, _this.keyframes)&&(identical(other.keyframeLoopUs, _this.keyframeLoopUs) || other.keyframeLoopUs == _this.keyframeLoopUs));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ResolvedAudio;
-  return Object.hash(runtimeType,_this.id,_this.mediaId,_this.kind,_this.startUs,_this.endUs,_this.sourceInUs,_this.sourceOutUs,_this.speed,_this.loop,_this.volume,_this.fadeInUs,_this.fadeOutUs,_this.cutAtVideoEnd);
+  return Object.hash(runtimeType,_this.id,_this.mediaId,_this.kind,_this.startUs,_this.endUs,_this.sourceInUs,_this.sourceOutUs,_this.speed,_this.loop,_this.volume,_this.fadeInUs,_this.fadeOutUs,_this.cutAtVideoEnd,const DeepCollectionEquality().hash(_this.keyframes),_this.keyframeLoopUs);
 }
 
 @override
 String toString() {
   final _this = this as ResolvedAudio;
-  return 'ResolvedAudio(id: ${_this.id}, mediaId: ${_this.mediaId}, kind: ${_this.kind}, startUs: ${_this.startUs}, endUs: ${_this.endUs}, sourceInUs: ${_this.sourceInUs}, sourceOutUs: ${_this.sourceOutUs}, speed: ${_this.speed}, loop: ${_this.loop}, volume: ${_this.volume}, fadeInUs: ${_this.fadeInUs}, fadeOutUs: ${_this.fadeOutUs}, cutAtVideoEnd: ${_this.cutAtVideoEnd})';
+  return 'ResolvedAudio(id: ${_this.id}, mediaId: ${_this.mediaId}, kind: ${_this.kind}, startUs: ${_this.startUs}, endUs: ${_this.endUs}, sourceInUs: ${_this.sourceInUs}, sourceOutUs: ${_this.sourceOutUs}, speed: ${_this.speed}, loop: ${_this.loop}, volume: ${_this.volume}, fadeInUs: ${_this.fadeInUs}, fadeOutUs: ${_this.fadeOutUs}, cutAtVideoEnd: ${_this.cutAtVideoEnd}, keyframes: ${_this.keyframes}, keyframeLoopUs: ${_this.keyframeLoopUs})';
 }
 
 
@@ -1571,7 +1597,7 @@ abstract mixin class $ResolvedAudioCopyWith<$Res>  {
   factory $ResolvedAudioCopyWith(ResolvedAudio value, $Res Function(ResolvedAudio) _then) = _$ResolvedAudioCopyWithImpl;
 @useResult
 $Res call({
- String id, String mediaId, AudioKind kind, int startUs, int endUs, int sourceInUs, int sourceOutUs, double speed, bool loop, double volume, int fadeInUs, int fadeOutUs, bool cutAtVideoEnd
+ String id, String mediaId, AudioKind kind, int startUs, int endUs, int sourceInUs, int sourceOutUs, double speed, bool loop, double volume, int fadeInUs, int fadeOutUs, bool cutAtVideoEnd, List<Keyframe> keyframes, int keyframeLoopUs
 });
 
 
@@ -1588,7 +1614,7 @@ class _$ResolvedAudioCopyWithImpl<$Res>
 
 /// Create a copy of ResolvedAudio
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? mediaId = null,Object? kind = null,Object? startUs = null,Object? endUs = null,Object? sourceInUs = null,Object? sourceOutUs = null,Object? speed = null,Object? loop = null,Object? volume = null,Object? fadeInUs = null,Object? fadeOutUs = null,Object? cutAtVideoEnd = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? mediaId = null,Object? kind = null,Object? startUs = null,Object? endUs = null,Object? sourceInUs = null,Object? sourceOutUs = null,Object? speed = null,Object? loop = null,Object? volume = null,Object? fadeInUs = null,Object? fadeOutUs = null,Object? cutAtVideoEnd = null,Object? keyframes = null,Object? keyframeLoopUs = null,}) {
   return _then(ResolvedAudio(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,mediaId: null == mediaId ? _self.mediaId : mediaId // ignore: cast_nullable_to_non_nullable
@@ -1603,7 +1629,9 @@ as bool,volume: null == volume ? _self.volume : volume // ignore: cast_nullable_
 as double,fadeInUs: null == fadeInUs ? _self.fadeInUs : fadeInUs // ignore: cast_nullable_to_non_nullable
 as int,fadeOutUs: null == fadeOutUs ? _self.fadeOutUs : fadeOutUs // ignore: cast_nullable_to_non_nullable
 as int,cutAtVideoEnd: null == cutAtVideoEnd ? _self.cutAtVideoEnd : cutAtVideoEnd // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,keyframes: null == keyframes ? _self.keyframes : keyframes // ignore: cast_nullable_to_non_nullable
+as List<Keyframe>,keyframeLoopUs: null == keyframeLoopUs ? _self.keyframeLoopUs : keyframeLoopUs // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 
@@ -1688,10 +1716,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String mediaId,  AudioKind kind,  int startUs,  int endUs,  int sourceInUs,  int sourceOutUs,  double speed,  bool loop,  double volume,  int fadeInUs,  int fadeOutUs,  bool cutAtVideoEnd)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String mediaId,  AudioKind kind,  int startUs,  int endUs,  int sourceInUs,  int sourceOutUs,  double speed,  bool loop,  double volume,  int fadeInUs,  int fadeOutUs,  bool cutAtVideoEnd,  List<Keyframe> keyframes,  int keyframeLoopUs)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ResolvedAudio() when $default != null:
-return $default(_that.id,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_that.sourceInUs,_that.sourceOutUs,_that.speed,_that.loop,_that.volume,_that.fadeInUs,_that.fadeOutUs,_that.cutAtVideoEnd);case _:
+return $default(_that.id,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_that.sourceInUs,_that.sourceOutUs,_that.speed,_that.loop,_that.volume,_that.fadeInUs,_that.fadeOutUs,_that.cutAtVideoEnd,_that.keyframes,_that.keyframeLoopUs);case _:
   return orElse();
 
 }
@@ -1709,10 +1737,10 @@ return $default(_that.id,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String mediaId,  AudioKind kind,  int startUs,  int endUs,  int sourceInUs,  int sourceOutUs,  double speed,  bool loop,  double volume,  int fadeInUs,  int fadeOutUs,  bool cutAtVideoEnd)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String mediaId,  AudioKind kind,  int startUs,  int endUs,  int sourceInUs,  int sourceOutUs,  double speed,  bool loop,  double volume,  int fadeInUs,  int fadeOutUs,  bool cutAtVideoEnd,  List<Keyframe> keyframes,  int keyframeLoopUs)  $default,) {final _that = this;
 switch (_that) {
 case _ResolvedAudio():
-return $default(_that.id,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_that.sourceInUs,_that.sourceOutUs,_that.speed,_that.loop,_that.volume,_that.fadeInUs,_that.fadeOutUs,_that.cutAtVideoEnd);case _:
+return $default(_that.id,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_that.sourceInUs,_that.sourceOutUs,_that.speed,_that.loop,_that.volume,_that.fadeInUs,_that.fadeOutUs,_that.cutAtVideoEnd,_that.keyframes,_that.keyframeLoopUs);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1729,10 +1757,10 @@ return $default(_that.id,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String mediaId,  AudioKind kind,  int startUs,  int endUs,  int sourceInUs,  int sourceOutUs,  double speed,  bool loop,  double volume,  int fadeInUs,  int fadeOutUs,  bool cutAtVideoEnd)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String mediaId,  AudioKind kind,  int startUs,  int endUs,  int sourceInUs,  int sourceOutUs,  double speed,  bool loop,  double volume,  int fadeInUs,  int fadeOutUs,  bool cutAtVideoEnd,  List<Keyframe> keyframes,  int keyframeLoopUs)?  $default,) {final _that = this;
 switch (_that) {
 case _ResolvedAudio() when $default != null:
-return $default(_that.id,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_that.sourceInUs,_that.sourceOutUs,_that.speed,_that.loop,_that.volume,_that.fadeInUs,_that.fadeOutUs,_that.cutAtVideoEnd);case _:
+return $default(_that.id,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_that.sourceInUs,_that.sourceOutUs,_that.speed,_that.loop,_that.volume,_that.fadeInUs,_that.fadeOutUs,_that.cutAtVideoEnd,_that.keyframes,_that.keyframeLoopUs);case _:
   return null;
 
 }
@@ -1744,7 +1772,7 @@ return $default(_that.id,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_tha
 @JsonSerializable()
 
 class _ResolvedAudio implements ResolvedAudio {
-  const _ResolvedAudio({required this.id, required this.mediaId, required this.kind, required this.startUs, required this.endUs, required this.sourceInUs, required this.sourceOutUs, required this.speed, required this.loop, required this.volume, required this.fadeInUs, required this.fadeOutUs, required this.cutAtVideoEnd});
+  const _ResolvedAudio({required this.id, required this.mediaId, required this.kind, required this.startUs, required this.endUs, required this.sourceInUs, required this.sourceOutUs, required this.speed, required this.loop, required this.volume, required this.fadeInUs, required this.fadeOutUs, required this.cutAtVideoEnd,  List<Keyframe> keyframes = const <Keyframe>[], this.keyframeLoopUs = 0}): _keyframes = keyframes;
   factory _ResolvedAudio.fromJson(Map<String, dynamic> json) => _$ResolvedAudioFromJson(json);
 
 @override final  String id;
@@ -1763,6 +1791,18 @@ class _ResolvedAudio implements ResolvedAudio {
 @override final  int fadeOutUs;
 /// The item ran past the end of the video and was cut there.
 @override final  bool cutAtVideoEnd;
+/// Keyframes of the first pass. A looping item repeats them every
+/// [keyframeLoopUs] from [startUs]; 0 when it does not loop.
+ final  List<Keyframe> _keyframes;
+/// Keyframes of the first pass. A looping item repeats them every
+/// [keyframeLoopUs] from [startUs]; 0 when it does not loop.
+@override@JsonKey() List<Keyframe> get keyframes {
+  if (_keyframes is EqualUnmodifiableListView) return _keyframes;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_keyframes);
+}
+
+@override@JsonKey() final  int keyframeLoopUs;
 
 /// Create a copy of ResolvedAudio
 /// with the given fields replaced by the non-null parameter values.
@@ -1777,18 +1817,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ResolvedAudio&&(identical(other.id, id) || other.id == id)&&(identical(other.mediaId, mediaId) || other.mediaId == mediaId)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.startUs, startUs) || other.startUs == startUs)&&(identical(other.endUs, endUs) || other.endUs == endUs)&&(identical(other.sourceInUs, sourceInUs) || other.sourceInUs == sourceInUs)&&(identical(other.sourceOutUs, sourceOutUs) || other.sourceOutUs == sourceOutUs)&&(identical(other.speed, speed) || other.speed == speed)&&(identical(other.loop, loop) || other.loop == loop)&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.fadeInUs, fadeInUs) || other.fadeInUs == fadeInUs)&&(identical(other.fadeOutUs, fadeOutUs) || other.fadeOutUs == fadeOutUs)&&(identical(other.cutAtVideoEnd, cutAtVideoEnd) || other.cutAtVideoEnd == cutAtVideoEnd));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ResolvedAudio&&(identical(other.id, id) || other.id == id)&&(identical(other.mediaId, mediaId) || other.mediaId == mediaId)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.startUs, startUs) || other.startUs == startUs)&&(identical(other.endUs, endUs) || other.endUs == endUs)&&(identical(other.sourceInUs, sourceInUs) || other.sourceInUs == sourceInUs)&&(identical(other.sourceOutUs, sourceOutUs) || other.sourceOutUs == sourceOutUs)&&(identical(other.speed, speed) || other.speed == speed)&&(identical(other.loop, loop) || other.loop == loop)&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.fadeInUs, fadeInUs) || other.fadeInUs == fadeInUs)&&(identical(other.fadeOutUs, fadeOutUs) || other.fadeOutUs == fadeOutUs)&&(identical(other.cutAtVideoEnd, cutAtVideoEnd) || other.cutAtVideoEnd == cutAtVideoEnd)&&const DeepCollectionEquality().equals(other.keyframes, _keyframes)&&(identical(other.keyframeLoopUs, keyframeLoopUs) || other.keyframeLoopUs == keyframeLoopUs));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,mediaId,kind,startUs,endUs,sourceInUs,sourceOutUs,speed,loop,volume,fadeInUs,fadeOutUs,cutAtVideoEnd);
+    return Object.hash(runtimeType,id,mediaId,kind,startUs,endUs,sourceInUs,sourceOutUs,speed,loop,volume,fadeInUs,fadeOutUs,cutAtVideoEnd,const DeepCollectionEquality().hash(_keyframes),keyframeLoopUs);
 }
 
 @override
 String toString() {
-    return 'ResolvedAudio(id: $id, mediaId: $mediaId, kind: $kind, startUs: $startUs, endUs: $endUs, sourceInUs: $sourceInUs, sourceOutUs: $sourceOutUs, speed: $speed, loop: $loop, volume: $volume, fadeInUs: $fadeInUs, fadeOutUs: $fadeOutUs, cutAtVideoEnd: $cutAtVideoEnd)';
+    return 'ResolvedAudio(id: $id, mediaId: $mediaId, kind: $kind, startUs: $startUs, endUs: $endUs, sourceInUs: $sourceInUs, sourceOutUs: $sourceOutUs, speed: $speed, loop: $loop, volume: $volume, fadeInUs: $fadeInUs, fadeOutUs: $fadeOutUs, cutAtVideoEnd: $cutAtVideoEnd, keyframes: $keyframes, keyframeLoopUs: $keyframeLoopUs)';
 }
 
 
@@ -1799,7 +1839,7 @@ abstract mixin class _$ResolvedAudioCopyWith<$Res> implements $ResolvedAudioCopy
   factory _$ResolvedAudioCopyWith(_ResolvedAudio value, $Res Function(_ResolvedAudio) _then) = __$ResolvedAudioCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String mediaId, AudioKind kind, int startUs, int endUs, int sourceInUs, int sourceOutUs, double speed, bool loop, double volume, int fadeInUs, int fadeOutUs, bool cutAtVideoEnd
+ String id, String mediaId, AudioKind kind, int startUs, int endUs, int sourceInUs, int sourceOutUs, double speed, bool loop, double volume, int fadeInUs, int fadeOutUs, bool cutAtVideoEnd, List<Keyframe> keyframes, int keyframeLoopUs
 });
 
 
@@ -1816,7 +1856,7 @@ class __$ResolvedAudioCopyWithImpl<$Res>
 
 /// Create a copy of ResolvedAudio
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? mediaId = null,Object? kind = null,Object? startUs = null,Object? endUs = null,Object? sourceInUs = null,Object? sourceOutUs = null,Object? speed = null,Object? loop = null,Object? volume = null,Object? fadeInUs = null,Object? fadeOutUs = null,Object? cutAtVideoEnd = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? mediaId = null,Object? kind = null,Object? startUs = null,Object? endUs = null,Object? sourceInUs = null,Object? sourceOutUs = null,Object? speed = null,Object? loop = null,Object? volume = null,Object? fadeInUs = null,Object? fadeOutUs = null,Object? cutAtVideoEnd = null,Object? keyframes = null,Object? keyframeLoopUs = null,}) {
   return _then(_ResolvedAudio(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,mediaId: null == mediaId ? _self.mediaId : mediaId // ignore: cast_nullable_to_non_nullable
@@ -1831,7 +1871,9 @@ as bool,volume: null == volume ? _self.volume : volume // ignore: cast_nullable_
 as double,fadeInUs: null == fadeInUs ? _self.fadeInUs : fadeInUs // ignore: cast_nullable_to_non_nullable
 as int,fadeOutUs: null == fadeOutUs ? _self.fadeOutUs : fadeOutUs // ignore: cast_nullable_to_non_nullable
 as int,cutAtVideoEnd: null == cutAtVideoEnd ? _self.cutAtVideoEnd : cutAtVideoEnd // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,keyframes: null == keyframes ? _self._keyframes : keyframes // ignore: cast_nullable_to_non_nullable
+as List<Keyframe>,keyframeLoopUs: null == keyframeLoopUs ? _self.keyframeLoopUs : keyframeLoopUs // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 

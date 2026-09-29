@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:stitch/features/timeline/domain/keyframes.dart';
 import 'package:stitch/features/timeline/domain/layout.dart';
 import 'package:stitch/features/timeline/domain/limits.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
@@ -12,6 +13,11 @@ part 'composition.g.dart';
 // The timeline flattened to absolute times: what the native engines play
 // and export. Preview and export both consume this one document, so they
 // cannot disagree. Nothing here needs anchors or layout math to interpret.
+//
+// Keyframes here have their times on the timeline, and their volume is the
+// final gain (levels applied), so an engine only evaluates them
+// (docs/timeline.md, Evaluator contract). Without keyframes an item's own
+// fields apply.
 
 @freezed
 abstract class ResolvedClip with _$ResolvedClip {
@@ -34,6 +40,8 @@ abstract class ResolvedClip with _$ResolvedClip {
     required int audioFadeInUs,
     required int audioFadeOutUs,
     required ClipFraming framing,
+    @Default(1.0) double opacity,
+    @Default(<Keyframe>[]) List<Keyframe> keyframes,
   }) = _ResolvedClip;
 
   factory fromJson(Map<String, dynamic> json) => _$ResolvedClipFromJson(json);
@@ -66,6 +74,8 @@ abstract class ResolvedText with _$ResolvedText {
     required ItemTransform transform,
     required TextAnimation animationIn,
     required TextAnimation animationOut,
+    @Default(1.0) double opacity,
+    @Default(<Keyframe>[]) List<Keyframe> keyframes,
   }) = _ResolvedText;
 
   factory fromJson(Map<String, dynamic> json) => _$ResolvedTextFromJson(json);
@@ -118,6 +128,11 @@ abstract class ResolvedAudio with _$ResolvedAudio {
 
     /// The item ran past the end of the video and was cut there.
     required bool cutAtVideoEnd,
+
+    /// Keyframes of the first pass. A looping item repeats them every
+    /// [keyframeLoopUs] from [startUs]; 0 when it does not loop.
+    @Default(<Keyframe>[]) List<Keyframe> keyframes,
+    @Default(0) int keyframeLoopUs,
   }) = _ResolvedAudio;
 
   factory fromJson(Map<String, dynamic> json) => _$ResolvedAudioFromJson(json);
@@ -160,15 +175,18 @@ ResolvedComposition _resolve(Timeline timeline) {
         sourceInUs: span.clip.sourceInUs,
         sourceOutUs: span.clip.sourceOutUs,
         speed: span.clip.speed,
-        volume:
-            span.clip.isPhoto ||
-                span.clip.audioDetached ||
-                !mix.originalSoundEnabled
-            ? 0
-            : span.clip.volume * mix.originalLevel,
+        volume: span.clip.volume * _originalGain(span.clip, mix),
         audioFadeInUs: i == 0 ? 0 : layout.transitionUs(spans[i - 1].clip.id),
         audioFadeOutUs: layout.transitionUs(span.clip.id),
         framing: span.clip.framing,
+        opacity: span.clip.opacity,
+        keyframes: _withGain(
+          timeline.keyframesOnTimeline((
+            kind: KeyframeOwnerKind.clip,
+            id: span.clip.id,
+          ), layout),
+          _originalGain(span.clip, mix),
+        ),
       ),
   ];
 
@@ -202,6 +220,11 @@ ResolvedComposition _resolve(Timeline timeline) {
           transform: item.transform,
           animationIn: item.animationIn,
           animationOut: item.animationOut,
+          opacity: item.opacity,
+          keyframes: timeline.keyframesOnTimeline((
+            kind: KeyframeOwnerKind.text,
+            id: item.id,
+          ), layout),
         ),
   ];
 
@@ -230,7 +253,8 @@ ResolvedComposition _resolve(Timeline timeline) {
   ]..sort((a, b) => a.startUs.compareTo(b.startUs));
 
   final audio = <ResolvedAudio>[
-    for (final item in timeline.audioItems) ?_resolveAudio(item, layout, mix),
+    for (final item in timeline.audioItems)
+      ?_resolveAudio(timeline, item, layout, mix),
   ];
 
   return ResolvedComposition(
@@ -245,6 +269,19 @@ ResolvedComposition _resolve(Timeline timeline) {
   );
 }
 
+/// What a clip's own sound is multiplied by: the original sound level, or
+/// 0 when it is off, extracted, or a photo.
+double _originalGain(VideoClip clip, AudioMix mix) =>
+    clip.isPhoto || clip.audioDetached || !mix.originalSoundEnabled
+    ? 0
+    : mix.originalLevel;
+
+/// [keyframes] with their volume multiplied by [gain].
+List<Keyframe> _withGain(List<Keyframe> keyframes, double gain) => [
+  for (final k in keyframes)
+    k.copyWith(values: k.values.copyWith(volume: k.values.volume * gain)),
+];
+
 /// The part of [start, start + length) inside the video, or null when none
 /// of it is.
 (int, int)? _window(int start, int length, int videoDurationUs) {
@@ -253,6 +290,7 @@ ResolvedComposition _resolve(Timeline timeline) {
 }
 
 ResolvedAudio? _resolveAudio(
+  Timeline timeline,
   AudioItem item,
   TimelineLayout layout,
   AudioMix mix,
@@ -286,5 +324,15 @@ ResolvedAudio? _resolveAudio(
     fadeInUs: fadeIn,
     fadeOutUs: clampInt(item.fadeOutUs, 0, length - fadeIn),
     cutAtVideoEnd: end < naturalEnd,
+    keyframes: _withGain(
+      timeline.keyframesOnTimeline((
+        kind: KeyframeOwnerKind.audio,
+        id: item.id,
+      ), layout),
+      mix.addedLevel,
+    ),
+    keyframeLoopUs: item.loop && item.keyframes.isNotEmpty
+        ? item.durationUs
+        : 0,
   );
 }

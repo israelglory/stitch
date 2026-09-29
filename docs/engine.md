@@ -55,6 +55,24 @@ Error codes are stable. Dart maps them to failure types: `missing_file`, `unsupp
 
 - The composition is the timeline resolved to absolute microseconds (see `docs/timeline.md`), so the engine does no layout math.
 - `version` numbers documents. The engines report the version on screen in their playback state, so the editor knows when a change is visible.
+- Clips, audio items, and overlays can carry `keyframes` (see Keyframes below). Clips and overlays also carry `opacity`. Documents without these fields still load: no keyframes, full opacity.
+
+## Keyframes
+
+Dart resolves keyframes before the engines see them (see [timeline.md](timeline.md)), so an engine only evaluates them:
+- Each keyframe is `{"timeUs", "values": {"x", "y", "scale", "rotationDeg", "opacity", "volume"}, "easing"}`, with its time on the timeline.
+- Only the keyframes that shape the item while it shows are sent: those inside it, and the nearest one on each side.
+- `volume` is the final gain: the original-sound or added-audio level is already applied, and it is 0 for muted clip sound.
+- A looping audio item sends the keyframes of its first pass and `keyframeLoopUs`, the length of a pass. Its keyframes repeat every pass from `startUs`.
+- Without keyframes, the item's own fields apply: a clip's `framing` and `opacity`, an overlay's `x`, `y`, `scale`, `rotationDeg`, and `opacity`, an item's `volume`.
+
+`Keyframes.swift` and `Keyframes.kt` evaluate them exactly as `engineValuesAt` in Dart. Both platforms' tests check against `test_media/keyframe_cases.json`, which a Dart test writes from the Dart evaluator (`UPDATE_KEYFRAME_CASES=1 flutter test test/features/timeline/engine_keyframes_test.dart`).
+
+How each value is applied:
+- **Picture:** a clip's `x`, `y`, `scale`, and `rotationDeg` replace its framing's offset, scale, and turn at every frame. Its opacity fades the clip over its own background, which stays opaque. This works the same during transitions, for both clips.
+- **Overlays:** keyframes place the text (center, scale, turn) and fade it. Their opacity multiplies with the entrance and exit animations, and an animation's movement adds to the keyframed place.
+- **Sound, iOS:** AVFoundation's volume ramps are linear. So `applyVolume` cuts the item's loudness at every fade edge, keyframe, and loop pass, and multiplies keyframes by fades. Any piece that still curves (an eased keyframe, or a fade over a changing volume) is drawn as 40 ms linear steps.
+- **Sound, Android:** `Gain` evaluates the volume for every audio frame (`Keyframes.volumeAt`, which allocates nothing) and multiplies it by the fades. An item whose keyframes go above full volume gets the per-item limiter, as a loud item does.
 
 ## Text
 
@@ -231,7 +249,7 @@ During the transition into its clip, the effect also draws the outgoing clip and
 
 ## Tests
 
-- **Both platforms:** every transition is checked against `test_media/transition_cases.json`.
+- **Both platforms:** every transition is checked against `test_media/transition_cases.json`, and the keyframe evaluator against `test_media/keyframe_cases.json`. Exports check a clip moved, held, and faded by keyframes, an overlay moved by them, and a volume eased to silence.
 - **Swift:** `ios/RunnerTests/EngineTests.swift` covers probe, composition, export, transitions, thumbnails, and proxies. The inputs are the corpus in `test_media/`, which `tool/make_test_media.sh` regenerates:
   - variable frame rate
   - HEVC HDR

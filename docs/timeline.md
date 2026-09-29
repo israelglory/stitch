@@ -65,6 +65,7 @@ Operations are extension methods grouped by area: `VideoTrackOps`, `TransitionOp
 - transition windows, with matching audio crossfades
 - final gains, after the original sound and added audio levels are applied
 - captions with absolute word times
+- keyframes with their times on the timeline and their volume as the final gain (see "Keyframes" in [engine.md](engine.md)); `engineValuesAt` is what the engines compute from them, and tests check it matches the editor at every moment
 
 The native engines receive this document as JSON. Preview and export both use it, so they cannot disagree.
 

@@ -1114,6 +1114,171 @@ class EngineTests {
     assertTrue("hidden as the fade starts: ${Integer.toHexString(fading)}", Color.blue(fading) > 200)
   }
 
+  // Keyframes
+
+  /** A keyframe as the document has it: [values] is JSON fields. */
+  private fun keyframe(us: Long, values: String, easing: String = "linear") =
+    """{"id": "k$us", "timeUs": $us, "values": {$values}, "easing": "$easing"}"""
+
+  @Test
+  fun keyframesMatchTheSharedTable() {
+    val table = org.json.JSONObject(
+      InstrumentationRegistry.getInstrumentation().context.assets.open("keyframe_cases.json")
+        .bufferedReader().readText(),
+    ).getJSONArray("cases")
+    assertTrue(table.length() > 0)
+    for (i in 0 until table.length()) {
+      val case = table.getJSONObject(i)
+      val keyframes = Keyframes.decode(
+        case.getJSONArray("keyframes"),
+        loopStartUs = case.getLong("loopStartUs"),
+        loopUs = case.getLong("loopUs"),
+      )
+      val samples = case.getJSONArray("samples")
+      for (j in 0 until samples.length()) {
+        val sample = samples.getJSONObject(j)
+        val at = sample.getLong("timeUs")
+        val got = keyframes.valuesAt(at)!!
+        val want = KeyframeValues.decode(sample.getJSONObject("values"))
+        val name = case.getString("name")
+        for ((field, g, w) in listOf(
+          Triple("x", got.x, want.x), Triple("y", got.y, want.y),
+          Triple("scale", got.scale, want.scale),
+          Triple("rotationDeg", got.rotationDeg, want.rotationDeg),
+          Triple("opacity", got.opacity, want.opacity), Triple("volume", got.volume, want.volume),
+        )) {
+          assertEquals("$name $field at $at", w, g, 1e-9)
+        }
+        assertEquals("$name volume at $at", want.volume, keyframes.volumeAt(at)!!, 1e-9)
+      }
+    }
+  }
+
+  @Test
+  fun keyframesReplaceTheVolumeUnderFades() {
+    val keyframes = Keyframes(
+      listOf(
+        Keyframe(1_000_000, KeyframeValues(volume = 1.0), "linear"),
+        Keyframe(2_000_000, KeyframeValues(volume = 0.0), "linear"),
+      ),
+    )
+    // A clip from 1 s on the timeline with a 0.5 s fade in.
+    val gain = Gain(0.3f, 3_000_000, 500_000, 0, keyframes = keyframes, timelineStartUs = 1_000_000)
+    assertEquals(0.375f, gain.at(250_000), 1e-4f)
+    assertEquals(0.5f, gain.at(500_000), 1e-4f)
+    assertEquals(0f, gain.at(1_500_000), 1e-4f)
+    assertEquals(1f, gain.peak, 0f)
+  }
+
+  private fun pixelAt(frame: Bitmap, x: Float, y: Float) =
+    frame.getPixel((frame.width * x).toInt(), (frame.height * y).toInt())
+
+  private fun assertRed(label: String, pixel: Int) =
+    assertTrue("$label: ${Integer.toHexString(pixel)}", Color.red(pixel) > 200 && Color.blue(pixel) < 60)
+
+  private fun assertBlue(label: String, pixel: Int) =
+    assertTrue("$label: ${Integer.toHexString(pixel)}", Color.blue(pixel) > 200 && Color.red(pixel) < 60)
+
+  @Test
+  fun keyframesMoveHoldAndFadeAClip() = runBlocking<Unit> {
+    val red = solidPhoto("red", Color.RED)
+    // Slides right a quarter by 0.5 s and half by 1 s, holds, then jumps
+    // back at 1.5 s, invisible.
+    val keyframes = listOf(
+      keyframe(0, "\"x\": 0"),
+      keyframe(1_000_000, "\"x\": 0.5", easing = "hold"),
+      keyframe(1_500_000, "\"x\": 0, \"opacity\": 0"),
+    ).joinToString(",")
+    val doc = EngineDocument.decode(
+      """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190335},
+       "media": {"p": {"path": "$red", "kind": "photo"}},
+       "composition": {"durationUs": 2000000, "clips": [
+         {"clipId": "c", "mediaId": "p", "kind": "photo", "startUs": 0, "endUs": 2000000,
+          "sourceInUs": 0, "sourceOutUs": 2000000, "speed": 1, "volume": 0,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")},
+          "opacity": 1, "keyframes": [$keyframes]}]}}
+      """,
+    )
+    val out = export(doc, name = "moving.mp4")
+    assertRed("in place at the start", pixelAt(frameAt(out, 0), 0.1f, 0.5f))
+    val quarter = frameAt(out, 500_000)
+    assertBlue("moved right: background", pixelAt(quarter, 0.1f, 0.5f))
+    assertRed("moved right: clip", pixelAt(quarter, 0.4f, 0.5f))
+    val held = frameAt(out, 1_300_000)
+    assertBlue("half off, held", pixelAt(held, 0.4f, 0.5f))
+    assertRed("half off, held: clip", pixelAt(held, 0.6f, 0.5f))
+    assertBlue("faded out", pixelAt(frameAt(out, 1_800_000), 0.5f, 0.5f))
+  }
+
+  @Test
+  fun keyframesMoveAnOverlay() = runBlocking<Unit> {
+    val blue = solidPhoto("blue", Color.BLUE)
+    val block = solidPhoto("block", Color.RED)
+    val keyframes = listOf(
+      keyframe(0, "\"x\": 0.5, \"y\": 0.25"),
+      keyframe(1_000_000, "\"x\": 0.5, \"y\": 0.75, \"opacity\": 1"),
+    ).joinToString(",")
+    val doc = EngineDocument.decode(
+      """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190080},
+       "media": {"p": {"path": "$blue", "kind": "photo"}},
+       "composition": {"durationUs": 2000000, "clips": [
+         {"clipId": "c", "mediaId": "p", "kind": "photo", "startUs": 0, "endUs": 2000000,
+          "sourceInUs": 0, "sourceOutUs": 2000000, "speed": 1, "volume": 0,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}}]},
+       "overlays": [{"id": "t", "startUs": 0, "endUs": 2000000, "images": ["$block"],
+         "width": 90, "height": 64, "x": 0.5, "y": 0.5, "scale": 1, "rotationDeg": 0,
+         "opacity": 1, "keyframes": [$keyframes],
+         "animationIn": {"type": "none", "durationUs": 0},
+         "animationOut": {"type": "none", "durationUs": 0}}]}
+      """,
+    )
+    val out = export(doc, name = "overlayMoving.mp4")
+    val start = frameAt(out, 0)
+    assertRed("at its first keyframe", pixelAt(start, 0.5f, 0.25f))
+    assertBlue("not yet below", pixelAt(start, 0.5f, 0.75f))
+    val end = frameAt(out, 1_500_000)
+    assertRed("at its last keyframe", pixelAt(end, 0.5f, 0.75f))
+    assertBlue("gone from above", pixelAt(end, 0.5f, 0.25f))
+  }
+
+  @Test
+  fun keyframedVolumeShapesTheSound() = runBlocking<Unit> {
+    // Full, eased down to silence at 1 s, then silent.
+    val keyframes = listOf(
+      keyframe(0, "\"volume\": 1", easing = "easeInOut"),
+      keyframe(1_000_000, "\"volume\": 0"),
+    ).joinToString(",")
+    val doc = EngineDocument.decode(
+      """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190080},
+       "media": {"p": {"path": "${solidPhoto("black", Color.BLACK)}", "kind": "photo"},
+                 "t": {"path": "${loudTone()}", "kind": "audio", "durationUs": 2000000}},
+       "composition": {"durationUs": 2000000, "clips": [
+         {"clipId": "c", "mediaId": "p", "kind": "photo", "startUs": 0, "endUs": 2000000,
+          "sourceInUs": 0, "sourceOutUs": 2000000, "speed": 1, "volume": 0,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}}],
+        "audio": [{"id": "a", "mediaId": "t", "startUs": 0, "endUs": 2000000, "sourceInUs": 0,
+          "sourceOutUs": 2000000, "speed": 1, "loop": false, "volume": 1, "fadeInUs": 0,
+          "fadeOutUs": 0, "keyframes": [$keyframes], "keyframeLoopUs": 0}]}}
+      """,
+    )
+    val out = export(doc, name = "volume.mp4")
+    val tone = 0.9 / kotlin.math.sqrt(2.0)
+    val early = rms(out, 50_000, 150_000)
+    val middle = rms(out, 450_000, 550_000)
+    val late = rms(out, 1_200_000, 1_800_000)
+    val levels = "early $early, middle $middle, late $late"
+    assertTrue(levels, early > tone * 0.85)
+    // easeInOut is halfway down at halfway.
+    assertEquals(levels, 0.5, middle / tone, 0.12)
+    assertTrue(levels, late < 0.01)
+  }
+
   // Thumbnails and proxies
 
   @Test

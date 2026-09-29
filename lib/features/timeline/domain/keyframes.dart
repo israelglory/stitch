@@ -137,7 +137,33 @@ extension KeyframeListMath on List<Keyframe> {
   }
 }
 
+/// Values at timeline time [timeUs] as the engines compute them, from
+/// [keyframes] with their times on the timeline (a resolved item's). A
+/// looping item's repeat every [loopUs] from [loopStartUs]. Null when
+/// there are none: the item's own values apply.
+KeyframeValues? engineValuesAt(
+  List<Keyframe> keyframes,
+  int timeUs, {
+  int loopStartUs = 0,
+  int loopUs = 0,
+}) {
+  final t = loopUs > 0 && timeUs >= loopStartUs
+      ? loopStartUs + (timeUs - loopStartUs) % loopUs
+      : timeUs;
+  return keyframes.valuesAt(t);
+}
+
 const _none = Keyframe(id: '', timeUs: 0, values: KeyframeValues());
+
+/// Timeline time at which [item]'s `sourceInUs` plays (on its first pass).
+/// Before the timeline start for extracted sound whose clip was trimmed at
+/// the front: it plays from later in the file to stay in sync.
+int audioOriginUs(AudioItem item, TimelineLayout layout) {
+  final start = layout.startOf(item.anchor);
+  return item.loop
+      ? start
+      : math.min(start, layout.unboundedStartOf(item.anchor));
+}
 
 /// Kinds of item that hold keyframes.
 enum KeyframeOwnerKind { clip, text, audio }
@@ -206,15 +232,52 @@ extension KeyframeOps on Timeline {
       case KeyframeOwnerKind.audio:
         final item = _audio(owner.id);
         if (item == null) return null;
-        final start = layout.startOf(item.anchor);
-        if (atUs < start || atUs > audioEndUs(item, layout)) return null;
+        final origin = audioOriginUs(item, layout);
+        final end = item.loop
+            ? audioEndUs(item, layout)
+            : origin + item.durationUs;
+        if (atUs < layout.startOf(item.anchor) || atUs > end) return null;
         // Looping items repeat their keyframes with each pass.
         final pass = item.durationUs;
         final into = item.loop && pass > 0
-            ? (atUs - start) % pass
-            : atUs - start;
+            ? (atUs - origin) % pass
+            : atUs - origin;
         return item.sourceInUs + timelineToSourceUs(into, item.speed);
     }
+  }
+
+  /// [owner]'s keyframes with their times on the timeline (the first
+  /// pass of a looping item), for the engines. Only those that shape the
+  /// item while it shows: the ones inside it and the nearest on each side.
+  List<Keyframe> keyframesOnTimeline(KeyframeOwner owner, [TimelineLayout? l]) {
+    final keyframes = keyframesOf(owner);
+    if (keyframes.isEmpty) return const [];
+    final layout = l ?? TimelineLayout.of(this);
+    final (int from, int to) = switch (owner.kind) {
+      KeyframeOwnerKind.clip => switch (layout.span(owner.id)) {
+        null => (0, -1),
+        final span => (span.startUs, span.endUs),
+      },
+      KeyframeOwnerKind.text => switch (_text(owner.id)) {
+        null => (0, -1),
+        final t => (
+          layout.startOf(t.anchor),
+          layout.startOf(t.anchor) + t.durationUs,
+        ),
+      },
+      KeyframeOwnerKind.audio => switch (_audio(owner.id)) {
+        null => (0, -1),
+        final a => (
+          audioOriginUs(a, layout),
+          audioOriginUs(a, layout) + a.durationUs,
+        ),
+      },
+    };
+    if (to < from) return const [];
+    return [
+      for (final k in keyframes)
+        k.copyWith(timeUs: timelineTimeOfKeyframe(owner, k.timeUs, layout)!),
+    ].within(from, to);
   }
 
   /// Timeline time of [owner]'s keyframe time [timeUs] (the first pass of
@@ -237,7 +300,7 @@ extension KeyframeOps on Timeline {
       case KeyframeOwnerKind.audio:
         final item = _audio(owner.id);
         if (item == null) return null;
-        return layout.startOf(item.anchor) +
+        return audioOriginUs(item, layout) +
             sourceToTimelineUs(timeUs - item.sourceInUs, item.speed);
     }
   }

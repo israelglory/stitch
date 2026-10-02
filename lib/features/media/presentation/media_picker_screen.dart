@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,6 +27,10 @@ enum PickerMode {
 
 /// Screens narrower than this get three columns instead of four.
 const double _fourColumnMinWidth = 360;
+
+/// Thumbnails are at most this wide: wider screens (tablets) get more
+/// columns.
+const double _maxThumbnailWidth = 140;
 
 /// Load the next page when this close to the end of the grid.
 const double _loadMoreExtent = 600;
@@ -244,7 +249,9 @@ class _Library extends ConsumerWidget {
   }
 }
 
-int _columnsFor(double width) => width < _fourColumnMinWidth ? 3 : 4;
+int _columnsFor(double width) => width < _fourColumnMinWidth
+    ? 3
+    : math.max(4, (width / _maxThumbnailWidth).floor());
 
 class _Grid extends ConsumerWidget {
   const new({required this.page, required this.onTap, required this.onNearEnd});

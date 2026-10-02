@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +14,11 @@ import 'package:stitch/features/projects/domain/project.dart';
 import 'package:stitch/features/projects/presentation/edited_label.dart';
 import 'package:stitch/l10n/generated/app_localizations.dart';
 
-const int _columns = 2;
+/// Cards are at most this wide: two columns on phones, more on tablets.
+const double _maxCardWidth = 240;
+
+/// Columns of cards in a list [width] wide (at least two).
+int _columnsFor(double width) => math.max(2, (width / _maxCardWidth).floor());
 
 /// Home: the user's projects, newest first.
 class ProjectsScreen extends ConsumerWidget {
@@ -88,8 +93,9 @@ class ProjectsScreen extends ConsumerWidget {
   }
 }
 
-/// Lays items out in rows of [_columns], each row as tall as its
-/// tallest card, so large text grows the cards instead of clipping them.
+/// Lays items out in rows (columns for the width), each row as tall as
+/// its tallest card, so large text grows the cards instead of clipping
+/// them.
 class _Rows extends StatelessWidget {
   const new({required this.itemCount, required this.itemBuilder});
 
@@ -98,7 +104,10 @@ class _Rows extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rows = (itemCount / _columns).ceil();
+    final columns = _columnsFor(
+      MediaQuery.sizeOf(context).width - AppSpacing.screen * 2,
+    );
+    final rows = (itemCount / columns).ceil();
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.screen,
@@ -111,11 +120,11 @@ class _Rows extends StatelessWidget {
       itemBuilder: (context, row) => Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (var c = 0; c < _columns; c++) ...[
+          for (var c = 0; c < columns; c++) ...[
             if (c > 0) const SizedBox(width: AppSpacing.md),
             Expanded(
-              child: row * _columns + c < itemCount
-                  ? itemBuilder(context, row * _columns + c)
+              child: row * columns + c < itemCount
+                  ? itemBuilder(context, row * columns + c)
                   : const SizedBox.shrink(),
             ),
           ],

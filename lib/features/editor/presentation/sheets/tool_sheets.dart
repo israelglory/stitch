@@ -29,7 +29,9 @@ Future<void> showToolSheet(
   builder: (context) => AppBottomSheet(
     title: title,
     onConfirm: () => Navigator.of(context).pop(),
-    child: child,
+    // Scrolls where the tool is taller than the screen allows (a phone
+    // held sideways).
+    child: SingleChildScrollView(child: child),
   ),
 );
 

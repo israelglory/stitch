@@ -217,7 +217,14 @@ final class DeviceHost: NSObject, DeviceHostApi, UIDocumentPickerDelegate,
     Task { @MainActor in
       guard let top = Self.topViewController() else { return }
       let sheet = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-      sheet.popoverPresentationController?.sourceView = top.view
+      // iPad shows it as a popover, which needs a place: the middle of
+      // the screen, without an arrow (not the top left corner).
+      if let popover = sheet.popoverPresentationController {
+        popover.sourceView = top.view
+        popover.sourceRect = CGRect(
+          x: top.view.bounds.midX, y: top.view.bounds.midY, width: 0, height: 0)
+        popover.permittedArrowDirections = []
+      }
       top.present(sheet, animated: true)
     }
   }

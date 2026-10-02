@@ -43,8 +43,13 @@ Future<void> bootstrap({
     };
   }
 
-  // Phone portrait only; tablets and landscape are out of scope.
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  // iOS follows Info.plist: iPhones in portrait, iPads every way (which
+  // iPad multitasking requires). Android phones stay in portrait.
+  await SystemChrome.setPreferredOrientations(
+    defaultTargetPlatform == TargetPlatform.iOS
+        ? const []
+        : const [DeviceOrientation.portraitUp],
+  );
   SystemChrome.setSystemUIOverlayStyle(
     SystemUiOverlayStyle(
       statusBarColor: AppColors.dark.background,

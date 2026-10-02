@@ -1,7 +1,7 @@
 name: stitch
 description: Free, open source video editor for iOS and Android. Everything stays on your device.
-publish_to: 'none'
-version: 0.1.0+1
+publish_to: "none"
+version: 1.0.0+1
 
 environment:
   sdk: ^3.13.0

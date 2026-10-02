@@ -160,29 +160,29 @@ class SettingsScreen extends ConsumerWidget {
                 for (final model in CaptionModel.values) _ModelRow(model),
                 _Section(l10n.settingsAbout),
                 ListRow(title: l10n.settingsVersion, value: version ?? ''),
-                ListRow(
-                  title: l10n.openSourceLicenses,
-                  showChevron: true,
-                  onTap: () => context.go(AppRoutes.licenses),
-                ),
-                ListRow(
-                  title: l10n.sourceCode,
-                  subtitle: 'github.com/israelglory/stitch',
-                  trailing: Icon(
-                    AppIcons.externalLink,
-                    size: AppSizes.inlineIcon,
-                    color: context.colors.textTertiary,
-                  ),
-                  onTap: () => unawaited(
-                    ref.read(systemServicesProvider).openUrl(sourceCodeUrl),
-                  ),
-                ),
-                if (kDebugMode || kProfileMode)
-                  ListRow(
-                    title: l10n.designGalleryTitle,
-                    showChevron: true,
-                    onTap: () => context.go(AppRoutes.designGallery),
-                  ),
+                // ListRow(
+                //   title: l10n.openSourceLicenses,
+                //   showChevron: true,
+                //   onTap: () => context.go(AppRoutes.licenses),
+                // ),
+                // ListRow(
+                //   title: l10n.sourceCode,
+                //   subtitle: 'github.com/israelglory/stitch',
+                //   trailing: Icon(
+                //     AppIcons.externalLink,
+                //     size: AppSizes.inlineIcon,
+                //     color: context.colors.textTertiary,
+                //   ),
+                //   onTap: () => unawaited(
+                //     ref.read(systemServicesProvider).openUrl(sourceCodeUrl),
+                //   ),
+                // ),
+                // if (kDebugMode || kProfileMode)
+                //   ListRow(
+                //     title: l10n.designGalleryTitle,
+                //     showChevron: true,
+                //     onTap: () => context.go(AppRoutes.designGallery),
+                //   ),
                 const SizedBox(height: AppSpacing.xl),
               ],
             ),

@@ -93,7 +93,7 @@ jobs:
           # The one-minute 1080p export is a local speed report, too slow for CI.
           script: >-
             cd android && ./gradlew :app:connectedDebugAndroidTest
-            -Pandroid.testInstrumentationRunnerArguments.notClass=xyz.gloryolaifa.stitch.engine.EngineTests#reportExportSpeedOneMinute1080p
+            -Pandroid.testInstrumentationRunnerArguments.notClass=xyz.olaifaglory.stitch.engine.EngineTests#reportExportSpeedOneMinute1080p
             && cd .. && adb shell mkdir -p /data/local/tmp/stitch_media
             && adb push test_media/large_1440p.mp4 test_media/rotated_portrait.mp4 test_media/speech.mp4 test_media/vfr.mp4 /data/local/tmp/stitch_media
             && adb shell chmod -R a+rX /data/local/tmp/stitch_media
@@ -134,5 +134,5 @@ jobs:
       - name: End to end tests
         run: |
           xcrun simctl boot "$DEVICE" || true
-          xcrun simctl privacy "$DEVICE" grant photos-add xyz.gloryolaifa.stitch
+          xcrun simctl privacy "$DEVICE" grant photos-add xyz.olaifaglory.stitch
           flutter test integration_test -d "$DEVICE" --dart-define=STITCH_TEST_MEDIA=$PWD/test_media

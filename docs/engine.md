@@ -189,7 +189,7 @@ During a transition, `Transitions` mixes the two canvases.
 
 **Probe, thumbnails, and proxies:** in `MediaTools.swift`. Filmstrip file names use a hash that stays stable across launches, so frames are cached on disk.
 
-## Android (`android/app/src/main/kotlin/xyz/gloryolaifa/stitch/engine/`)
+## Android (`android/app/src/main/kotlin/xyz/olaifaglory/stitch/engine/`)
 
 Built on Media3 1.11 (`Transformer`, `CompositionPlayer`, and effects). Much of this API is marked unstable, so the version is pinned in `android/app/build.gradle.kts` and should only be upgraded with the engine tests passing.
 

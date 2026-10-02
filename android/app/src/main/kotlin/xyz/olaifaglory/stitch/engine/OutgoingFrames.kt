@@ -1,4 +1,4 @@
-package xyz.gloryolaifa.stitch.engine
+package xyz.olaifaglory.stitch.engine
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory

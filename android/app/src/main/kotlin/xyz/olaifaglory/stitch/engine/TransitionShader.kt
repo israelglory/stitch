@@ -1,4 +1,4 @@
-package xyz.gloryolaifa.stitch.engine
+package xyz.olaifaglory.stitch.engine
 
 /**
  * The transitions, as GLSL in the style of gl-transitions

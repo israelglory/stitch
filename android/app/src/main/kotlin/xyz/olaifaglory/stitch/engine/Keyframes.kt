@@ -1,4 +1,4 @@
-package xyz.gloryolaifa.stitch.engine
+package xyz.olaifaglory.stitch.engine
 
 import org.json.JSONArray
 import org.json.JSONObject

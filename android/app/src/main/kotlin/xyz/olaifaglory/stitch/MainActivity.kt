@@ -1,12 +1,12 @@
-package xyz.gloryolaifa.stitch
+package xyz.olaifaglory.stitch
 
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
-import xyz.gloryolaifa.stitch.engine.DeviceHost
-import xyz.gloryolaifa.stitch.engine.EngineHost
+import xyz.olaifaglory.stitch.engine.DeviceHost
+import xyz.olaifaglory.stitch.engine.EngineHost
 
 class MainActivity : FlutterActivity() {
   private var engineHost: EngineHost? = null

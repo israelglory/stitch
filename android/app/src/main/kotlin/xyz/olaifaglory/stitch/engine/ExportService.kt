@@ -1,4 +1,4 @@
-package xyz.gloryolaifa.stitch.engine
+package xyz.olaifaglory.stitch.engine
 
 import android.Manifest
 import android.app.Notification
@@ -16,7 +16,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import xyz.gloryolaifa.stitch.R
+import xyz.olaifaglory.stitch.R
 
 /**
  * Keeps the app running while it exports, with a progress notification,

@@ -4,8 +4,8 @@
 // Uses test_media/speech.mp4 from STITCH_TEST_MEDIA (see
 // editor_flow_test.dart). Grant access first, so no system prompt waits:
 //
-//   xcrun simctl privacy <simulator> grant photos-add xyz.gloryolaifa.stitch
-//   adb shell pm grant xyz.gloryolaifa.stitch \
+//   xcrun simctl privacy <simulator> grant photos-add xyz.olaifaglory.stitch
+//   adb shell pm grant xyz.olaifaglory.stitch \
 //     android.permission.POST_NOTIFICATIONS
 import 'dart:io';
 

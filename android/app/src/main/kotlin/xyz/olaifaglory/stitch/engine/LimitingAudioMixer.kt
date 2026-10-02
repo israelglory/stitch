@@ -1,4 +1,4 @@
-package xyz.gloryolaifa.stitch.engine
+package xyz.olaifaglory.stitch.engine
 
 import androidx.annotation.OptIn
 import androidx.media3.common.C

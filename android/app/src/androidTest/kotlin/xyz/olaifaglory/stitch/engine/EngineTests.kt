@@ -1,4 +1,4 @@
-package xyz.gloryolaifa.stitch.engine
+package xyz.olaifaglory.stitch.engine
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -327,7 +327,7 @@ class EngineTests {
   @Test
   fun exportShowsEachClipInItsRange() = runBlocking<Unit> {
     val out = export(backToBack())
-    // Kept for inspection: adb shell run-as xyz.gloryolaifa.stitch ls cache/frames
+    // Kept for inspection: adb shell run-as xyz.olaifaglory.stitch ls cache/frames
     val frames = File(context.cacheDir, "frames").apply { mkdirs() }
     for (t in listOf(500_000L, 1_500_000L, 2_000_000L, 3_500_000L)) {
       File(frames, "back_to_back_$t.png").outputStream().use {

@@ -37,7 +37,7 @@ xcodebuild test -workspace ios/Runner.xcworkspace -scheme Runner \
 
 # End to end on a simulator: import, preview, play, export, captions.
 # The export test saves to Photos; grant access first so no prompt waits.
-xcrun simctl privacy <simulator id> grant photos-add xyz.gloryolaifa.stitch
+xcrun simctl privacy <simulator id> grant photos-add xyz.olaifaglory.stitch
 flutter test integration_test -d <simulator id> --dart-define=STITCH_TEST_MEDIA=$PWD/test_media
 
 # Kotlin engine tests (probe, composition, preview, export) on an emulator or device

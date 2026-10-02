@@ -10,8 +10,8 @@ import 'package:pigeon/pigeon.dart';
     dartOut: 'lib/engine/pigeon/engine_api.g.dart',
     dartPackageName: 'stitch',
     swiftOut: 'ios/Runner/Engine/EngineApi.g.swift',
-    kotlinOut: 'android/app/src/main/kotlin/xyz/gloryolaifa/stitch/engine/EngineApi.g.kt',
-    kotlinOptions: KotlinOptions(package: 'xyz.gloryolaifa.stitch.engine'),
+    kotlinOut: 'android/app/src/main/kotlin/xyz/olaifaglory/stitch/engine/EngineApi.g.kt',
+    kotlinOptions: KotlinOptions(package: 'xyz.olaifaglory.stitch.engine'),
   ),
 )
 /// What a media file contains, from the file itself.

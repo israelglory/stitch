@@ -169,8 +169,9 @@ private class ClipProgram(
 
       GlUtil.focusFramebufferUsingCurrentContext(saved[0], look.width, look.height)
       val yuv = from?.isYuv == true
-      val program = program(mainKey(transition != null, yuv)) {
-        GlProgram(VERTEX, mainFragment(transition != null, yuv, blur))
+      val transitionId = transition?.let { transitionShaderId(it.type) }
+      val program = program(mainKey(transitionId, yuv)) {
+        GlProgram(VERTEX, mainFragment(transitionId, yuv, blur))
       }
       program.use()
       program.setSamplerTexIdUniform("uTo", inputTexId, 0)
@@ -216,7 +217,10 @@ private class ClipProgram(
           "uProgress",
           (presentationTimeUs - transition.startUs).toFloat() / transition.durationUs,
         )
-        program.setIntUniform("uType", TransitionShader.typeIndex(transition.type))
+        program.setFloatsUniformIfPresent(
+          "ratio",
+          floatArrayOf(look.width.toFloat() / look.height),
+        )
       }
       program.bindAttributesAndUniforms()
       GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
@@ -383,8 +387,9 @@ private class ClipProgram(
       )
     }
 
-    fun mainKey(transition: Boolean, yuv: Boolean) =
-      "main" + (if (transition) "T" else "") + (if (yuv) "Y" else "")
+    /** One program per transition: [transitionId] is null outside them. */
+    fun mainKey(transitionId: String?, yuv: Boolean) =
+      "main" + (transitionId?.let { "T$it" } ?: "") + (if (yuv) "Y" else "")
   }
 }
 
@@ -477,7 +482,7 @@ void main() {
 }
 """
 
-private const val VERTEX = """
+internal const val VERTEX = """
 attribute vec4 aFramePosition;
 varying vec2 vUv;
 void main() {
@@ -508,7 +513,20 @@ vec4 sample$name(vec2 t) { return texture2D($name, t); }
 """
 }
 
-private fun mainFragment(transition: Boolean, yuv: Boolean, blur: Boolean): String {
+/**
+ * The transition shader to use for document type [type]: unknown types (from
+ * a newer version) play as a crossfade.
+ */
+internal fun transitionShaderId(type: String): String =
+  if (TransitionShaders.sources.containsKey(type)) type else "crossfade"
+
+/**
+ * The clip's fragment shader: the clip over its background, and during a
+ * transition ([transitionId], from transitions/ by way of
+ * [TransitionShaders]) the clip being left mixed in by that transition.
+ */
+internal fun mainFragment(transitionId: String?, yuv: Boolean, blur: Boolean): String {
+  val transition = transitionId != null
   val defines = buildString {
     if (transition) append("#define TRANSITION\n")
     if (blur) append("#define BLUR\n")
@@ -545,7 +563,9 @@ uniform float uFromOpacity;
 uniform mat3 uFromTex;
 uniform float uFromPresent;
 uniform float uProgress;
-uniform int uType;
+// Width over height, for transitions with round or square shapes.
+uniform float ratio;
+#define progress uProgress
 #ifdef BLUR
 uniform sampler2D uFromBlur;
 #endif
@@ -563,12 +583,12 @@ vec4 getFromColor(vec2 uv) {
   return vec4(mix(bg, c.rgb, c.a * uFromOpacity), 1.0);
 }
 
-${TransitionShader.GLSL}
+${transitionId?.let { TransitionShaders.sources[it] } ?: ""}
 #endif
 
 void main() {
 #ifdef TRANSITION
-  gl_FragColor = transition(vUv, uProgress, uType);
+  gl_FragColor = transition(vUv);
 #else
   gl_FragColor = getToColor(vUv);
 #endif

@@ -376,6 +376,151 @@ class EngineTests {
     """,
   )
 
+  /** Compiles every transition's GL program on an offscreen context. */
+  @Test
+  fun everyTransitionCompiles() {
+    val display = android.opengl.EGL14.eglGetDisplay(android.opengl.EGL14.EGL_DEFAULT_DISPLAY)
+    val version = IntArray(2)
+    android.opengl.EGL14.eglInitialize(display, version, 0, version, 1)
+    val configs = arrayOfNulls<android.opengl.EGLConfig>(1)
+    android.opengl.EGL14.eglChooseConfig(
+      display,
+      intArrayOf(
+        android.opengl.EGL14.EGL_RENDERABLE_TYPE, android.opengl.EGL14.EGL_OPENGL_ES2_BIT,
+        android.opengl.EGL14.EGL_SURFACE_TYPE, android.opengl.EGL14.EGL_PBUFFER_BIT,
+        android.opengl.EGL14.EGL_NONE,
+      ),
+      0, configs, 0, 1, IntArray(1), 0,
+    )
+    val context = android.opengl.EGL14.eglCreateContext(
+      display, configs[0], android.opengl.EGL14.EGL_NO_CONTEXT,
+      intArrayOf(android.opengl.EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, android.opengl.EGL14.EGL_NONE), 0,
+    )
+    val surface = android.opengl.EGL14.eglCreatePbufferSurface(
+      display, configs[0],
+      intArrayOf(android.opengl.EGL14.EGL_WIDTH, 1, android.opengl.EGL14.EGL_HEIGHT, 1, android.opengl.EGL14.EGL_NONE), 0,
+    )
+    android.opengl.EGL14.eglMakeCurrent(display, surface, surface, context)
+    try {
+      assertEquals(50, TransitionShaders.sources.size)
+      val failures = mutableListOf<String>()
+      for (id in TransitionShaders.sources.keys) {
+        for (yuv in listOf(false, true)) {
+          for (blur in listOf(false, true)) {
+            try {
+              androidx.media3.common.util.GlProgram(VERTEX, mainFragment(id, yuv, blur)).delete()
+            } catch (e: Exception) {
+              failures += "$id (yuv $yuv, blur $blur): ${e.message}"
+            }
+          }
+        }
+      }
+      assertTrue(failures.joinToString("\n"), failures.isEmpty())
+    } finally {
+      android.opengl.EGL14.eglMakeCurrent(
+        display, android.opengl.EGL14.EGL_NO_SURFACE, android.opengl.EGL14.EGL_NO_SURFACE,
+        android.opengl.EGL14.EGL_NO_CONTEXT,
+      )
+      android.opengl.EGL14.eglDestroySurface(display, surface)
+      android.opengl.EGL14.eglDestroyContext(display, context)
+    }
+  }
+
+  /** RGB of [frame] averaged in 8 x 8 blocks, as the reference images are. */
+  private fun averaged(frame: Bitmap): IntArray {
+    val w = frame.width
+    val h = frame.height
+    val pixels = IntArray(w * h)
+    frame.getPixels(pixels, 0, w, 0, 0, w, h)
+    val bw = w / 8
+    val bh = h / 8
+    val out = IntArray(bw * bh * 3)
+    for (by in 0 until bh) for (bx in 0 until bw) {
+      var r = 0
+      var g = 0
+      var b = 0
+      for (y in 0 until 8) for (x in 0 until 8) {
+        val c = pixels[(by * 8 + y) * w + bx * 8 + x]
+        r += Color.red(c)
+        g += Color.green(c)
+        b += Color.blue(c)
+      }
+      val i = (by * bw + bx) * 3
+      out[i] = r / 64
+      out[i + 1] = g / 64
+      out[i + 2] = b / 64
+    }
+    return out
+  }
+
+  /**
+   * Every transition, exported, against the reference images the Dart test
+   * renders from the same shader source (test_media/transitions). One
+   * document holds them all: the two test frames alternate, each pair
+   * joined by a transition, pairs joined by cuts.
+   */
+  @Test
+  fun everyTransitionMatchesItsReference() = runBlocking<Unit> {
+    val from = media("transitions/from.png")
+    val to = media("transitions/to.png")
+    val ids = TransitionShaders.sources.keys.toList()
+    val pairUs = 1_200_000L
+    val clips = ids.indices.joinToString(",") { k ->
+      val start = k * pairUs
+      """{"clipId": "a$k", "mediaId": "a", "kind": "photo", "startUs": $start,
+          "endUs": ${start + 800_000}, "sourceInUs": 0, "sourceOutUs": 800000, "speed": 1,
+          "volume": 0, "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}},
+         {"clipId": "b$k", "mediaId": "b", "kind": "photo", "startUs": ${start + 400_000},
+          "endUs": ${start + pairUs}, "sourceInUs": 0, "sourceOutUs": 800000, "speed": 1,
+          "volume": 0, "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}}"""
+    }
+    val transitions = ids.mapIndexed { k, id ->
+      """{"type": "$id", "fromClipId": "a$k", "toClipId": "b$k",
+          "startUs": ${k * pairUs + 400_000}, "durationUs": 400000}"""
+    }.joinToString(",")
+    val doc = EngineDocument.decode(
+      """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190080},
+       "media": {"a": {"path": "$from", "kind": "photo"}, "b": {"path": "$to", "kind": "photo"}},
+       "composition": {"durationUs": ${ids.size * pairUs}, "clips": [$clips],
+        "transitions": [$transitions]}}
+      """,
+    )
+    val out = export(doc, name = "all_transitions.mp4")
+    val assets = InstrumentationRegistry.getInstrumentation().context.assets
+    val tolerances = org.json.JSONObject(
+      assets.open("transitions/tolerances.json").bufferedReader().readText(),
+    )
+    val failures = mutableListOf<String>()
+    val report = StringBuilder()
+    ids.forEachIndexed { k, id ->
+      for (percent in listOf(25, 50, 75)) {
+        val reference = assets.open("transitions/${id}_$percent.png").use {
+          BitmapFactory.decodeStream(it)
+        }
+        val expected = IntArray(reference.width * reference.height * 3).also { rgb ->
+          for (y in 0 until reference.height) for (x in 0 until reference.width) {
+            val c = reference.getPixel(x, y)
+            val i = (y * reference.width + x) * 3
+            rgb[i] = Color.red(c)
+            rgb[i + 1] = Color.green(c)
+            rgb[i + 2] = Color.blue(c)
+          }
+        }
+        val atUs = k * pairUs + 400_000 + 400_000L * percent / 100
+        val got = averaged(frameAt(out, atUs))
+        val diff = got.indices.sumOf { kotlin.math.abs(got[it] - expected[it]) } /
+          got.size.toDouble() / 255
+        val tolerance = tolerances.getDouble(id)
+        report.append("$id $percent%%: %.3f\n".format(diff))
+        if (diff > tolerance) failures += "$id at $percent%%: %.3f (tolerance $tolerance)".format(diff)
+      }
+    }
+    android.util.Log.i("TransitionParity", report.toString())
+    assertTrue(failures.joinToString("\n"), failures.isEmpty())
+  }
+
   @Test
   fun transitionsMatchTheSharedTable() = runBlocking<Unit> {
     val red = solidPhoto("red", Color.RED)

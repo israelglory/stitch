@@ -1154,6 +1154,16 @@ class AudioSpecimen extends StatelessWidget {
   );
 }
 
+/// A few of the transitions (the editor has the full catalog).
+const _specimenTransitions = <String?>[
+  null,
+  'crossfade',
+  'slideLeft',
+  'circleOpen',
+  'pixelate',
+  'cube',
+];
+
 class TransitionPreviewSpecimen extends StatelessWidget {
   const new({this.animate = true, super.key});
 
@@ -1167,18 +1177,18 @@ class TransitionPreviewSpecimen extends StatelessWidget {
         spacing: AppSpacing.sm,
         runSpacing: AppSpacing.md,
         children: [
-          for (final look in TransitionLook.values)
+          for (final transition in _specimenTransitions)
             ChoiceTile(
-              label: look.name,
-              selected: look == TransitionLook.crossfade,
+              label: transition ?? 'none',
+              selected: transition == 'crossfade',
               onTap: _noop,
               visual: SizedBox.square(
                 dimension: 64,
                 child: TransitionPreview(
-                  look: look,
+                  transition: transition,
                   animate: animate,
-                  from: sampleFrame(0),
-                  to: sampleFrame(2),
+                  from: TransitionFrame(color: sampleTone(0)),
+                  to: TransitionFrame(color: sampleTone(2)),
                 ),
               ),
             ),

@@ -144,7 +144,7 @@ const _$MediaKindEnumMap = {
 
 _Transition _$TransitionFromJson(Map<String, dynamic> json) => _Transition(
   afterClipId: json['afterClipId'] as String,
-  type: $enumDecode(_$TransitionTypeEnumMap, json['type']),
+  type: json['type'] as String,
   durationUs: (json['durationUs'] as num).toInt(),
   params:
       (json['params'] as Map<String, dynamic>?)?.map(
@@ -156,20 +156,10 @@ _Transition _$TransitionFromJson(Map<String, dynamic> json) => _Transition(
 Map<String, dynamic> _$TransitionToJson(_Transition instance) =>
     <String, dynamic>{
       'afterClipId': instance.afterClipId,
-      'type': _$TransitionTypeEnumMap[instance.type]!,
+      'type': instance.type,
       'durationUs': instance.durationUs,
       'params': instance.params,
     };
-
-const _$TransitionTypeEnumMap = {
-  TransitionType.crossfade: 'crossfade',
-  TransitionType.fadeToBlack: 'fadeToBlack',
-  TransitionType.slideLeft: 'slideLeft',
-  TransitionType.slideRight: 'slideRight',
-  TransitionType.wipeLeft: 'wipeLeft',
-  TransitionType.wipeRight: 'wipeRight',
-  TransitionType.zoomIn: 'zoomIn',
-};
 
 _ItemTransform _$ItemTransformFromJson(Map<String, dynamic> json) =>
     _ItemTransform(

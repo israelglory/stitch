@@ -13,8 +13,10 @@ const _sampleTones = [
   Color(0xFF5E4E57),
 ];
 
-Widget sampleFrame(int i) =>
-    ColoredBox(color: _sampleTones[i % _sampleTones.length]);
+Widget sampleFrame(int i) => ColoredBox(color: sampleTone(i));
+
+/// The color of [sampleFrame] [i].
+Color sampleTone(int i) => _sampleTones[i % _sampleTones.length];
 
 /// Deterministic waveform so goldens are stable.
 List<double> sampleWaveform(int count, {int seed = 1}) => [

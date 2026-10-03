@@ -24,11 +24,7 @@ extension TransitionOps on Timeline {
   /// Sets the transition after [clipId], or removes it when [type] is null.
   /// The duration defaults to the current one (or the default) and is
   /// clamped to the allowed range for this cut.
-  Timeline setTransition(
-    String clipId,
-    TransitionType? type, {
-    int? durationUs,
-  }) {
+  Timeline setTransition(String clipId, String? type, {int? durationUs}) {
     final existing = transitionAfter(clipId);
     if (type == null) {
       if (existing == null) return this;
@@ -66,7 +62,7 @@ extension TransitionOps on Timeline {
 
   /// Applies [type] with [durationUs] to every cut. Each cut clamps the
   /// duration to its own cap. A null [type] removes all transitions.
-  Timeline applyTransitionToAll(TransitionType? type, {int? durationUs}) {
+  Timeline applyTransitionToAll(String? type, {int? durationUs}) {
     var result = this;
     for (var i = 0; i + 1 < videoClips.length; i++) {
       result = result.setTransition(

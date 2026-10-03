@@ -54,8 +54,8 @@ void main() {
 
     test('removes the transition after the clip, keeps the one before', () {
       final t = track([2, 2, 2])
-          .setTransition('a', TransitionType.crossfade)
-          .setTransition('b', TransitionType.wipeLeft)
+          .setTransition('a', 'crossfade')
+          .setTransition('b', 'wipeLeft')
           .deleteClip('b');
       expect(t.transitions.map((x) => x.afterClipId), ['a']);
     });
@@ -136,7 +136,7 @@ void main() {
 
     test('the transition after the clip moves to the second part', () {
       final t = track([4, 2])
-          .setTransition('a', TransitionType.crossfade)
+          .setTransition('a', 'crossfade')
           .splitClip('a', s(1), newId: 'a2');
       expect(t.transitions.single.afterClipId, 'a2');
     });
@@ -230,12 +230,12 @@ void main() {
 
     test('a transition travels with its clip and is dropped at the end', () {
       final moved = track([2, 2, 2])
-          .setTransition('a', TransitionType.crossfade)
+          .setTransition('a', 'crossfade')
           .moveClip('a', 1);
       expect(moved.transitions.single.afterClipId, 'a');
 
       final last = track([2, 2, 2])
-          .setTransition('a', TransitionType.crossfade)
+          .setTransition('a', 'crossfade')
           .moveClip('a', 2);
       expect(last.transitions, isEmpty);
     });

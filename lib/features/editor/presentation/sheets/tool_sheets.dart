@@ -8,11 +8,13 @@ import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/editor_state.dart';
 import 'package:stitch/features/editor/presentation/editor_media.dart';
 import 'package:stitch/features/editor/presentation/sheets/keyframe_sheets.dart';
+import 'package:stitch/features/editor/presentation/transition_names.g.dart';
 import 'package:stitch/features/projects/domain/project.dart';
 import 'package:stitch/features/projects/presentation/format_screen.dart';
 import 'package:stitch/features/timeline/domain/audio_ops.dart';
 import 'package:stitch/features/timeline/domain/limits.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
+import 'package:stitch/features/timeline/domain/transition_catalog.g.dart';
 import 'package:stitch/features/timeline/domain/transition_ops.dart';
 import 'package:stitch/features/timeline/domain/video_ops.dart';
 import 'package:stitch/l10n/generated/app_localizations.dart';
@@ -55,6 +57,7 @@ class _EditSlider extends ConsumerWidget {
     required this.value,
     required this.format,
     required this.apply,
+    this.enabled = true,
   });
 
   final String projectId;
@@ -64,6 +67,9 @@ class _EditSlider extends ConsumerWidget {
   final double Function(EditorState state) value;
   final String Function(double) format;
   final Timeline Function(Timeline base, double value) apply;
+
+  /// Shown but not adjustable when false.
+  final bool enabled;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -76,9 +82,11 @@ class _EditSlider extends ConsumerWidget {
       min: min,
       max: math.max(max, min + 0.001),
       formatValue: format,
-      onChangeStart: (_) => controller.beginGesture(),
-      onChanged: (v) => controller.updateGesture((b) => apply(b, v)),
-      onChangeEnd: (_) => controller.endGesture(),
+      onChangeStart: enabled ? (_) => controller.beginGesture() : null,
+      onChanged: enabled
+          ? (v) => controller.updateGesture((b) => apply(b, v))
+          : null,
+      onChangeEnd: enabled ? (_) => controller.endGesture() : null,
     );
   }
 }
@@ -183,58 +191,46 @@ class FadeSheet extends ConsumerWidget {
   }
 }
 
-/// Transition types in the order shown.
-const _transitionTypes = <TransitionType?>[
-  null,
-  TransitionType.crossfade,
-  TransitionType.fadeToBlack,
-  TransitionType.slideLeft,
-  TransitionType.slideRight,
-  TransitionType.wipeLeft,
-  TransitionType.wipeRight,
-  TransitionType.zoomIn,
-];
-
-String _transitionName(AppLocalizations l10n, TransitionType? type) =>
-    switch (type) {
-      null => l10n.transitionNone,
-      TransitionType.crossfade => l10n.transitionCrossfade,
-      TransitionType.fadeToBlack => l10n.transitionFadeToBlack,
-      TransitionType.slideLeft => l10n.transitionSlideLeft,
-      TransitionType.slideRight => l10n.transitionSlideRight,
-      TransitionType.wipeLeft => l10n.transitionWipeLeft,
-      TransitionType.wipeRight => l10n.transitionWipeRight,
-      TransitionType.zoomIn => l10n.transitionZoomIn,
-    };
-
-TransitionLook _look(TransitionType? type) => switch (type) {
-  null => TransitionLook.none,
-  TransitionType.crossfade => TransitionLook.crossfade,
-  TransitionType.fadeToBlack => TransitionLook.fadeToBlack,
-  TransitionType.slideLeft => TransitionLook.slideLeft,
-  TransitionType.slideRight => TransitionLook.slideRight,
-  TransitionType.wipeLeft => TransitionLook.wipeLeft,
-  TransitionType.wipeRight => TransitionLook.wipeRight,
-  TransitionType.zoomIn => TransitionLook.zoomIn,
-};
-
 /// Size of each transition preview tile.
 const double _transitionTile = 64;
 
+/// Width of a tile with its label: long names take two lines.
+const double _transitionTileWidth = _transitionTile + AppSpacing.md;
+
+/// Tiles in the fullest category (Basic also has None).
+final int _largestCategory = TransitionCategory.values
+    .map(
+      (c) =>
+          transitionCatalog.where((t) => t.category == c).length +
+          (c == TransitionCategory.basic ? 1 : 0),
+    )
+    .reduce(math.max);
+
 /// Transition for the cut after [clipId]: type grid with previews using
 /// the two clips, duration, and apply to all.
-class TransitionSheet extends ConsumerWidget {
+class TransitionSheet extends ConsumerStatefulWidget {
   const new({required this.projectId, required this.clipId, super.key});
 
   final String projectId;
   final String clipId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TransitionSheet> createState() => _TransitionSheetState();
+}
+
+class _TransitionSheetState extends ConsumerState<TransitionSheet> {
+  /// The category shown; starts at the current transition's.
+  TransitionCategory? _category;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final state = ref.watch(editorControllerProvider(projectId)).value;
+    final state = ref.watch(editorControllerProvider(widget.projectId)).value;
     if (state == null) return const SizedBox.shrink();
-    final controller = ref.read(editorControllerProvider(projectId).notifier);
+    final controller = ref.read(
+      editorControllerProvider(widget.projectId).notifier,
+    );
+    final clipId = widget.clipId;
     final timeline = state.timeline;
     final index = timeline.indexOfClip(clipId);
     if (index < 0 || index + 1 >= timeline.videoClips.length) {
@@ -258,51 +254,122 @@ class TransitionSheet extends ConsumerWidget {
       );
     }
 
+    final category =
+        _category ??
+        transitionCatalog
+            .where((t) => t.id == current?.type)
+            .firstOrNull
+            ?.category ??
+        TransitionCategory.basic;
+    final fromFrame = TransitionFrame(
+      color: context.colors.surfaceRaised,
+      image: MediaPoster.image(ref, state.project, from.mediaId),
+    );
+    // Until there are posters, two tones so the movement still shows.
+    final toFrame = TransitionFrame(
+      color: context.colors.textTertiary,
+      image: MediaPoster.image(ref, state.project, to.mediaId),
+    );
+    Widget tile(String? type) => SizedBox(
+      width: _transitionTileWidth,
+      child: ChoiceTile(
+        label: type == null ? l10n.transitionNone : transitionName(l10n, type),
+        selected: current?.type == type,
+        labelLines: 2,
+        onTap: () => controller.apply((t) => t.setTransition(clipId, type)),
+        visual: SizedBox.square(
+          dimension: _transitionTile,
+          child: TransitionPreview(
+            transition: type,
+            from: fromFrame,
+            to: toFrame,
+          ),
+        ),
+      ),
+    );
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Wrap(
-          spacing: AppSpacing.sm,
-          runSpacing: AppSpacing.md,
-          alignment: WrapAlignment.center,
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final c in TransitionCategory.values)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
+                  child: OptionChip(
+                    label: transitionCategoryName(l10n, c),
+                    selected: c == category,
+                    onTap: () => setState(() => _category = c),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        // As tall as the largest category, so switching categories never
+        // moves the chips (a tap meant for the next one would land outside
+        // the sheet and close it).
+        Stack(
           children: [
-            for (final type in _transitionTypes)
-              ChoiceTile(
-                label: _transitionName(l10n, type),
-                selected: current?.type == type,
-                onTap: () =>
-                    controller.apply((t) => t.setTransition(clipId, type)),
-                visual: SizedBox.square(
-                  dimension: _transitionTile,
-                  child: TransitionPreview(
-                    look: _look(type),
-                    from: MediaPoster(
-                      project: state.project,
-                      mediaId: from.mediaId,
-                    ),
-                    to: MediaPoster(
-                      project: state.project,
-                      mediaId: to.mediaId,
-                    ),
+            ExcludeSemantics(
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: 0,
+                  child: Wrap(
+                    spacing: AppSpacing.xs,
+                    runSpacing: AppSpacing.md,
+                    children: [
+                      for (var i = 0; i < _largestCategory; i++)
+                        const SizedBox(
+                          width: _transitionTileWidth,
+                          child: ChoiceTile(
+                            label: '\n',
+                            labelLines: 2,
+                            selected: false,
+                            onTap: null,
+                            visual: SizedBox.square(dimension: _transitionTile),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
+            ),
+            Positioned.fill(
+              child: Wrap(
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.md,
+                alignment: WrapAlignment.center,
+                children: [
+                  if (category == TransitionCategory.basic) tile(null),
+                  for (final t in transitionCatalog)
+                    if (t.category == category) tile(t.id),
+                ],
+              ),
+            ),
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
-        if (current != null && maxUs > minUs)
+        // Always there (disabled with None chosen), so choosing the first
+        // transition does not grow the sheet under the finger.
+        if (maxUs > minUs)
           _EditSlider(
-            projectId: projectId,
+            projectId: widget.projectId,
             label: l10n.durationLabel,
             min: minUs.toDouble(),
             max: maxUs.toDouble(),
             format: (v) => _secondsText(l10n, v),
+            enabled: current != null,
             value: (s) =>
-                (s.timeline.transitionAfter(clipId)?.durationUs ?? minUs)
+                (s.timeline.transitionAfter(clipId)?.durationUs ??
+                        TimelineLimits.defaultTransitionUs)
                     .toDouble(),
-            apply: (b, v) =>
-                b.setTransition(clipId, current.type, durationUs: v.round()),
+            apply: (b, v) => current == null
+                ? b
+                : b.setTransition(clipId, current.type, durationUs: v.round()),
           ),
         Align(
           alignment: AlignmentDirectional.centerEnd,

@@ -1,4 +1,5 @@
 import AVFoundation
+import Metal
 import UIKit
 import XCTest
 
@@ -308,6 +309,111 @@ final class EngineTests: XCTestCase {
           "startUs": 1200000, "durationUs": 1200000}]}}
       """
     return try! EngineDocument.decode(json)
+  }
+
+  func testEveryTransitionCompiles() throws {
+    let device = try XCTUnwrap(MTLCreateSystemDefaultDevice())
+    XCTAssertEqual(TransitionSources.metal.count, 50)
+    var failures: [String] = []
+    for (id, body) in TransitionSources.metal.sorted(by: { $0.key < $1.key }) {
+      do {
+        _ = try Transitions.makePipeline(device: device, body: body)
+      } catch {
+        failures.append("\(id): \(error)")
+      }
+    }
+    XCTAssert(failures.isEmpty, failures.joined(separator: "\n"))
+  }
+
+  /// RGB of [image] averaged in 8 x 8 blocks, as the reference images are.
+  private func averaged(_ image: CGImage) -> [Int] {
+    let pixels = rgba(image)
+    let w = image.width / 8
+    let h = image.height / 8
+    var out = [Int](repeating: 0, count: w * h * 3)
+    for by in 0..<h {
+      for bx in 0..<w {
+        for c in 0..<3 {
+          var sum = 0
+          for y in 0..<8 {
+            for x in 0..<8 {
+              sum += Int(pixels[((by * 8 + y) * image.width + bx * 8 + x) * 4 + c])
+            }
+          }
+          out[(by * w + bx) * 3 + c] = sum / 64
+        }
+      }
+    }
+    return out
+  }
+
+  /// Every transition, exported, against the reference images the Dart test
+  /// renders from the same shader source (test_media/transitions). One
+  /// document holds them all: the two test frames alternate, each pair joined
+  /// by a transition, pairs joined by cuts.
+  func testEveryTransitionMatchesItsReference() async throws {
+    let from = media("transitions/from.png")
+    let to = media("transitions/to.png")
+    let ids = TransitionSources.metal.keys.sorted()
+    let pairUs: Int64 = 1_200_000
+    let framing = #"{"mode": "fit", "scale": 1, "offsetX": 0, "offsetY": 0, "rotationDeg": 0}"#
+    let clips = ids.indices.map { k -> String in
+      let start = Int64(k) * pairUs
+      return """
+        {"clipId": "a\(k)", "mediaId": "a", "kind": "photo", "startUs": \(start),
+         "endUs": \(start + 800_000), "sourceInUs": 0, "sourceOutUs": 800000, "speed": 1,
+         "volume": 0, "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": \(framing)},
+        {"clipId": "b\(k)", "mediaId": "b", "kind": "photo", "startUs": \(start + 400_000),
+         "endUs": \(start + pairUs), "sourceInUs": 0, "sourceOutUs": 800000, "speed": 1,
+         "volume": 0, "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": \(framing)}
+        """
+    }.joined(separator: ",")
+    let transitions = ids.enumerated().map { k, id in
+      """
+      {"type": "\(id)", "fromClipId": "a\(k)", "toClipId": "b\(k)",
+       "startUs": \(Int64(k) * pairUs + 400_000), "durationUs": 400000}
+      """
+    }.joined(separator: ",")
+    let json = """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190080},
+       "media": {"a": {"path": "\(from)", "kind": "photo"}, "b": {"path": "\(to)", "kind": "photo"}},
+       "composition": {"durationUs": \(Int64(ids.count) * pairUs), "clips": [\(clips)],
+        "transitions": [\(transitions)]}}
+      """
+    let asset = try await export(try EngineDocument.decode(json), name: "all_transitions")
+    let generator = AVAssetImageGenerator(asset: asset)
+    generator.requestedTimeToleranceBefore = .zero
+    generator.requestedTimeToleranceAfter = .zero
+    let tolerances = try JSONSerialization.jsonObject(
+      with: Data(contentsOf: URL(fileURLWithPath: media("transitions/tolerances.json"))))
+      as! [String: Double]
+    var failures: [String] = []
+    var report: [String] = []
+    for (k, id) in ids.enumerated() {
+      for percent in [25, 50, 75] {
+        let reference = try XCTUnwrap(
+          UIImage(contentsOfFile: media("transitions/\(id)_\(percent).png"))?.cgImage)
+        let referencePixels = rgba(reference)
+        var expected: [Int] = []
+        for i in 0..<(reference.width * reference.height) {
+          for c in 0..<3 { expected.append(Int(referencePixels[i * 4 + c])) }
+        }
+        let atUs = Int64(k) * pairUs + 400_000 + Int64(400_000 * percent / 100)
+        let (frame, _) = try await generator.image(at: CMTime(value: atUs, timescale: 1_000_000))
+        let got = averaged(frame)
+        var total = 0
+        for (a, b) in zip(got, expected) { total += abs(a - b) }
+        let diff = Double(total) / Double(got.count) / 255.0
+        report.append(String(format: "%@ %d%%: %.3f", id, percent, diff))
+        let tolerance = tolerances[id] ?? 0.04
+        if diff > tolerance {
+          failures.append(String(format: "%@ at %d%%: %.3f (tolerance %.2f)", id, percent, diff, tolerance))
+        }
+      }
+    }
+    print("TransitionParity\n" + report.joined(separator: "\n"))
+    XCTAssert(failures.isEmpty, failures.joined(separator: "\n"))
   }
 
   func testTransitionsMatchTheSharedTable() async throws {

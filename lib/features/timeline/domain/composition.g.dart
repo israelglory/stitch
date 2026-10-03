@@ -54,7 +54,7 @@ const _$MediaKindEnumMap = {
 
 _ResolvedTransition _$ResolvedTransitionFromJson(Map<String, dynamic> json) =>
     _ResolvedTransition(
-      type: $enumDecode(_$TransitionTypeEnumMap, json['type']),
+      type: json['type'] as String,
       fromClipId: json['fromClipId'] as String,
       toClipId: json['toClipId'] as String,
       startUs: (json['startUs'] as num).toInt(),
@@ -68,23 +68,13 @@ _ResolvedTransition _$ResolvedTransitionFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ResolvedTransitionToJson(_ResolvedTransition instance) =>
     <String, dynamic>{
-      'type': _$TransitionTypeEnumMap[instance.type]!,
+      'type': instance.type,
       'fromClipId': instance.fromClipId,
       'toClipId': instance.toClipId,
       'startUs': instance.startUs,
       'durationUs': instance.durationUs,
       'params': instance.params,
     };
-
-const _$TransitionTypeEnumMap = {
-  TransitionType.crossfade: 'crossfade',
-  TransitionType.fadeToBlack: 'fadeToBlack',
-  TransitionType.slideLeft: 'slideLeft',
-  TransitionType.slideRight: 'slideRight',
-  TransitionType.wipeLeft: 'wipeLeft',
-  TransitionType.wipeRight: 'wipeRight',
-  TransitionType.zoomIn: 'zoomIn',
-};
 
 _ResolvedText _$ResolvedTextFromJson(Map<String, dynamic> json) =>
     _ResolvedText(

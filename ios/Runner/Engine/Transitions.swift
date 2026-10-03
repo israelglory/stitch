@@ -1,53 +1,50 @@
 import CoreImage
 import Metal
 
-/// Mixes two canvas images with the transition shader.
+/// Mixes two canvas images with a transition shader.
 ///
-/// The shader is Metal compiled at runtime by the system: a Core Image
-/// kernel would need the Metal toolchain, an optional Xcode download, for
-/// every build. Both canvases are rendered into textures, a compute kernel
-/// mixes them, and the result goes back to Core Image.
+/// Each transition is written once, in transitions/*.glsl, and generated
+/// as Metal into TransitionSources.swift (tool/gen_transitions.dart). The
+/// shaders are compiled at runtime by the system, each on first use: a Core
+/// Image kernel would need the Metal toolchain, an optional Xcode download,
+/// for every build. Both canvases are rendered into textures, a compute
+/// kernel mixes them, and the result goes back to Core Image.
 ///
 /// Used from the compositor's serial queue only.
 final class Transitions {
-  /// Type names from the document, in the shader's type-number order.
-  private static let types = [
-    "crossfade", "fadeToBlack", "slideLeft", "slideRight", "wipeLeft", "wipeRight", "zoomIn",
-  ]
+  /// What unknown types (from a newer version) play as.
+  static let fallback = "crossfade"
 
-  /// 1-based number for [type]; unknown types crossfade.
-  static func number(for type: String) -> Int32 {
-    Int32((types.firstIndex(of: type) ?? 0) + 1)
-  }
-
+  private let device: MTLDevice
   private let context: CIContext
   private let queue: MTLCommandQueue
-  private let pipeline: MTLComputePipelineState
-  private let colorSpace: CGColorSpace
+
+  /// The shader sees sRGB values, as on Android and in the Flutter
+  /// previews (all three are tested against the same reference images):
+  /// transitions that brighten or threshold (burn, brightness fade) would
+  /// look different on values encoded for Rec. 709. Core Image converts on
+  /// the way in and out.
+  private let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
+  private var pipelines: [String: MTLComputePipelineState] = [:]
   private var textures: (from: MTLTexture, to: MTLTexture, out: MTLTexture)?
 
-  init?(device: MTLDevice?, context: CIContext, colorSpace: CGColorSpace) {
+  init?(device: MTLDevice?, context: CIContext) {
     guard let device, let queue = device.makeCommandQueue() else { return nil }
-    do {
-      let library = try device.makeLibrary(source: Self.source, options: nil)
-      guard let function = library.makeFunction(name: "stitchTransition") else { return nil }
-      pipeline = try device.makeComputePipelineState(function: function)
-    } catch {
-      NSLog("Stitch: transition shader failed to build: \(error)")
-      return nil
-    }
+    self.device = device
     self.context = context
     self.queue = queue
-    self.colorSpace = colorSpace
   }
 
-  /// [from] and [to] each cover [canvas], which starts at the origin.
+  /// [from] and [to] each cover [canvas], which starts at the origin. Nil
+  /// when the transition cannot run (the caller dissolves instead).
   func apply(from: CIImage, to: CIImage, type: String, progress: CGFloat, canvas: CGRect)
     -> CIImage?
   {
     let width = Int(canvas.width.rounded())
     let height = Int(canvas.height.rounded())
-    guard width > 0, height > 0, let targets = textures(width: width, height: height),
+    guard width > 0, height > 0,
+      let pipeline = pipeline(for: type) ?? pipeline(for: Self.fallback),
+      let targets = textures(width: width, height: height),
       let commands = queue.makeCommandBuffer()
     else { return nil }
 
@@ -60,7 +57,7 @@ final class Transitions {
     encoder.setTexture(targets.from, index: 0)
     encoder.setTexture(targets.to, index: 1)
     encoder.setTexture(targets.out, index: 2)
-    var params = Params(progress: Float(progress), type: Self.number(for: type))
+    var params = Params(progress: Float(progress), ratio: Float(width) / Float(height))
     encoder.setBytes(&params, length: MemoryLayout<Params>.stride, index: 0)
     let group = MTLSize(width: 16, height: 16, depth: 1)
     encoder.dispatchThreadgroups(
@@ -72,13 +69,36 @@ final class Transitions {
     return CIImage(mtlTexture: targets.out, options: [.colorSpace: colorSpace])
   }
 
+  /// The compiled shader for [type], built on first use; nil for unknown
+  /// types and shaders that fail to build.
+  private func pipeline(for type: String) -> MTLComputePipelineState? {
+    if let cached = pipelines[type] { return cached }
+    guard let body = TransitionSources.metal[type] else { return nil }
+    do {
+      let pipeline = try Self.makePipeline(device: device, body: body)
+      pipelines[type] = pipeline
+      return pipeline
+    } catch {
+      NSLog("Stitch: transition \(type) failed to build: \(error)")
+      return nil
+    }
+  }
+
+  /// Compiles one transition's Metal [body] into a compute pipeline.
+  static func makePipeline(device: MTLDevice, body: String) throws -> MTLComputePipelineState {
+    let library = try device.makeLibrary(source: prelude + body + kernel, options: nil)
+    guard let function = library.makeFunction(name: "stitchTransition") else {
+      throw EngineError.badDocument("Transition kernel missing")
+    }
+    return try device.makeComputePipelineState(function: function)
+  }
+
   private func textures(width: Int, height: Int) -> (from: MTLTexture, to: MTLTexture, out: MTLTexture)? {
     if let textures, textures.out.width == width, textures.out.height == height { return textures }
     let descriptor = MTLTextureDescriptor.texture2DDescriptor(
       pixelFormat: .bgra8Unorm, width: width, height: height, mipmapped: false)
     descriptor.usage = [.shaderRead, .shaderWrite, .renderTarget]
     descriptor.storageMode = .private
-    let device = queue.device
     guard let from = device.makeTexture(descriptor: descriptor),
       let to = device.makeTexture(descriptor: descriptor),
       let out = device.makeTexture(descriptor: descriptor)
@@ -89,24 +109,47 @@ final class Transitions {
 
   private struct Params {
     var progress: Float
-    var type: Int32
+    var ratio: Float
   }
 
-  /// The transitions, in the style of gl-transitions (https://gl-transitions.com,
-  /// MIT): a color from the outgoing frame, the incoming frame, and linear
-  /// progress. Mirrors TransitionShader.kt on Android; docs/engine.md defines
-  /// the looks and test_media/transition_cases.json holds the colors both
-  /// platforms are tested against. uv is 0 to 1 with y up.
-  private static let source = """
+  /// Makes the GLSL the transitions are written in (see
+  /// transitions/README.md) valid Metal: GLSL's type names and the few
+  /// functions Metal names differently. Every transition function takes
+  /// the two textures, progress, and ratio (CTX_PARAMS), as Metal has no
+  /// global uniforms; the generator passes them on (CTX_ARGS). uv is 0 to 1
+  /// with y up.
+  private static let prelude = """
     #include <metal_stdlib>
     using namespace metal;
 
-    struct Params { float progress; int type; };
+    #define vec2 float2
+    #define vec3 float3
+    #define vec4 float4
+    #define mat2 float2x2
+    #define mat3 float3x3
 
-    static float4 at(texture2d<float, access::sample> t, float2 uv) {
-      constexpr sampler s(address::clamp_to_edge, filter::linear, coord::normalized);
-      return t.sample(s, uv);
-    }
+    #define CTX_PARAMS texture2d<float> _from, texture2d<float> _to, float progress, float ratio
+    #define CTX_ARGS _from, _to, progress, ratio
+
+    constexpr sampler _smp(address::clamp_to_edge, filter::linear, coord::normalized);
+    #define getFromColor(p) _from.sample(_smp, (p))
+    #define getToColor(p) _to.sample(_smp, (p))
+
+    // GLSL's mod floors; Metal's fmod truncates.
+    inline float mod(float x, float y) { return x - y * floor(x / y); }
+    inline float2 mod(float2 x, float y) { return x - y * floor(x / y); }
+    inline float3 mod(float3 x, float y) { return x - y * floor(x / y); }
+    inline float2 mod(float2 x, float2 y) { return x - y * floor(x / y); }
+    inline float atan(float y, float x) { return atan2(y, x); }
+    #define inversesqrt rsqrt
+
+
+    """
+
+  private static let kernel = """
+
+
+    struct Params { float progress; float ratio; };
 
     kernel void stitchTransition(
         texture2d<float, access::sample> from [[texture(0)]],
@@ -116,37 +159,7 @@ final class Transitions {
         uint2 gid [[thread_position_in_grid]]) {
       if (gid.x >= out.get_width() || gid.y >= out.get_height()) return;
       float2 uv = (float2(gid) + 0.5) / float2(out.get_width(), out.get_height());
-      float p = params.progress;
-      int type = params.type;
-      float4 black = float4(0.0, 0.0, 0.0, 1.0);
-      float4 color;
-      if (type == 2) {
-        // Fade to black: out through black, darkest halfway.
-        color = p < 0.5 ? mix(at(from, uv), black, p * 2.0)
-                        : mix(black, at(to, uv), p * 2.0 - 1.0);
-      } else if (type == 3) {
-        // Slide left: both frames move left by p.
-        color = uv.x < 1.0 - p ? at(from, float2(uv.x + p, uv.y))
-                               : at(to, float2(uv.x - (1.0 - p), uv.y));
-      } else if (type == 4) {
-        // Slide right: both frames move right by p.
-        color = uv.x >= p ? at(from, float2(uv.x - p, uv.y))
-                          : at(to, float2(uv.x + (1.0 - p), uv.y));
-      } else if (type == 5) {
-        // Wipe left: the incoming frame is revealed from the right edge.
-        color = uv.x >= 1.0 - p ? at(to, uv) : at(from, uv);
-      } else if (type == 6) {
-        // Wipe right: the incoming frame is revealed from the left edge.
-        color = uv.x < p ? at(to, uv) : at(from, uv);
-      } else if (type == 7) {
-        // Zoom in: the outgoing frame grows by up to 60 percent as it fades.
-        float4 grown = at(from, (uv - 0.5) / (1.0 + 0.6 * p) + 0.5);
-        color = mix(grown, at(to, uv), p);
-      } else {
-        // Crossfade.
-        color = mix(at(from, uv), at(to, uv), p);
-      }
-      out.write(color, gid);
+      out.write(transition(from, to, params.progress, params.ratio, uv), gid);
     }
     """
 }

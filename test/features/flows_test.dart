@@ -224,6 +224,34 @@ void main() {
       await finishEditing(tester);
     });
 
+    testWidgets('transition sheet browses categories', (tester) async {
+      final (id, _) = await open(tester);
+      await tester.tap(find.byType(TransitionButton).first);
+      await settle(tester);
+      expect(find.text('Heart'), findsNothing);
+      // Categories hold different numbers of transitions; the sheet keeps
+      // its height so the chips stay under the finger.
+      final chips = tester.getTopLeft(find.text('Basic'));
+      await tester.tap(find.text('Light'));
+      await settle(tester);
+      expect(tester.getTopLeft(find.text('Basic')), chips);
+      await tester.tap(find.text('Shape'));
+      await settle(tester);
+      await tester.tap(find.text('Heart'));
+      await tester.pump();
+      expect(stateOf(tester, id).timeline.transitions.single.type, 'heart');
+      // Choosing the first transition does not grow the sheet either.
+      await settle(tester);
+      expect(tester.getTopLeft(find.text('Basic')), chips);
+      // Reopened, it shows the current transition's category.
+      await tester.tap(find.bySemanticsLabel('Done'));
+      await settle(tester);
+      await tester.tap(find.byType(TransitionButton).first);
+      await settle(tester);
+      expect(find.text('Heart'), findsOneWidget);
+      await finishEditing(tester);
+    });
+
     testWidgets('transition sheet sets a crossfade', (tester) async {
       final (id, _) = await open(tester);
       await tester.tap(find.byType(TransitionButton).first);
@@ -232,7 +260,7 @@ void main() {
       await tester.tap(find.text('Crossfade'));
       await tester.pump();
       final t = stateOf(tester, id).timeline.transitions.single;
-      expect(t.type.name, 'crossfade');
+      expect(t.type, 'crossfade');
       await finishEditing(tester);
     });
 

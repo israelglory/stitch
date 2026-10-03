@@ -28,11 +28,7 @@ void main() {
     test('a transition overlaps the clips around it', () {
       final t = track([2, 3]).copyWith(
         transitions: [
-          Transition(
-            afterClipId: 'a',
-            type: TransitionType.crossfade,
-            durationUs: s(0.5),
-          ),
+          Transition(afterClipId: 'a', type: 'crossfade', durationUs: s(0.5)),
         ],
       );
       expect(t.startOfClip('b'), s(1.5));
@@ -43,11 +39,7 @@ void main() {
     test('the effective transition never exceeds half the shorter clip', () {
       final t = track([0.6, 3]).copyWith(
         transitions: [
-          Transition(
-            afterClipId: 'a',
-            type: TransitionType.crossfade,
-            durationUs: s(1.5),
-          ),
+          Transition(afterClipId: 'a', type: 'crossfade', durationUs: s(1.5)),
         ],
       );
       expect(t.layout.transitionUs('a'), s(0.3));
@@ -56,11 +48,7 @@ void main() {
     test('spanAt picks the incoming clip inside a transition', () {
       final t = track([2, 3]).copyWith(
         transitions: [
-          Transition(
-            afterClipId: 'a',
-            type: TransitionType.crossfade,
-            durationUs: s(1),
-          ),
+          Transition(afterClipId: 'a', type: 'crossfade', durationUs: s(1)),
         ],
       );
       expect(t.layout.spanAt(s(0.5))!.clip.id, 'a');

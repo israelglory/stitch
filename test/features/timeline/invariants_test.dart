@@ -14,12 +14,15 @@ import 'package:stitch/features/timeline/domain/limits.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
 import 'package:stitch/features/timeline/domain/normalize.dart';
 import 'package:stitch/features/timeline/domain/text_ops.dart';
+import 'package:stitch/features/timeline/domain/transition_catalog.g.dart';
 import 'package:stitch/features/timeline/domain/transition_ops.dart';
 import 'package:stitch/features/timeline/domain/video_ops.dart';
 
 import 'fixtures.dart';
 
 const _sequences = 1000;
+
+final List<String> transitionIds = [for (final t in transitionCatalog) t.id];
 const _stepsPerSequence = 60;
 
 void main() {
@@ -131,14 +134,14 @@ _Edit _randomEdit(Timeline t, Random rng, String Function() id) {
         'transition',
         (t) => t.setTransition(
           pick(clipIds),
-          rng.nextBool() ? pick(TransitionType.values) : null,
+          rng.nextBool() ? pick(transitionIds) : null,
           durationUs: rng.nextInt(s(3)),
         ),
       ),
       (
         'all transitions',
         (t) => t.applyTransitionToAll(
-          pick(TransitionType.values),
+          pick(transitionIds),
           durationUs: rng.nextInt(s(2)),
         ),
       ),

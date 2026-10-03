@@ -150,23 +150,16 @@ abstract class VideoClip with _$VideoClip {
   bool get isPhoto => kind == MediaKind.photo;
 }
 
-enum TransitionType {
-  crossfade,
-  fadeToBlack,
-  slideLeft,
-  slideRight,
-  wipeLeft,
-  wipeRight,
-  zoomIn,
-}
-
 /// A transition in the cut after clip [afterClipId]. The two clips overlap
 /// by [durationUs]. No transition means a hard cut.
 @freezed
 abstract class Transition with _$Transition {
   const factory({
     required String afterClipId,
-    required TransitionType type,
+
+    /// An id from `transitionCatalog` (transitions/ in the repo). An
+    /// unknown id, from a newer version, is kept and plays as a crossfade.
+    required String type,
     required int durationUs,
     @Default(<String, double>{}) Map<String, double> params,
   }) = _Transition;

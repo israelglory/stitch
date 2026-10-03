@@ -30,8 +30,7 @@ final class StitchCompositor: NSObject, AVVideoCompositing {
   private var photoCache = PhotoCache(limit: 8)
   /// Room for a few typewriter overlays' frames at once.
   private var overlayCache = PhotoCache(limit: 64)
-  private lazy var transitions = Transitions(
-    device: Self.device, context: context, colorSpace: outputColorSpace)
+  private lazy var transitions = Transitions(device: Self.device, context: context)
 
   let sourcePixelBufferAttributes: [String: any Sendable]? = [
     kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,

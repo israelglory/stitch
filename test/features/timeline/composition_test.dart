@@ -33,8 +33,7 @@ void main() {
 
   test('transitions resolve to windows and matching audio crossfades', () {
     final comp = ResolvedComposition.resolve(
-      track([3, 3, 3])
-          .setTransition('a', TransitionType.crossfade, durationUs: s(1)),
+      track([3, 3, 3]).setTransition('a', 'crossfade', durationUs: s(1)),
     );
     final t = comp.transitions.single;
     expect(t.fromClipId, 'a');
@@ -119,7 +118,7 @@ void main() {
   test('round-trips through JSON', () {
     final comp = ResolvedComposition.resolve(
       track([3, 3])
-          .setTransition('a', TransitionType.wipeLeft)
+          .setTransition('a', 'wipeLeft')
           .addText(id: 't', text: 'Hi', atUs: s(1))
           .setCaptions([
             (

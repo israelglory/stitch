@@ -168,10 +168,7 @@ void main() {
     // project gets shorter; then show the middle of the slide.
     container
         .read(editorControllerProvider(editorScreen.projectId).notifier)
-        .apply(
-          (t) =>
-              t.setTransition(t.videoClips.first.id, TransitionType.slideLeft),
-        );
+        .apply((t) => t.setTransition(t.videoClips.first.id, 'slideLeft'));
     await wait(tester, const Duration(milliseconds: 500));
     final edited = container
         .read(editorControllerProvider(editorScreen.projectId))

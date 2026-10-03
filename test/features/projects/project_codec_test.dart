@@ -14,7 +14,7 @@ import '../timeline/fixtures.dart';
 
 Project sampleProject() {
   final timeline = track([3, 4])
-      .setTransition('a', TransitionType.crossfade)
+      .setTransition('a', 'crossfade')
       .addText(id: 't', text: 'Hi', atUs: s(1))
       .addAudio(
         id: 'm',

@@ -357,7 +357,7 @@ $ClipFramingCopyWith<$Res> get framing {
 /// @nodoc
 mixin _$ResolvedTransition {
 
- TransitionType get type; String get fromClipId; String get toClipId; int get startUs; int get durationUs; Map<String, double> get params;
+ String get type; String get fromClipId; String get toClipId; int get startUs; int get durationUs; Map<String, double> get params;
 /// Create a copy of ResolvedTransition
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -395,7 +395,7 @@ abstract mixin class $ResolvedTransitionCopyWith<$Res>  {
   factory $ResolvedTransitionCopyWith(ResolvedTransition value, $Res Function(ResolvedTransition) _then) = _$ResolvedTransitionCopyWithImpl;
 @useResult
 $Res call({
- TransitionType type, String fromClipId, String toClipId, int startUs, int durationUs, Map<String, double> params
+ String type, String fromClipId, String toClipId, int startUs, int durationUs, Map<String, double> params
 });
 
 
@@ -415,7 +415,7 @@ class _$ResolvedTransitionCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? fromClipId = null,Object? toClipId = null,Object? startUs = null,Object? durationUs = null,Object? params = null,}) {
   return _then(ResolvedTransition(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as TransitionType,fromClipId: null == fromClipId ? _self.fromClipId : fromClipId // ignore: cast_nullable_to_non_nullable
+as String,fromClipId: null == fromClipId ? _self.fromClipId : fromClipId // ignore: cast_nullable_to_non_nullable
 as String,toClipId: null == toClipId ? _self.toClipId : toClipId // ignore: cast_nullable_to_non_nullable
 as String,startUs: null == startUs ? _self.startUs : startUs // ignore: cast_nullable_to_non_nullable
 as int,durationUs: null == durationUs ? _self.durationUs : durationUs // ignore: cast_nullable_to_non_nullable
@@ -505,7 +505,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TransitionType type,  String fromClipId,  String toClipId,  int startUs,  int durationUs,  Map<String, double> params)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String type,  String fromClipId,  String toClipId,  int startUs,  int durationUs,  Map<String, double> params)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ResolvedTransition() when $default != null:
 return $default(_that.type,_that.fromClipId,_that.toClipId,_that.startUs,_that.durationUs,_that.params);case _:
@@ -526,7 +526,7 @@ return $default(_that.type,_that.fromClipId,_that.toClipId,_that.startUs,_that.d
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TransitionType type,  String fromClipId,  String toClipId,  int startUs,  int durationUs,  Map<String, double> params)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String type,  String fromClipId,  String toClipId,  int startUs,  int durationUs,  Map<String, double> params)  $default,) {final _that = this;
 switch (_that) {
 case _ResolvedTransition():
 return $default(_that.type,_that.fromClipId,_that.toClipId,_that.startUs,_that.durationUs,_that.params);case _:
@@ -546,7 +546,7 @@ return $default(_that.type,_that.fromClipId,_that.toClipId,_that.startUs,_that.d
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TransitionType type,  String fromClipId,  String toClipId,  int startUs,  int durationUs,  Map<String, double> params)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String type,  String fromClipId,  String toClipId,  int startUs,  int durationUs,  Map<String, double> params)?  $default,) {final _that = this;
 switch (_that) {
 case _ResolvedTransition() when $default != null:
 return $default(_that.type,_that.fromClipId,_that.toClipId,_that.startUs,_that.durationUs,_that.params);case _:
@@ -564,7 +564,7 @@ class _ResolvedTransition implements ResolvedTransition {
   const _ResolvedTransition({required this.type, required this.fromClipId, required this.toClipId, required this.startUs, required this.durationUs,  Map<String, double> params = const <String, double>{}}): _params = params;
   factory _ResolvedTransition.fromJson(Map<String, dynamic> json) => _$ResolvedTransitionFromJson(json);
 
-@override final  TransitionType type;
+@override final  String type;
 @override final  String fromClipId;
 @override final  String toClipId;
 @override final  int startUs;
@@ -612,7 +612,7 @@ abstract mixin class _$ResolvedTransitionCopyWith<$Res> implements $ResolvedTran
   factory _$ResolvedTransitionCopyWith(_ResolvedTransition value, $Res Function(_ResolvedTransition) _then) = __$ResolvedTransitionCopyWithImpl;
 @override @useResult
 $Res call({
- TransitionType type, String fromClipId, String toClipId, int startUs, int durationUs, Map<String, double> params
+ String type, String fromClipId, String toClipId, int startUs, int durationUs, Map<String, double> params
 });
 
 
@@ -632,7 +632,7 @@ class __$ResolvedTransitionCopyWithImpl<$Res>
 @override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? fromClipId = null,Object? toClipId = null,Object? startUs = null,Object? durationUs = null,Object? params = null,}) {
   return _then(_ResolvedTransition(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as TransitionType,fromClipId: null == fromClipId ? _self.fromClipId : fromClipId // ignore: cast_nullable_to_non_nullable
+as String,fromClipId: null == fromClipId ? _self.fromClipId : fromClipId // ignore: cast_nullable_to_non_nullable
 as String,toClipId: null == toClipId ? _self.toClipId : toClipId // ignore: cast_nullable_to_non_nullable
 as String,startUs: null == startUs ? _self.startUs : startUs // ignore: cast_nullable_to_non_nullable
 as int,durationUs: null == durationUs ? _self.durationUs : durationUs // ignore: cast_nullable_to_non_nullable

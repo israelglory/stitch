@@ -62,7 +62,7 @@ These were needed to build the listed components. Each has one narrow use.
 | `EmptyState`, `ErrorBanner` | `feedback.dart` | Empty state has at most one action and no illustration. |
 | `AppHeader` | `header.dart` | Top bar. Top-level screens use a start-aligned title. Flows and the editor center the title between the controls. |
 | `PageDots`, `ChoiceTile`, `AspectRatioGlyph`, `ColorSwatchButton` | `choices.dart` | Pagers and option grids (aspect ratio, background, transitions). |
-| `TransitionPreview` | `transition_preview.dart` | Looping preview of a transition. Shows a still under reduced motion. |
+| `TransitionPreview`, `TransitionFrame` | `transition_preview.dart` | Looping preview of a transition, drawn by its real shader (`shaders/transitions/`) on two frames (pictures, or plain colors while there are none). A null transition is a cut. Shows a still under reduced motion. |
 | `showTextInputDialog`, `showActionSheet` | `overlays.dart` | Rename dialog; list of actions in a sheet. |
 | Onboarding mock-ups | `mocks/editor_mocks.dart` | Static mock-ups built from real components. Decorative, so hidden from screen readers. |
 | `TimeRuler`, `Playhead`, `LaneHeader` | `timeline/timeline_chrome.dart` | Ruler labels stay at least 64pt apart at any zoom. |

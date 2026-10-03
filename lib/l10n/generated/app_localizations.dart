@@ -2187,6 +2187,312 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{size} GB'**
   String sizeGigabytes(String size);
+
+  /// A group of transitions in the transitions sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic'**
+  String get transitionCategoryBasic;
+
+  /// A group of transitions in the transitions sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide'**
+  String get transitionCategorySlide;
+
+  /// A group of transitions in the transitions sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Wipe'**
+  String get transitionCategoryWipe;
+
+  /// A group of transitions in the transitions sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom'**
+  String get transitionCategoryZoom;
+
+  /// A group of transitions in the transitions sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Shape'**
+  String get transitionCategoryShape;
+
+  /// A group of transitions in the transitions sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get transitionCategoryLight;
+
+  /// A group of transitions in the transitions sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Glitch'**
+  String get transitionCategoryGlitch;
+
+  /// A group of transitions in the transitions sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Fun'**
+  String get transitionCategoryFun;
+
+  /// Transition between two clips: Fades out to white, then in from white.
+  ///
+  /// In en, this message translates to:
+  /// **'Fade to white'**
+  String get transitionFadeToWhite;
+
+  /// Transition between two clips: Small blocks of the incoming clip appear in random order.
+  ///
+  /// In en, this message translates to:
+  /// **'Dissolve'**
+  String get transitionDissolve;
+
+  /// Transition between two clips: Bright parts of the picture change first, dark parts last.
+  ///
+  /// In en, this message translates to:
+  /// **'Brightness fade'**
+  String get transitionLumaFade;
+
+  /// Transition between two clips: Both clips move up together.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide up'**
+  String get transitionSlideUp;
+
+  /// Transition between two clips: Both clips move down together.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide down'**
+  String get transitionSlideDown;
+
+  /// Transition between two clips: The incoming clip slides in from the right over the outgoing one.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover left'**
+  String get transitionCoverLeft;
+
+  /// Transition between two clips: The incoming clip slides in from the left over the outgoing one.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover right'**
+  String get transitionCoverRight;
+
+  /// Transition between two clips: The outgoing clip slides away to the left, uncovering the incoming one.
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal left'**
+  String get transitionRevealLeft;
+
+  /// Transition between two clips: The outgoing clip slides away to the right, uncovering the incoming one.
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal right'**
+  String get transitionRevealRight;
+
+  /// Transition between two clips: The incoming clip is revealed from the bottom edge.
+  ///
+  /// In en, this message translates to:
+  /// **'Wipe up'**
+  String get transitionWipeUp;
+
+  /// Transition between two clips: The incoming clip is revealed from the top edge.
+  ///
+  /// In en, this message translates to:
+  /// **'Wipe down'**
+  String get transitionWipeDown;
+
+  /// Transition between two clips: A soft diagonal edge sweeps from the bottom left corner.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft wipe'**
+  String get transitionSoftWipe;
+
+  /// Transition between two clips: The incoming clip sweeps in like a clock hand.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock'**
+  String get transitionClockWipe;
+
+  /// Transition between two clips: The incoming clip opens from a line down the middle.
+  ///
+  /// In en, this message translates to:
+  /// **'Split'**
+  String get transitionBarnDoorHorizontal;
+
+  /// Transition between two clips: The incoming clip opens from a line across the middle.
+  ///
+  /// In en, this message translates to:
+  /// **'Split vertical'**
+  String get transitionBarnDoorVertical;
+
+  /// Transition between two clips: The incoming clip appears through opening blinds.
+  ///
+  /// In en, this message translates to:
+  /// **'Blinds'**
+  String get transitionBlinds;
+
+  /// Transition between two clips: Diagonal stripes fill in one after another.
+  ///
+  /// In en, this message translates to:
+  /// **'Stripes'**
+  String get transitionStripes;
+
+  /// Transition between two clips: The incoming clip settles from close up as it fades in.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get transitionZoomOut;
+
+  /// Transition between two clips: A burst of zoom blur carries one clip into the other.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom blur'**
+  String get transitionCrossZoom;
+
+  /// Transition between two clips: The outgoing clip spins away into the middle.
+  ///
+  /// In en, this message translates to:
+  /// **'Spin'**
+  String get transitionSpin;
+
+  /// Transition between two clips: The picture twists into a swirl and out again.
+  ///
+  /// In en, this message translates to:
+  /// **'Swirl'**
+  String get transitionSwirl;
+
+  /// Transition between two clips: Zooms deep into the outgoing clip and out of the incoming one.
+  ///
+  /// In en, this message translates to:
+  /// **'Punch zoom'**
+  String get transitionZoomThrough;
+
+  /// Transition between two clips: The incoming clip opens as a growing circle.
+  ///
+  /// In en, this message translates to:
+  /// **'Circle open'**
+  String get transitionCircleOpen;
+
+  /// Transition between two clips: The outgoing clip closes into a shrinking circle.
+  ///
+  /// In en, this message translates to:
+  /// **'Circle close'**
+  String get transitionCircleClose;
+
+  /// Transition between two clips: The incoming clip opens as a growing diamond.
+  ///
+  /// In en, this message translates to:
+  /// **'Diamond'**
+  String get transitionDiamond;
+
+  /// Transition between two clips: The incoming clip opens as a growing heart.
+  ///
+  /// In en, this message translates to:
+  /// **'Heart'**
+  String get transitionHeart;
+
+  /// Transition between two clips: Squares grow from the middle outward until they meet.
+  ///
+  /// In en, this message translates to:
+  /// **'Squares'**
+  String get transitionSquares;
+
+  /// Transition between two clips: Half the squares of a checkerboard change, then the other half.
+  ///
+  /// In en, this message translates to:
+  /// **'Checkerboard'**
+  String get transitionCheckerboard;
+
+  /// Transition between two clips: Blurs out of the outgoing clip and into the incoming one.
+  ///
+  /// In en, this message translates to:
+  /// **'Blur'**
+  String get transitionBlur;
+
+  /// Transition between two clips: A bright white flash covers the cut.
+  ///
+  /// In en, this message translates to:
+  /// **'Flash'**
+  String get transitionFlash;
+
+  /// Transition between two clips: A warm glow of light sweeps across the cut.
+  ///
+  /// In en, this message translates to:
+  /// **'Light leak'**
+  String get transitionLightLeak;
+
+  /// Transition between two clips: The picture overexposes to near white, then settles on the incoming clip.
+  ///
+  /// In en, this message translates to:
+  /// **'Burn'**
+  String get transitionBurn;
+
+  /// Transition between two clips: The picture breaks into big pixels and back.
+  ///
+  /// In en, this message translates to:
+  /// **'Pixelate'**
+  String get transitionPixelate;
+
+  /// Transition between two clips: Rows jump and colors split, as on a damaged tape.
+  ///
+  /// In en, this message translates to:
+  /// **'Glitch'**
+  String get transitionGlitch;
+
+  /// Transition between two clips: Red and blue drift apart and come back together.
+  ///
+  /// In en, this message translates to:
+  /// **'Color split'**
+  String get transitionRgbSplit;
+
+  /// Transition between two clips: A burst of TV static covers the cut.
+  ///
+  /// In en, this message translates to:
+  /// **'Static'**
+  String get transitionNoise;
+
+  /// Transition between two clips: Tiles of the incoming clip appear in random order.
+  ///
+  /// In en, this message translates to:
+  /// **'Mosaic'**
+  String get transitionMosaic;
+
+  /// Transition between two clips: Ripples spread through the picture as it changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Ripple'**
+  String get transitionRipple;
+
+  /// Transition between two clips: The picture sways in a wave as it changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Wave'**
+  String get transitionWave;
+
+  /// Transition between two clips: The clips turn like two sides of a cube.
+  ///
+  /// In en, this message translates to:
+  /// **'Cube'**
+  String get transitionCube;
+
+  /// Transition between two clips: The outgoing clip opens like two doors onto the incoming one.
+  ///
+  /// In en, this message translates to:
+  /// **'Doorway'**
+  String get transitionDoorway;
+
+  /// Transition between two clips: The picture folds into a turning kaleidoscope and back.
+  ///
+  /// In en, this message translates to:
+  /// **'Kaleidoscope'**
+  String get transitionKaleidoscope;
+
+  /// Transition between two clips: The incoming clip drops in from the top and bounces.
+  ///
+  /// In en, this message translates to:
+  /// **'Bounce'**
+  String get transitionBounce;
 }
 
 class _AppLocalizationsDelegate

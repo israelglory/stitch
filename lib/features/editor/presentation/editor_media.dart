@@ -24,6 +24,15 @@ class MediaPoster extends ConsumerWidget {
   /// Decode width in physical pixels; keeps timeline frames small.
   final int? cacheWidth;
 
+  /// The poster of [mediaId] in [project] as an image, if it has one.
+  static ImageProvider? image(WidgetRef ref, Project project, String mediaId) {
+    final path = project.media[mediaId]?.posterPath;
+    if (path == null) return null;
+    return FileImage(
+      File(ref.watch(projectStoreProvider).resolve(project.id, path)),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final path = project.media[mediaId]?.posterPath;

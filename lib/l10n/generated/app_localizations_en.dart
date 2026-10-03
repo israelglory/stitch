@@ -1190,4 +1190,157 @@ class AppLocalizationsEn extends AppLocalizations {
   String sizeGigabytes(String size) {
     return '$size GB';
   }
+
+  @override
+  String get transitionCategoryBasic => 'Basic';
+
+  @override
+  String get transitionCategorySlide => 'Slide';
+
+  @override
+  String get transitionCategoryWipe => 'Wipe';
+
+  @override
+  String get transitionCategoryZoom => 'Zoom';
+
+  @override
+  String get transitionCategoryShape => 'Shape';
+
+  @override
+  String get transitionCategoryLight => 'Light';
+
+  @override
+  String get transitionCategoryGlitch => 'Glitch';
+
+  @override
+  String get transitionCategoryFun => 'Fun';
+
+  @override
+  String get transitionFadeToWhite => 'Fade to white';
+
+  @override
+  String get transitionDissolve => 'Dissolve';
+
+  @override
+  String get transitionLumaFade => 'Brightness fade';
+
+  @override
+  String get transitionSlideUp => 'Slide up';
+
+  @override
+  String get transitionSlideDown => 'Slide down';
+
+  @override
+  String get transitionCoverLeft => 'Cover left';
+
+  @override
+  String get transitionCoverRight => 'Cover right';
+
+  @override
+  String get transitionRevealLeft => 'Reveal left';
+
+  @override
+  String get transitionRevealRight => 'Reveal right';
+
+  @override
+  String get transitionWipeUp => 'Wipe up';
+
+  @override
+  String get transitionWipeDown => 'Wipe down';
+
+  @override
+  String get transitionSoftWipe => 'Soft wipe';
+
+  @override
+  String get transitionClockWipe => 'Clock';
+
+  @override
+  String get transitionBarnDoorHorizontal => 'Split';
+
+  @override
+  String get transitionBarnDoorVertical => 'Split vertical';
+
+  @override
+  String get transitionBlinds => 'Blinds';
+
+  @override
+  String get transitionStripes => 'Stripes';
+
+  @override
+  String get transitionZoomOut => 'Zoom out';
+
+  @override
+  String get transitionCrossZoom => 'Zoom blur';
+
+  @override
+  String get transitionSpin => 'Spin';
+
+  @override
+  String get transitionSwirl => 'Swirl';
+
+  @override
+  String get transitionZoomThrough => 'Punch zoom';
+
+  @override
+  String get transitionCircleOpen => 'Circle open';
+
+  @override
+  String get transitionCircleClose => 'Circle close';
+
+  @override
+  String get transitionDiamond => 'Diamond';
+
+  @override
+  String get transitionHeart => 'Heart';
+
+  @override
+  String get transitionSquares => 'Squares';
+
+  @override
+  String get transitionCheckerboard => 'Checkerboard';
+
+  @override
+  String get transitionBlur => 'Blur';
+
+  @override
+  String get transitionFlash => 'Flash';
+
+  @override
+  String get transitionLightLeak => 'Light leak';
+
+  @override
+  String get transitionBurn => 'Burn';
+
+  @override
+  String get transitionPixelate => 'Pixelate';
+
+  @override
+  String get transitionGlitch => 'Glitch';
+
+  @override
+  String get transitionRgbSplit => 'Color split';
+
+  @override
+  String get transitionNoise => 'Static';
+
+  @override
+  String get transitionMosaic => 'Mosaic';
+
+  @override
+  String get transitionRipple => 'Ripple';
+
+  @override
+  String get transitionWave => 'Wave';
+
+  @override
+  String get transitionCube => 'Cube';
+
+  @override
+  String get transitionDoorway => 'Doorway';
+
+  @override
+  String get transitionKaleidoscope => 'Kaleidoscope';
+
+  @override
+  String get transitionBounce => 'Bounce';
 }

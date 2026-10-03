@@ -50,7 +50,7 @@ abstract class ResolvedClip with _$ResolvedClip {
 @freezed
 abstract class ResolvedTransition with _$ResolvedTransition {
   const factory({
-    required TransitionType type,
+    required String type,
     required String fromClipId,
     required String toClipId,
     required int startUs,

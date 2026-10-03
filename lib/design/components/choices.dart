@@ -46,6 +46,7 @@ class ChoiceTile extends StatelessWidget {
     required this.visual,
     required this.selected,
     required this.onTap,
+    this.labelLines = 1,
     super.key,
   });
 
@@ -53,6 +54,9 @@ class ChoiceTile extends StatelessWidget {
   final Widget visual;
   final bool selected;
   final VoidCallback? onTap;
+
+  /// Lines the label may take before it ends in an ellipsis.
+  final int labelLines;
 
   @override
   Widget build(BuildContext context) {
@@ -85,8 +89,9 @@ class ChoiceTile extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             label,
-            maxLines: 1,
+            maxLines: labelLines,
             overflow: TextOverflow.ellipsis,
+            textAlign: labelLines > 1 ? TextAlign.center : null,
             style: AppTypography.caption.copyWith(
               color: selected ? colors.accent : colors.textSecondary,
             ),

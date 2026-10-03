@@ -141,19 +141,23 @@ Captions need the timeline's sound as speech recognition takes it: 16 kHz mono f
 
 ## Transitions
 
-Each transition is a shader in the style of [gl-transitions](https://gl-transitions.com) (MIT): it gets the outgoing frame, the incoming frame, and the progress `p`, which runs linearly from 0 to 1 over the transition. Coordinates `(x, y)` run from 0 to 1 across the canvas, from the bottom left. Both frames are whole canvases: each clip placed over its own background.
+There are 50 transitions, in eight categories: Basic, Slide, Wipe, Zoom, Shape, Light, Glitch, and Fun. Each is one GLSL file in `transitions/`, in the style of [gl-transitions](https://gl-transitions.com): it gets the outgoing frame, the incoming frame, and the progress `p`, which runs linearly from 0 to 1 over the transition. Coordinates `(x, y)` run from 0 to 1 across the canvas, from the bottom left. Both frames are whole canvases: each clip placed over its own background. `transitions/README.md` has the rules for writing one.
 
-| Type | Color at (x, y) |
-|---|---|
-| Crossfade | outgoing and incoming mixed: `mix(from, to, p)` |
-| Fade to black | `from` darkening to black until halfway, then black brightening into `to` |
-| Slide left | both frames move left by `p`: `from(x + p)` where `x < 1 - p`, else `to(x - (1 - p))` |
-| Slide right | both frames move right by `p`: `from(x - p)` where `x >= p`, else `to(x + (1 - p))` |
-| Wipe left | `to` where `x >= 1 - p` (revealed from the right edge), else `from` |
-| Wipe right | `to` where `x < p` (revealed from the left edge), else `from` |
-| Zoom in | `from` scaled up by `1 + 0.6p` about the center, mixed into `to` by `p` |
+`tool/gen_transitions.dart` generates every platform's code from those files:
 
-The shaders are `TransitionShader.kt` (GLSL) on Android and the Metal source in `Transitions.swift` on iOS. `test_media/transition_cases.json` lists expected colors for all seven types at three progress points and four positions, generated from the table above. Both platforms' tests render every case and compare. The looping previews in the Transitions sheet (`TransitionPreview`) follow the same definitions.
+- **Android:** `TransitionShaders.kt`. `ClipEffect` builds one GL program per transition (and per YUV and blur variant) the first time a clip uses it.
+- **iOS:** `TransitionSources.swift`, as Metal. `Transitions` adds a prelude that makes the GLSL valid Metal: type names, `mod`, two-argument `atan`, and sampling. It passes the textures, progress, and ratio to every function, since Metal has no global uniforms. Each transition is compiled by the system's runtime compiler on first use and cached. The shader sees sRGB values, as on Android and in the previews.
+- **Flutter:** `shaders/transitions/<id>.frag`, which the previews in the Transitions sheet (`TransitionPreview`) run on the two clips' posters.
+- **Dart:** `transition_catalog.g.dart` (ids and categories) and `transition_names.g.dart` (names from the app strings).
+
+Projects store the transition's id. An unknown id, from a newer version, is kept and plays as a crossfade on every platform.
+
+**Tests:**
+
+- The Dart reference test renders every transition with its Flutter shader. It checks that each starts exactly on the outgoing frame and ends exactly on the incoming one. It then writes or verifies reference images at 25, 50, and 75 percent (`test_media/transitions/`, 45 x 80, the 360 x 640 canvas averaged in 8 x 8 blocks).
+- Both engines export one document holding all 50 transitions and compare frames to those images. The tolerance is from `tolerances.json`: a mean difference per channel of 0.04 by default.
+- On the Android emulator the largest difference was 0.012. Both engines also compile every transition (`everyTransitionCompiles`).
+- `test_media/transition_cases.json` still checks the original seven against their analytic definitions.
 
 ## iOS (`ios/Runner/Engine/`)
 

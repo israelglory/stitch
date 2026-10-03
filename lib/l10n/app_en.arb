@@ -1622,5 +1622,209 @@
         "type": "String"
       }
     }
+  },
+  "transitionCategoryBasic": "Basic",
+  "@transitionCategoryBasic": {
+    "description": "A group of transitions in the transitions sheet."
+  },
+  "transitionCategorySlide": "Slide",
+  "@transitionCategorySlide": {
+    "description": "A group of transitions in the transitions sheet."
+  },
+  "transitionCategoryWipe": "Wipe",
+  "@transitionCategoryWipe": {
+    "description": "A group of transitions in the transitions sheet."
+  },
+  "transitionCategoryZoom": "Zoom",
+  "@transitionCategoryZoom": {
+    "description": "A group of transitions in the transitions sheet."
+  },
+  "transitionCategoryShape": "Shape",
+  "@transitionCategoryShape": {
+    "description": "A group of transitions in the transitions sheet."
+  },
+  "transitionCategoryLight": "Light",
+  "@transitionCategoryLight": {
+    "description": "A group of transitions in the transitions sheet."
+  },
+  "transitionCategoryGlitch": "Glitch",
+  "@transitionCategoryGlitch": {
+    "description": "A group of transitions in the transitions sheet."
+  },
+  "transitionCategoryFun": "Fun",
+  "@transitionCategoryFun": {
+    "description": "A group of transitions in the transitions sheet."
+  },
+  "transitionFadeToWhite": "Fade to white",
+  "@transitionFadeToWhite": {
+    "description": "Transition between two clips: Fades out to white, then in from white."
+  },
+  "transitionDissolve": "Dissolve",
+  "@transitionDissolve": {
+    "description": "Transition between two clips: Small blocks of the incoming clip appear in random order."
+  },
+  "transitionLumaFade": "Brightness fade",
+  "@transitionLumaFade": {
+    "description": "Transition between two clips: Bright parts of the picture change first, dark parts last."
+  },
+  "transitionSlideUp": "Slide up",
+  "@transitionSlideUp": {
+    "description": "Transition between two clips: Both clips move up together."
+  },
+  "transitionSlideDown": "Slide down",
+  "@transitionSlideDown": {
+    "description": "Transition between two clips: Both clips move down together."
+  },
+  "transitionCoverLeft": "Cover left",
+  "@transitionCoverLeft": {
+    "description": "Transition between two clips: The incoming clip slides in from the right over the outgoing one."
+  },
+  "transitionCoverRight": "Cover right",
+  "@transitionCoverRight": {
+    "description": "Transition between two clips: The incoming clip slides in from the left over the outgoing one."
+  },
+  "transitionRevealLeft": "Reveal left",
+  "@transitionRevealLeft": {
+    "description": "Transition between two clips: The outgoing clip slides away to the left, uncovering the incoming one."
+  },
+  "transitionRevealRight": "Reveal right",
+  "@transitionRevealRight": {
+    "description": "Transition between two clips: The outgoing clip slides away to the right, uncovering the incoming one."
+  },
+  "transitionWipeUp": "Wipe up",
+  "@transitionWipeUp": {
+    "description": "Transition between two clips: The incoming clip is revealed from the bottom edge."
+  },
+  "transitionWipeDown": "Wipe down",
+  "@transitionWipeDown": {
+    "description": "Transition between two clips: The incoming clip is revealed from the top edge."
+  },
+  "transitionSoftWipe": "Soft wipe",
+  "@transitionSoftWipe": {
+    "description": "Transition between two clips: A soft diagonal edge sweeps from the bottom left corner."
+  },
+  "transitionClockWipe": "Clock",
+  "@transitionClockWipe": {
+    "description": "Transition between two clips: The incoming clip sweeps in like a clock hand."
+  },
+  "transitionBarnDoorHorizontal": "Split",
+  "@transitionBarnDoorHorizontal": {
+    "description": "Transition between two clips: The incoming clip opens from a line down the middle."
+  },
+  "transitionBarnDoorVertical": "Split vertical",
+  "@transitionBarnDoorVertical": {
+    "description": "Transition between two clips: The incoming clip opens from a line across the middle."
+  },
+  "transitionBlinds": "Blinds",
+  "@transitionBlinds": {
+    "description": "Transition between two clips: The incoming clip appears through opening blinds."
+  },
+  "transitionStripes": "Stripes",
+  "@transitionStripes": {
+    "description": "Transition between two clips: Diagonal stripes fill in one after another."
+  },
+  "transitionZoomOut": "Zoom out",
+  "@transitionZoomOut": {
+    "description": "Transition between two clips: The incoming clip settles from close up as it fades in."
+  },
+  "transitionCrossZoom": "Zoom blur",
+  "@transitionCrossZoom": {
+    "description": "Transition between two clips: A burst of zoom blur carries one clip into the other."
+  },
+  "transitionSpin": "Spin",
+  "@transitionSpin": {
+    "description": "Transition between two clips: The outgoing clip spins away into the middle."
+  },
+  "transitionSwirl": "Swirl",
+  "@transitionSwirl": {
+    "description": "Transition between two clips: The picture twists into a swirl and out again."
+  },
+  "transitionZoomThrough": "Punch zoom",
+  "@transitionZoomThrough": {
+    "description": "Transition between two clips: Zooms deep into the outgoing clip and out of the incoming one."
+  },
+  "transitionCircleOpen": "Circle open",
+  "@transitionCircleOpen": {
+    "description": "Transition between two clips: The incoming clip opens as a growing circle."
+  },
+  "transitionCircleClose": "Circle close",
+  "@transitionCircleClose": {
+    "description": "Transition between two clips: The outgoing clip closes into a shrinking circle."
+  },
+  "transitionDiamond": "Diamond",
+  "@transitionDiamond": {
+    "description": "Transition between two clips: The incoming clip opens as a growing diamond."
+  },
+  "transitionHeart": "Heart",
+  "@transitionHeart": {
+    "description": "Transition between two clips: The incoming clip opens as a growing heart."
+  },
+  "transitionSquares": "Squares",
+  "@transitionSquares": {
+    "description": "Transition between two clips: Squares grow from the middle outward until they meet."
+  },
+  "transitionCheckerboard": "Checkerboard",
+  "@transitionCheckerboard": {
+    "description": "Transition between two clips: Half the squares of a checkerboard change, then the other half."
+  },
+  "transitionBlur": "Blur",
+  "@transitionBlur": {
+    "description": "Transition between two clips: Blurs out of the outgoing clip and into the incoming one."
+  },
+  "transitionFlash": "Flash",
+  "@transitionFlash": {
+    "description": "Transition between two clips: A bright white flash covers the cut."
+  },
+  "transitionLightLeak": "Light leak",
+  "@transitionLightLeak": {
+    "description": "Transition between two clips: A warm glow of light sweeps across the cut."
+  },
+  "transitionBurn": "Burn",
+  "@transitionBurn": {
+    "description": "Transition between two clips: The picture overexposes to near white, then settles on the incoming clip."
+  },
+  "transitionPixelate": "Pixelate",
+  "@transitionPixelate": {
+    "description": "Transition between two clips: The picture breaks into big pixels and back."
+  },
+  "transitionGlitch": "Glitch",
+  "@transitionGlitch": {
+    "description": "Transition between two clips: Rows jump and colors split, as on a damaged tape."
+  },
+  "transitionRgbSplit": "Color split",
+  "@transitionRgbSplit": {
+    "description": "Transition between two clips: Red and blue drift apart and come back together."
+  },
+  "transitionNoise": "Static",
+  "@transitionNoise": {
+    "description": "Transition between two clips: A burst of TV static covers the cut."
+  },
+  "transitionMosaic": "Mosaic",
+  "@transitionMosaic": {
+    "description": "Transition between two clips: Tiles of the incoming clip appear in random order."
+  },
+  "transitionRipple": "Ripple",
+  "@transitionRipple": {
+    "description": "Transition between two clips: Ripples spread through the picture as it changes."
+  },
+  "transitionWave": "Wave",
+  "@transitionWave": {
+    "description": "Transition between two clips: The picture sways in a wave as it changes."
+  },
+  "transitionCube": "Cube",
+  "@transitionCube": {
+    "description": "Transition between two clips: The clips turn like two sides of a cube."
+  },
+  "transitionDoorway": "Doorway",
+  "@transitionDoorway": {
+    "description": "Transition between two clips: The outgoing clip opens like two doors onto the incoming one."
+  },
+  "transitionKaleidoscope": "Kaleidoscope",
+  "@transitionKaleidoscope": {
+    "description": "Transition between two clips: The picture folds into a turning kaleidoscope and back."
+  },
+  "transitionBounce": "Bounce",
+  "@transitionBounce": {
+    "description": "Transition between two clips: The incoming clip drops in from the top and bounces."
   }
 }

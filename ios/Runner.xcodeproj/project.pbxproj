@@ -30,6 +30,7 @@
 		99CE09B3FAAF12CC842DBD8A /* StitchCompositor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BDD387247C34D2A4E5EF032 /* StitchCompositor.swift */; };
 		A7D250634E231EB45368867B /* EngineHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 619BB423439B273118698740 /* EngineHost.swift */; };
 		ADAA6AAC3D6F451693E0405C /* blank.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 44B27F7FBEBD75053364E8DE /* blank.mp4 */; };
+		B467252A96311AFE0F4AC90F /* TransitionSources.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44631427E2A6E12D54BADBBD /* TransitionSources.swift */; };
 		DE7F38A1AF5FDC778C64EA30 /* PreviewPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BF5F60C347707FFDE1CC270 /* PreviewPlayer.swift */; };
 		E6E8BB74F0D33FBE5AC801A7 /* MediaTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A5FE6E75178000AC65AEB83 /* MediaTools.swift */; };
 		F5688ECBAB32266CD5176FEF /* CompositionBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 461585129628828A65525CDB /* CompositionBuilder.swift */; };
@@ -69,6 +70,7 @@
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		44631427E2A6E12D54BADBBD /* TransitionSources.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TransitionSources.swift; sourceTree = "<group>"; };
 		44B27F7FBEBD75053364E8DE /* blank.mp4 */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = blank.mp4; sourceTree = "<group>"; };
 		461585129628828A65525CDB /* CompositionBuilder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CompositionBuilder.swift; sourceTree = "<group>"; };
 		47B317950902787B27184326 /* Keyframes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Keyframes.swift; sourceTree = "<group>"; };
@@ -193,6 +195,7 @@
 				85A8A3350530380025DD95D4 /* TextMotion.swift */,
 				A82E6101457536EACA08FA47 /* SpeechAudio.swift */,
 				47B317950902787B27184326 /* Keyframes.swift */,
+				44631427E2A6E12D54BADBBD /* TransitionSources.swift */,
 			);
 			path = Engine;
 			sourceTree = "<group>";
@@ -271,7 +274,7 @@
 			);
 			mainGroup = 97C146E51CF9000F007C117D;
 			packageReferences = (
-				781AD8BC2B33823900A9FFBB /* XCLocalSwiftPackageReference "Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage" */,
+				781AD8BC2B33823900A9FFBB /* XCLocalSwiftPackageReference "FlutterGeneratedPluginSwiftPackage" */,
 			);
 			productRefGroup = 97C146EF1CF9000F007C117D /* Products */;
 			projectDirPath = "";
@@ -372,6 +375,7 @@
 				FC4B3C4C12AE130D4DE0DB75 /* TextMotion.swift in Sources */,
 				12C1B0502B93319BB668F673 /* SpeechAudio.swift in Sources */,
 				35184973273B48B26558B36E /* Keyframes.swift in Sources */,
+				B467252A96311AFE0F4AC90F /* TransitionSources.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -745,7 +749,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		781AD8BC2B33823900A9FFBB /* XCLocalSwiftPackageReference "Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage" */ = {
+		781AD8BC2B33823900A9FFBB /* XCLocalSwiftPackageReference "FlutterGeneratedPluginSwiftPackage" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage;
 		};

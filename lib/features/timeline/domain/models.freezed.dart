@@ -1558,7 +1558,9 @@ $ClipFramingCopyWith<$Res> get framing {
 /// @nodoc
 mixin _$Transition {
 
- String get afterClipId; TransitionType get type; int get durationUs; Map<String, double> get params;
+ String get afterClipId;/// An id from `transitionCatalog` (transitions/ in the repo). An
+/// unknown id, from a newer version, is kept and plays as a crossfade.
+ String get type; int get durationUs; Map<String, double> get params;
 /// Create a copy of Transition
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1596,7 +1598,7 @@ abstract mixin class $TransitionCopyWith<$Res>  {
   factory $TransitionCopyWith(Transition value, $Res Function(Transition) _then) = _$TransitionCopyWithImpl;
 @useResult
 $Res call({
- String afterClipId, TransitionType type, int durationUs, Map<String, double> params
+ String afterClipId, String type, int durationUs, Map<String, double> params
 });
 
 
@@ -1617,7 +1619,7 @@ class _$TransitionCopyWithImpl<$Res>
   return _then(Transition(
 afterClipId: null == afterClipId ? _self.afterClipId : afterClipId // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as TransitionType,durationUs: null == durationUs ? _self.durationUs : durationUs // ignore: cast_nullable_to_non_nullable
+as String,durationUs: null == durationUs ? _self.durationUs : durationUs // ignore: cast_nullable_to_non_nullable
 as int,params: null == params ? _self.params : params // ignore: cast_nullable_to_non_nullable
 as Map<String, double>,
   ));
@@ -1704,7 +1706,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String afterClipId,  TransitionType type,  int durationUs,  Map<String, double> params)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String afterClipId,  String type,  int durationUs,  Map<String, double> params)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Transition() when $default != null:
 return $default(_that.afterClipId,_that.type,_that.durationUs,_that.params);case _:
@@ -1725,7 +1727,7 @@ return $default(_that.afterClipId,_that.type,_that.durationUs,_that.params);case
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String afterClipId,  TransitionType type,  int durationUs,  Map<String, double> params)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String afterClipId,  String type,  int durationUs,  Map<String, double> params)  $default,) {final _that = this;
 switch (_that) {
 case _Transition():
 return $default(_that.afterClipId,_that.type,_that.durationUs,_that.params);case _:
@@ -1745,7 +1747,7 @@ return $default(_that.afterClipId,_that.type,_that.durationUs,_that.params);case
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String afterClipId,  TransitionType type,  int durationUs,  Map<String, double> params)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String afterClipId,  String type,  int durationUs,  Map<String, double> params)?  $default,) {final _that = this;
 switch (_that) {
 case _Transition() when $default != null:
 return $default(_that.afterClipId,_that.type,_that.durationUs,_that.params);case _:
@@ -1764,7 +1766,9 @@ class _Transition implements Transition {
   factory _Transition.fromJson(Map<String, dynamic> json) => _$TransitionFromJson(json);
 
 @override final  String afterClipId;
-@override final  TransitionType type;
+/// An id from `transitionCatalog` (transitions/ in the repo). An
+/// unknown id, from a newer version, is kept and plays as a crossfade.
+@override final  String type;
 @override final  int durationUs;
  final  Map<String, double> _params;
 @override@JsonKey() Map<String, double> get params {
@@ -1809,7 +1813,7 @@ abstract mixin class _$TransitionCopyWith<$Res> implements $TransitionCopyWith<$
   factory _$TransitionCopyWith(_Transition value, $Res Function(_Transition) _then) = __$TransitionCopyWithImpl;
 @override @useResult
 $Res call({
- String afterClipId, TransitionType type, int durationUs, Map<String, double> params
+ String afterClipId, String type, int durationUs, Map<String, double> params
 });
 
 
@@ -1830,7 +1834,7 @@ class __$TransitionCopyWithImpl<$Res>
   return _then(_Transition(
 afterClipId: null == afterClipId ? _self.afterClipId : afterClipId // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as TransitionType,durationUs: null == durationUs ? _self.durationUs : durationUs // ignore: cast_nullable_to_non_nullable
+as String,durationUs: null == durationUs ? _self.durationUs : durationUs // ignore: cast_nullable_to_non_nullable
 as int,params: null == params ? _self._params : params // ignore: cast_nullable_to_non_nullable
 as Map<String, double>,
   ));

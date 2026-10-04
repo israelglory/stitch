@@ -1343,4 +1343,109 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get transitionBounce => 'Bounce';
+
+  @override
+  String get tabOnline => 'Online';
+
+  @override
+  String get searchSounds => 'Search sounds';
+
+  @override
+  String get noSoundsFound => 'No sounds match';
+
+  @override
+  String get onlineSoundsLoading => 'Loading the sound library';
+
+  @override
+  String get onlineSoundsOffTitle => 'The online library is off';
+
+  @override
+  String get onlineSoundsOffMessage =>
+      'Turn it on in Settings to browse and download more music and sound effects.';
+
+  @override
+  String downloadSoundLabel(String name) {
+    return 'Download $name';
+  }
+
+  @override
+  String downloadingSoundLabel(String name, int percent) {
+    return 'Downloading $name, $percent%. Tap to cancel.';
+  }
+
+  @override
+  String get soundDownloadFailed => 'Download failed. Tap to try again.';
+
+  @override
+  String get soundLibraryNote =>
+      'All sounds are free to use in any video (CC0).';
+
+  @override
+  String get soundCreditsTitle => 'Sound sources';
+
+  @override
+  String get soundCreditsIntro =>
+      'Every sound here is dedicated to the public domain (CC0): free to use anywhere, with no credit needed. Thank you to the artists.';
+
+  @override
+  String get libraryMoodBeats => 'Beats';
+
+  @override
+  String get libraryMoodSeasonal => 'Seasonal';
+
+  @override
+  String get libraryGroupUi => 'Clicks and UI';
+
+  @override
+  String get libraryGroupImpact => 'Impacts';
+
+  @override
+  String get libraryGroupGame => 'Game';
+
+  @override
+  String get libraryGroupVoice => 'Voice';
+
+  @override
+  String get libraryGroupEveryday => 'Everyday';
+
+  @override
+  String get libraryGroupWhoosh => 'Whooshes';
+
+  @override
+  String get libraryGroupNature => 'Nature';
+
+  @override
+  String get libraryGroupCrowd => 'Crowd';
+
+  @override
+  String get libraryGroupFunny => 'Funny';
+
+  @override
+  String get settingsOnlineSounds => 'Online sound library';
+
+  @override
+  String get settingsOnlineSoundsNote =>
+      'Music and sound effects to download, from the Internet Archive. Off, Stitch never contacts it.';
+
+  @override
+  String get settingOn => 'On';
+
+  @override
+  String get settingOff => 'Off';
+
+  @override
+  String get storageSounds => 'Downloaded sounds';
+
+  @override
+  String get deleteSoundsTitle => 'Delete downloaded sounds?';
+
+  @override
+  String get deleteSoundsMessage =>
+      'Projects keep the sounds they use. The rest can be downloaded again.';
+
+  @override
+  String get soundSourcesLink => 'Sources and credits';
+
+  @override
+  String get settingsSounds => 'Sounds';
 }

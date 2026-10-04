@@ -182,6 +182,20 @@ void main() {
       await _finish(tester);
     });
 
+    testWidgets('online sounds', (tester) async {
+      await openEditor(tester);
+      await tester.tap(find.text('Audio'));
+      await tester.pump();
+      await tester.tap(find.text('Music'));
+      await settle(tester);
+      await tester.tap(find.text('Online'));
+      await settle(tester);
+      await tester.tap(find.bySemanticsLabel('Download Party time'));
+      await settle(tester);
+      await _golden(tester, 'online_sounds');
+      await _finish(tester);
+    });
+
     testWidgets('voiceover', (tester) async {
       await openEditor(tester);
       await tester.tap(find.text('Audio'));

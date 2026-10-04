@@ -100,6 +100,26 @@ The picker explains why it needs access before the system prompt appears. After 
 
 The gallery is reloaded every time the app returns to the foreground. On Android, a query made while access was being granted can come back empty, and new media may have been added in the meantime.
 
+## Online sound library
+
+The audio library's Online tab offers music and sound effects to download. The library lives on the Internet Archive; `tool/sound_catalog/README.md` describes it.
+
+- **`SoundCatalog` and `SoundLibraryStore`** (`features/audio/data/sound_library.dart`):
+  - the catalog format;
+  - downloaded sounds in the cache folder (`sounds/`, kept by Clear cache);
+  - the newest catalog, fetched and saved;
+  - previews. Music plays a 15-second clip; an effect is small enough to just download.
+- **`downloadFile`** (`core/network/file_download.dart`) does the downloading, shared with the caption models:
+  - downloads into a `.part` file and resumes from it;
+  - tries the base address, then each mirror;
+  - checks size and SHA-256 before renaming the file into place.
+- **`SoundLibrary`** (`features/audio/application/sound_library.dart`):
+  - loads the saved catalog, or the shipped one (`assets/sound_library/catalog.json`);
+  - fetches the newest catalog once per run of the app;
+  - runs downloads two at a time, with cancel, retry, and delete.
+  - Nothing is requested until the Online tab is opened, and nothing at all when "Online sound library" is off in Settings.
+- **Adding a sound copies the file into the project**, as for any audio. Deleting downloads never affects a project.
+
 ## Errors
 
 Failures are subclasses of the sealed `Failure` in `core/errors`. They carry no user-facing text. Presentation maps each subclass to a localized message.

@@ -1,6 +1,6 @@
 # Stitch
 
-A free, open source video editor for iOS and Android. Everything stays on your device: no accounts, no backend, no tracking. The only network access is an optional one-time download of speech recognition models for captions.
+A free, open source video editor for iOS and Android. Everything stays on your device: no accounts, no backend, no tracking. The app goes online only to download what you ask for: speech recognition models for captions, and music and sound effects from the online sound library (which can be turned off in Settings).
 
 Status: early development. See [docs/architecture.md](docs/architecture.md) for how the code is organized, [docs/design-system.md](docs/design-system.md) for the design system, [docs/timeline.md](docs/timeline.md) for the editing model, and [docs/engine.md](docs/engine.md) for the native media engine.
 
@@ -52,7 +52,7 @@ flutter test integration_test -d emulator-5554 --dart-define=STITCH_TEST_MEDIA=/
 
 `test_media/` holds the media corpus; `tool/make_test_media.sh` regenerates it.
 
-The end to end tests include captions (`integration_test/captions_test.dart`), which download the tiny caption model (44 MB) on first run. The Dart speech recognition tests run whisper.cpp on your computer and skip until the model is fetched:
+`integration_test/online_sounds_test.dart` runs against the live sound library on the Internet Archive, so it needs a network connection. The end to end tests also include captions (`integration_test/captions_test.dart`), which download the tiny caption model (44 MB) on first run. The Dart speech recognition tests run whisper.cpp on your computer and skip until the model is fetched:
 
 ```sh
 tool/fetch_test_model.sh
@@ -102,8 +102,14 @@ Without that file the release build falls back to the debug key and prints a war
 Stitch is built to meet F-Droid's inclusion policy: no proprietary libraries, no Google Play Services, no analytics, and every bundled asset is open (see below). Notes for reviewers:
 
 - **Native code.** whisper.cpp is built from source in `third_party/whisper.cpp` by the Dart build hook (`hook/build.dart`), using the NDK's clang. There is no CMake or prebuilt binary. The NDK version is Flutter's default (`flutter.ndkVersion`, currently 28.2.13676358). Build paths are mapped out of the binary (`-ffile-prefix-map`), so builds are reproducible across machines.
-- **Network.** The only network access is the optional caption model download, started by the user from the captions tool. Models come from Hugging Face (`huggingface.co/ggerganov/whisper.cpp`) at a pinned revision and are checked against a SHA-256 before use. They are OpenAI's Whisper weights (MIT). Nothing else is sent or fetched.
-- **Anti-features.** None expected. The model download could be seen as `NonFreeNet` only if the host is considered a non-free service; the files themselves are free.
+- **Network.** The app makes two kinds of request, and sends nothing about the user in either:
+  - **Caption models**, downloaded only when the user starts one from the captions tool. They come from Hugging Face (`huggingface.co/ggerganov/whisper.cpp`) at a pinned revision and are checked against a SHA-256 before use. They are OpenAI's Whisper weights (MIT).
+  - **The online sound library** (see `tool/sound_catalog/`), hosted on the Internet Archive (`archive.org/details/stitch-sound-library`), a non-profit library:
+    - The audio library fetches its catalog (`catalog.json`) once per run of the app when the Online tab is first opened.
+    - Sounds and previews are downloaded only when the user asks. Each file is checked against its SHA-256.
+    - Every sound is CC0. "Online sound library" in Settings turns all of it off.
+    - The app ships a copy of the catalog, so the list shows offline.
+- **Anti-features.** None expected. Both hosts serve free files: Hugging Face for the caption models, and the Internet Archive, a non-profit, for the sounds. The sound library is optional and can be turned off. The catalog's addresses come from the shipped catalog, which mirrors can be added to.
 
 ## Known limitations
 

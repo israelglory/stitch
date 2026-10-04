@@ -2493,6 +2493,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bounce'**
   String get transitionBounce;
+
+  /// Audio library tab: music and sound effects to download from the online library.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get tabOnline;
+
+  /// Placeholder of the search field in the online sound library.
+  ///
+  /// In en, this message translates to:
+  /// **'Search sounds'**
+  String get searchSounds;
+
+  /// Shown when a search in the online sound library finds nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No sounds match'**
+  String get noSoundsFound;
+
+  /// Shown while the online sound list loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading the sound library'**
+  String get onlineSoundsLoading;
+
+  /// Online tab, when the user turned the online sound library off in Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'The online library is off'**
+  String get onlineSoundsOffTitle;
+
+  /// Online tab, when the library is off.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn it on in Settings to browse and download more music and sound effects.'**
+  String get onlineSoundsOffMessage;
+
+  /// Accessibility label of the download button of a sound.
+  ///
+  /// In en, this message translates to:
+  /// **'Download {name}'**
+  String downloadSoundLabel(String name);
+
+  /// Accessibility label of a sound downloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading {name}, {percent}%. Tap to cancel.'**
+  String downloadingSoundLabel(String name, int percent);
+
+  /// Under a sound whose download failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed. Tap to try again.'**
+  String get soundDownloadFailed;
+
+  /// Note at the end of the online sound list.
+  ///
+  /// In en, this message translates to:
+  /// **'All sounds are free to use in any video (CC0).'**
+  String get soundLibraryNote;
+
+  /// Title of the sheet listing where each online sound comes from.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound sources'**
+  String get soundCreditsTitle;
+
+  /// Top of the sound sources sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Every sound here is dedicated to the public domain (CC0): free to use anywhere, with no credit needed. Thank you to the artists.'**
+  String get soundCreditsIntro;
+
+  /// Music mood: instrumental beats.
+  ///
+  /// In en, this message translates to:
+  /// **'Beats'**
+  String get libraryMoodBeats;
+
+  /// Music mood: holiday and Halloween music.
+  ///
+  /// In en, this message translates to:
+  /// **'Seasonal'**
+  String get libraryMoodSeasonal;
+
+  /// Sound effect group.
+  ///
+  /// In en, this message translates to:
+  /// **'Clicks and UI'**
+  String get libraryGroupUi;
+
+  /// Sound effect group.
+  ///
+  /// In en, this message translates to:
+  /// **'Impacts'**
+  String get libraryGroupImpact;
+
+  /// Sound effect group: retro game and sci-fi sounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Game'**
+  String get libraryGroupGame;
+
+  /// Sound effect group: short spoken words like "Game over".
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get libraryGroupVoice;
+
+  /// Sound effect group: cards, coins, doors, footsteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyday'**
+  String get libraryGroupEveryday;
+
+  /// Sound effect group.
+  ///
+  /// In en, this message translates to:
+  /// **'Whooshes'**
+  String get libraryGroupWhoosh;
+
+  /// Sound effect group: birds, rain, waves.
+  ///
+  /// In en, this message translates to:
+  /// **'Nature'**
+  String get libraryGroupNature;
+
+  /// Sound effect group: applause, cheering, laughter.
+  ///
+  /// In en, this message translates to:
+  /// **'Crowd'**
+  String get libraryGroupCrowd;
+
+  /// Sound effect group: boings, slide whistles.
+  ///
+  /// In en, this message translates to:
+  /// **'Funny'**
+  String get libraryGroupFunny;
+
+  /// Settings row: whether the audio library offers music and sound effects to download.
+  ///
+  /// In en, this message translates to:
+  /// **'Online sound library'**
+  String get settingsOnlineSounds;
+
+  /// Explanation under the online sound library setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Music and sound effects to download, from the Internet Archive. Off, Stitch never contacts it.'**
+  String get settingsOnlineSoundsNote;
+
+  /// A setting that is turned on.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get settingOn;
+
+  /// A setting that is turned off.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get settingOff;
+
+  /// Storage row: space used by sounds downloaded from the online library.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded sounds'**
+  String get storageSounds;
+
+  /// Confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete downloaded sounds?'**
+  String get deleteSoundsTitle;
+
+  /// Confirmation message.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects keep the sounds they use. The rest can be downloaded again.'**
+  String get deleteSoundsMessage;
+
+  /// Link under the online sound list: opens where each sound comes from.
+  ///
+  /// In en, this message translates to:
+  /// **'Sources and credits'**
+  String get soundSourcesLink;
+
+  /// Settings section heading: the online sound library.
+  ///
+  /// In en, this message translates to:
+  /// **'Sounds'**
+  String get settingsSounds;
 }
 
 class _AppLocalizationsDelegate

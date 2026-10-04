@@ -1826,5 +1826,148 @@
   "transitionBounce": "Bounce",
   "@transitionBounce": {
     "description": "Transition between two clips: The incoming clip drops in from the top and bounces."
+  },
+  "tabOnline": "Online",
+  "@tabOnline": {
+    "description": "Audio library tab: music and sound effects to download from the online library."
+  },
+  "searchSounds": "Search sounds",
+  "@searchSounds": {
+    "description": "Placeholder of the search field in the online sound library."
+  },
+  "noSoundsFound": "No sounds match",
+  "@noSoundsFound": {
+    "description": "Shown when a search in the online sound library finds nothing."
+  },
+  "onlineSoundsLoading": "Loading the sound library",
+  "@onlineSoundsLoading": {
+    "description": "Shown while the online sound list loads."
+  },
+  "onlineSoundsOffTitle": "The online library is off",
+  "@onlineSoundsOffTitle": {
+    "description": "Online tab, when the user turned the online sound library off in Settings."
+  },
+  "onlineSoundsOffMessage": "Turn it on in Settings to browse and download more music and sound effects.",
+  "@onlineSoundsOffMessage": {
+    "description": "Online tab, when the library is off."
+  },
+  "downloadSoundLabel": "Download {name}",
+  "@downloadSoundLabel": {
+    "description": "Accessibility label of the download button of a sound.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Party time"
+      }
+    }
+  },
+  "downloadingSoundLabel": "Downloading {name}, {percent}%. Tap to cancel.",
+  "@downloadingSoundLabel": {
+    "description": "Accessibility label of a sound downloading.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Party time"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "soundDownloadFailed": "Download failed. Tap to try again.",
+  "@soundDownloadFailed": {
+    "description": "Under a sound whose download failed."
+  },
+  "soundLibraryNote": "All sounds are free to use in any video (CC0).",
+  "@soundLibraryNote": {
+    "description": "Note at the end of the online sound list."
+  },
+  "soundCreditsTitle": "Sound sources",
+  "@soundCreditsTitle": {
+    "description": "Title of the sheet listing where each online sound comes from."
+  },
+  "soundCreditsIntro": "Every sound here is dedicated to the public domain (CC0): free to use anywhere, with no credit needed. Thank you to the artists.",
+  "@soundCreditsIntro": {
+    "description": "Top of the sound sources sheet."
+  },
+  "libraryMoodBeats": "Beats",
+  "@libraryMoodBeats": {
+    "description": "Music mood: instrumental beats."
+  },
+  "libraryMoodSeasonal": "Seasonal",
+  "@libraryMoodSeasonal": {
+    "description": "Music mood: holiday and Halloween music."
+  },
+  "libraryGroupUi": "Clicks and UI",
+  "@libraryGroupUi": {
+    "description": "Sound effect group."
+  },
+  "libraryGroupImpact": "Impacts",
+  "@libraryGroupImpact": {
+    "description": "Sound effect group."
+  },
+  "libraryGroupGame": "Game",
+  "@libraryGroupGame": {
+    "description": "Sound effect group: retro game and sci-fi sounds."
+  },
+  "libraryGroupVoice": "Voice",
+  "@libraryGroupVoice": {
+    "description": "Sound effect group: short spoken words like \"Game over\"."
+  },
+  "libraryGroupEveryday": "Everyday",
+  "@libraryGroupEveryday": {
+    "description": "Sound effect group: cards, coins, doors, footsteps."
+  },
+  "libraryGroupWhoosh": "Whooshes",
+  "@libraryGroupWhoosh": {
+    "description": "Sound effect group."
+  },
+  "libraryGroupNature": "Nature",
+  "@libraryGroupNature": {
+    "description": "Sound effect group: birds, rain, waves."
+  },
+  "libraryGroupCrowd": "Crowd",
+  "@libraryGroupCrowd": {
+    "description": "Sound effect group: applause, cheering, laughter."
+  },
+  "libraryGroupFunny": "Funny",
+  "@libraryGroupFunny": {
+    "description": "Sound effect group: boings, slide whistles."
+  },
+  "settingsOnlineSounds": "Online sound library",
+  "@settingsOnlineSounds": {
+    "description": "Settings row: whether the audio library offers music and sound effects to download."
+  },
+  "settingsOnlineSoundsNote": "Music and sound effects to download, from the Internet Archive. Off, Stitch never contacts it.",
+  "@settingsOnlineSoundsNote": {
+    "description": "Explanation under the online sound library setting."
+  },
+  "settingOn": "On",
+  "@settingOn": {
+    "description": "A setting that is turned on."
+  },
+  "settingOff": "Off",
+  "@settingOff": {
+    "description": "A setting that is turned off."
+  },
+  "storageSounds": "Downloaded sounds",
+  "@storageSounds": {
+    "description": "Storage row: space used by sounds downloaded from the online library."
+  },
+  "deleteSoundsTitle": "Delete downloaded sounds?",
+  "@deleteSoundsTitle": {
+    "description": "Confirmation title."
+  },
+  "deleteSoundsMessage": "Projects keep the sounds they use. The rest can be downloaded again.",
+  "@deleteSoundsMessage": {
+    "description": "Confirmation message."
+  },
+  "soundSourcesLink": "Sources and credits",
+  "@soundSourcesLink": {
+    "description": "Link under the online sound list: opens where each sound comes from."
+  },
+  "settingsSounds": "Sounds",
+  "@settingsSounds": {
+    "description": "Settings section heading: the online sound library."
   }
 }

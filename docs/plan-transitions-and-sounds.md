@@ -1,6 +1,6 @@
 # Plan: more transitions and an online sound library
 
-Status: T1 and T2 done (50 transitions; see `transitions/README.md`). A1 to A4 not started. Each milestone ends with a report.
+Status: T1 and T2 done (50 transitions; see `transitions/README.md`). A1 to A3 built (150 CC0 sounds; see `tool/sound_catalog/README.md`); A4 device testing in progress. Previews are downloaded clips played locally, not streamed, so no native changes were needed.
 
 ## Part 1: Transitions
 

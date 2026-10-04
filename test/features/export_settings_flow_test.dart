@@ -202,6 +202,8 @@ void main() {
       containerOf(tester).invalidate(storageUseProvider);
       await settle(tester);
       await tester.scrollUntilVisible(find.text('Clear cache'), 200);
+      await tester.ensureVisible(find.text('Clear cache'));
+      await tester.pump();
       await tester.tap(find.text('Clear cache'));
       await settle(tester, rounds: 2);
       expect(find.text('Clear the cache?'), findsOneWidget);

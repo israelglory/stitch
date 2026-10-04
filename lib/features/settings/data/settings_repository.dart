@@ -13,6 +13,7 @@ class SettingsRepository {
   static const _frameRate = 'settings.export.frameRate';
   static const _quality = 'settings.export.quality';
   static const _aspect = 'settings.aspect';
+  static const _onlineSounds = 'settings.onlineSounds';
 
   final SharedPreferencesWithCache _prefs;
 
@@ -38,6 +39,7 @@ class SettingsRepository {
         quality: pick(ExportQuality.values, _quality, defaults.export.quality),
       ),
       aspect: pick(AspectPreset.values, _aspect, defaults.aspect),
+      onlineSounds: _prefs.getBool(_onlineSounds) ?? defaults.onlineSounds,
     );
   }
 
@@ -47,5 +49,6 @@ class SettingsRepository {
     await _prefs.setInt(_frameRate, settings.export.frameRate);
     await _prefs.setString(_quality, settings.export.quality.name);
     await _prefs.setString(_aspect, settings.aspect.name);
+    await _prefs.setBool(_onlineSounds, settings.onlineSounds);
   }
 }

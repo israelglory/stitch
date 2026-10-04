@@ -8,6 +8,7 @@ import 'package:stitch/core/platform/system_services.dart';
 import 'package:stitch/engine/engine_provider.dart';
 import 'package:stitch/engine/fake_editor_engine.dart';
 import 'package:stitch/features/audio/application/audio_providers.dart';
+import 'package:stitch/features/audio/application/sound_library.dart';
 import 'package:stitch/features/audio/data/audio_device.dart';
 import 'package:stitch/features/captions/application/caption_providers.dart';
 import 'package:stitch/features/onboarding/data/onboarding_repository.dart';
@@ -15,6 +16,7 @@ import 'package:stitch/features/text/application/text_providers.dart';
 
 import 'fake_captions.dart';
 import 'fake_media_library.dart';
+import 'fake_sound_library.dart';
 import 'fake_text_rasterizer.dart';
 import 'prefs.dart';
 
@@ -31,6 +33,7 @@ final class TestEnv {
     this.speech,
     this.models,
     this.system,
+    this.sounds,
   );
 
   static final DateTime now = DateTime.utc(2026, 9, 24, 12);
@@ -44,6 +47,7 @@ final class TestEnv {
   final FakeSpeechRecognizer speech;
   final FakeCaptionModelStore models;
   final FakeSystemServices system;
+  final FakeSoundLibraryStore sounds;
 
   /// Creates the environment. Call from a test (it registers tear-downs).
   /// Real file IO must run outside the widget tester's fake async zone,
@@ -58,6 +62,9 @@ final class TestEnv {
     final speech = FakeSpeechRecognizer();
     final models = FakeCaptionModelStore();
     final system = FakeSystemServices();
+    final sounds = FakeSoundLibraryStore(
+      Directory('${root.path}/cache/sounds'),
+    );
     final prefs = await inMemoryPrefs({
       if (onboarded) OnboardingRepository.completedKey: true,
     });
@@ -75,6 +82,10 @@ final class TestEnv {
         speechRecognizerProvider.overrideWithValue(speech),
         captionModelStoreProvider.overrideWithValue(models),
         systemServicesProvider.overrideWithValue(system),
+        soundLibraryStoreProvider.overrideWithValue(sounds),
+        shippedSoundCatalogProvider.overrideWith(
+          (ref) async => fakeSoundCatalog(),
+        ),
       ],
     );
     addTearDown(() {
@@ -91,6 +102,7 @@ final class TestEnv {
       speech,
       models,
       system,
+      sounds,
     );
   }
 }

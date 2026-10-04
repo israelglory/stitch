@@ -49,7 +49,7 @@ final class StorageUseProvider
   }
 }
 
-String _$storageUseHash() => r'dc30b7ec7466a6699f63c10e0fdc431e86911646';
+String _$storageUseHash() => r'36d1ed5c738b6a478888ce07171d721e52946e9a';
 
 @ProviderFor(cacheCleaner)
 final cacheCleanerProvider = CacheCleanerProvider._();

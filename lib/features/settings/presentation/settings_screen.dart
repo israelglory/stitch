@@ -9,6 +9,7 @@ import 'package:stitch/app/providers.dart';
 import 'package:stitch/app/router.dart';
 import 'package:stitch/core/storage/bytes.dart';
 import 'package:stitch/design/design.dart';
+import 'package:stitch/features/audio/application/sound_library.dart';
 import 'package:stitch/features/captions/application/caption_providers.dart';
 import 'package:stitch/features/captions/data/caption_models.dart';
 import 'package:stitch/features/export/domain/export_options.dart';
@@ -154,6 +155,23 @@ class SettingsScreen extends ConsumerWidget {
                         controller.update((s) => s.copyWith(theme: t)),
                   ),
                 ),
+                _Section(l10n.settingsSounds),
+                ListRow(
+                  title: l10n.settingsOnlineSounds,
+                  subtitle: l10n.settingsOnlineSoundsNote,
+                  value: settings.onlineSounds
+                      ? l10n.settingOn
+                      : l10n.settingOff,
+                  showChevron: true,
+                  onTap: () => _choose(
+                    context,
+                    title: l10n.settingsOnlineSounds,
+                    options: [(true, l10n.settingOn), (false, l10n.settingOff)],
+                    selected: settings.onlineSounds,
+                    onSelected: (on) =>
+                        controller.update((s) => s.copyWith(onlineSounds: on)),
+                  ),
+                ),
                 _Section(l10n.settingsStorage),
                 const _Storage(),
                 _Section(l10n.settingsCaptionModels),
@@ -283,6 +301,20 @@ class _StorageState extends ConsumerState<_Storage> {
     setState(() => _clearing = false);
   }
 
+  Future<void> _deleteSounds() async {
+    final l10n = AppLocalizations.of(context);
+    final ok = await showConfirmDialog(
+      context: context,
+      title: l10n.deleteSoundsTitle,
+      message: l10n.deleteSoundsMessage,
+      confirmLabel: l10n.delete,
+      destructive: true,
+    );
+    if (!ok || !mounted) return;
+    await ref.read(soundLibraryProvider.notifier).deleteAll();
+    if (mounted) ref.invalidate(storageUseProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -309,6 +341,23 @@ class _StorageState extends ConsumerState<_Storage> {
           row(l10n.storageProjects, use.value?.projects),
           row(l10n.storageCache, use.value?.cache),
           row(l10n.storageModels, use.value?.models),
+          ListRow(
+            title: l10n.storageSounds,
+            value: use.value == null
+                ? null
+                : formatBytes(l10n, use.value!.sounds),
+            trailing: use.value == null
+                ? Skeleton.text(
+                    AppTypography.body,
+                    width: AppSizes.skeletonValue,
+                  )
+                : (use.value!.sounds == 0
+                      ? null
+                      : AppTextButton(
+                          label: l10n.delete,
+                          onPressed: () => unawaited(_deleteSounds()),
+                        )),
+          ),
         ],
         Padding(
           padding: const EdgeInsets.fromLTRB(

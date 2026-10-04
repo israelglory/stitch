@@ -11,8 +11,11 @@ import 'package:stitch/core/time/time.dart';
 import 'package:stitch/design/design.dart';
 import 'package:stitch/features/audio/application/audio_providers.dart';
 import 'package:stitch/features/audio/application/bundled_files.dart';
+import 'package:stitch/features/audio/application/sound_library.dart';
 import 'package:stitch/features/audio/data/audio_device.dart';
 import 'package:stitch/features/audio/data/bundled_audio.dart';
+import 'package:stitch/features/audio/data/sound_library.dart';
+import 'package:stitch/features/audio/presentation/online_sounds.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
 import 'package:stitch/features/timeline/domain/models.dart' as m;
@@ -20,10 +23,11 @@ import 'package:stitch/l10n/generated/app_localizations.dart';
 
 enum AudioLibraryKind { music, effects }
 
-enum _Source { bundled, device }
+enum _Source { bundled, online, device }
 
-/// Music or sound effects to add at the playhead: the bundled library,
-/// tried before adding, and (for music) a file from the device.
+/// Music or sound effects to add at the playhead: the bundled library, the
+/// online library (downloaded on request), each tried before adding, and
+/// (for music) a file from the device.
 class AudioLibraryScreen extends ConsumerStatefulWidget {
   const new({required this.projectId, required this.kind, super.key});
 
@@ -39,8 +43,9 @@ class _AudioLibraryState extends ConsumerState<AudioLibraryScreen> {
   bool _busy = false;
   Object? _error;
 
-  /// The sound being tried, while its file is prepared or it plays.
-  BundledSound? _trying;
+  /// The sound being tried (its id and name), while its file is prepared
+  /// or it plays.
+  ({String id, String name})? _trying;
 
   // Read up front: dispose may not use ref.
   late final AudioDevice _device;
@@ -61,16 +66,34 @@ class _AudioLibraryState extends ConsumerState<AudioLibraryScreen> {
     super.dispose();
   }
 
-  Future<void> _toggle(BundledSound sound, AudioPreviewState state) async {
-    if (_trying?.id == sound.id && state.isPlaying) {
+  /// Plays [id] from the file [prepare] gives, or stops it if playing.
+  Future<void> _toggle(
+    String id,
+    String name,
+    Future<File> Function() prepare,
+    AudioPreviewState state,
+  ) async {
+    if (_trying?.id == id && state.isPlaying) {
       setState(() => _trying = null);
       await _device.stopPreview();
       return;
     }
-    setState(() => _trying = sound);
-    final file = await bundledSoundFile(sound, _cache);
-    if (!mounted || _trying?.id != sound.id) return;
-    await _device.startPreview(file.path);
+    setState(() {
+      _trying = (id: id, name: name);
+      _error = null;
+    });
+    try {
+      final file = await prepare();
+      if (!mounted || _trying?.id != id) return;
+      await _device.startPreview(file.path);
+    } on Object catch (e) {
+      if (mounted) {
+        setState(() {
+          _trying = null;
+          _error = e;
+        });
+      }
+    }
   }
 
   Future<void> _run(Future<void> Function() add) async {
@@ -102,6 +125,16 @@ class _AudioLibraryState extends ConsumerState<AudioLibraryScreen> {
     await _controller.addAudioFile(
       file,
       name: name,
+      kind: _music ? m.AudioKind.music : m.AudioKind.soundEffect,
+      atUs: _playhead,
+    );
+  });
+
+  Future<void> _addOnline(LibrarySound sound) => _run(() async {
+    final file = ref.read(soundLibraryProvider.notifier).fileOf(sound);
+    await _controller.addAudioFile(
+      file,
+      name: sound.title,
       kind: _music ? m.AudioKind.music : m.AudioKind.soundEffect,
       atUs: _playhead,
     );
@@ -140,23 +173,23 @@ class _AudioLibraryState extends ConsumerState<AudioLibraryScreen> {
               onPressed: () => context.pop(),
             ),
           ),
-          if (_music)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.screen,
-                AppSpacing.sm,
-                AppSpacing.screen,
-                AppSpacing.sm,
-              ),
-              child: SegmentedControl<_Source>(
-                segments: [
-                  Segment(_Source.bundled, l10n.tabBundled),
-                  Segment(_Source.device, l10n.tabFromDevice),
-                ],
-                selected: _source,
-                onChanged: _busy ? null : (s) => setState(() => _source = s),
-              ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screen,
+              AppSpacing.sm,
+              AppSpacing.screen,
+              AppSpacing.sm,
             ),
+            child: SegmentedControl<_Source>(
+              segments: [
+                Segment(_Source.bundled, l10n.tabBundled),
+                Segment(_Source.online, l10n.tabOnline),
+                if (_music) Segment(_Source.device, l10n.tabFromDevice),
+              ],
+              selected: _source,
+              onChanged: _busy ? null : (s) => setState(() => _source = s),
+            ),
+          ),
           if (error != null && failureMessage(l10n, error) != null)
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -166,32 +199,55 @@ class _AudioLibraryState extends ConsumerState<AudioLibraryScreen> {
             ),
           if (_busy) const LinearProgress(),
           Expanded(
-            child: _source == _Source.device
-                ? EmptyState(
-                    title: l10n.deviceAudioTitle,
-                    message: l10n.deviceAudioMessage,
-                    actionLabel: l10n.chooseFile,
-                    primaryAction: true,
-                    onAction: _pickFile,
-                  )
-                : _BundledList(
-                    sounds: _music ? bundledMusic : bundledEffects,
-                    music: _music,
-                    playingId: playing?.id,
-                    enabled: !_busy,
-                    onToggle: (s) => _toggle(s, state),
-                    onAdd: _addBundled,
-                  ),
+            child: switch (_source) {
+              _Source.device => EmptyState(
+                title: l10n.deviceAudioTitle,
+                message: l10n.deviceAudioMessage,
+                actionLabel: l10n.chooseFile,
+                primaryAction: true,
+                onAction: _pickFile,
+              ),
+              _Source.online => OnlineSoundList(
+                kind: _music ? LibraryKind.music : LibraryKind.effect,
+                playingId: playing?.id,
+                enabled: !_busy,
+                onToggle: (s) => _toggle(
+                  s.id,
+                  s.title,
+                  () => ref.read(soundLibraryProvider.notifier).previewFile(s),
+                  state,
+                ),
+                onAdd: _addOnline,
+              ),
+              _Source.bundled => _BundledList(
+                sounds: _music ? bundledMusic : bundledEffects,
+                music: _music,
+                playingId: playing?.id,
+                enabled: !_busy,
+                onToggle: (s) => _toggle(
+                  s.id,
+                  _soundName(l10n, s),
+                  () => bundledSoundFile(s, _cache),
+                  state,
+                ),
+                onAdd: _addBundled,
+              ),
+            },
           ),
           if (playing != null)
             MiniPlayer(
               caption: l10n.nowPlaying,
-              title: _soundName(l10n, playing),
+              title: playing.name,
               progress: state.durationUs == 0
                   ? 0
                   : state.positionUs / state.durationUs,
               stopLabel: l10n.stopPreview,
-              onStop: () => _toggle(playing, state),
+              onStop: () => _toggle(
+                playing.id,
+                playing.name,
+                () => throw StateError('Already playing'),
+                state,
+              ),
             ),
         ],
       ),

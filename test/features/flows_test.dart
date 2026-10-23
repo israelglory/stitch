@@ -147,6 +147,30 @@ void main() {
     await settleUntil(tester, find.text('No projects yet'));
   });
 
+  testWidgets('home: the rename dialog stays above the keyboard', (
+    tester,
+  ) async {
+    final env = await createEnv(tester);
+    await createProject(tester, env);
+    await pumpApp(tester, env, size: const Size(360, 640));
+    await tester.tap(find.bySemanticsLabel('Options for Beach day'));
+    await settle(tester);
+    await tester.tap(find.text('Rename'));
+    await settle(tester);
+    const keyboard = 300.0;
+    tester.view.viewInsets = FakeViewPadding(
+      bottom: keyboard * tester.view.devicePixelRatio,
+    );
+    addTearDown(tester.view.resetViewInsets);
+    await settle(tester);
+    expect(
+      tester.getRect(find.text('Save')).bottom,
+      lessThanOrEqualTo(640 - keyboard),
+    );
+    await tester.tap(find.text('Save'));
+    await settle(tester);
+  });
+
   group('editor', () {
     Future<(String, EditorController)> open(WidgetTester tester) async {
       final env = await createEnv(tester);

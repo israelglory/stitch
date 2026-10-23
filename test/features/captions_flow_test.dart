@@ -306,6 +306,37 @@ void main() {
       await finish(tester);
     });
 
+    testWidgets('the caption being typed in stays above the keyboard', (
+      tester,
+    ) async {
+      await withCaptions(tester);
+      await tester.tap(find.text('Captions'));
+      await settle(tester);
+      final field = find.byType(EditableText).last;
+      await tester.tap(field);
+      // A phone keyboard: 336 points.
+      const keyboard = 336.0;
+      tester.view.viewInsets = FakeViewPadding(
+        bottom: keyboard * tester.view.devicePixelRatio,
+      );
+      addTearDown(tester.view.resetViewInsets);
+      await settle(tester);
+      expect(tester.takeException(), isNull);
+      final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+      final above = screen.height - keyboard;
+      expect(tester.getRect(field).bottom, lessThanOrEqualTo(above));
+      expect(
+        tester.getRect(find.text('Captions').last).top,
+        greaterThanOrEqualTo(0),
+        reason: 'the title stays on screen',
+      );
+      tester.view.resetViewInsets();
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.tap(find.bySemanticsLabel('Done'));
+      await settle(tester);
+      await finish(tester);
+    });
+
     testWidgets('style and position apply to every caption', (tester) async {
       final id = await withCaptions(tester);
       await tester.tap(find.text('Captions'));

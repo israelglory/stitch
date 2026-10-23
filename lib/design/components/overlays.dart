@@ -426,69 +426,73 @@ class _TextInputDialogState extends State<_TextInputDialog> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final l10n = AppLocalizations.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: _dialogMaxWidth),
-          child: Material(
-            type: MaterialType.transparency,
-            child: Container(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              decoration: BoxDecoration(
-                color: colors.surface,
-                border: Border.all(color: colors.border),
-                borderRadius: BorderRadius.circular(AppRadius.card),
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Semantics(
-                      header: true,
-                      child: Text(
-                        widget.title,
-                        style: AppTypography.bodyLarge.semibold.copyWith(
-                          color: colors.textPrimary,
+    // Centered in the room the keyboard leaves.
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: _dialogMaxWidth),
+            child: Material(
+              type: MaterialType.transparency,
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                decoration: BoxDecoration(
+                  color: colors.surface,
+                  border: Border.all(color: colors.border),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Semantics(
+                        header: true,
+                        child: Text(
+                          widget.title,
+                          style: AppTypography.bodyLarge.semibold.copyWith(
+                            color: colors.textPrimary,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    AppTextField(
-                      controller: _controller,
-                      hint: widget.hint,
-                      autofocus: true,
-                      semanticLabel: widget.title,
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (_) => _submit(),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SecondaryButton(
-                            label: l10n.cancel,
-                            onPressed: () => Navigator.of(context).pop(),
-                            expand: true,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: ListenableBuilder(
-                            listenable: _controller,
-                            builder: (context, _) => PrimaryButton(
-                              label: widget.confirmLabel,
+                      const SizedBox(height: AppSpacing.md),
+                      AppTextField(
+                        controller: _controller,
+                        hint: widget.hint,
+                        autofocus: true,
+                        semanticLabel: widget.title,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _submit(),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SecondaryButton(
+                              label: l10n.cancel,
+                              onPressed: () => Navigator.of(context).pop(),
                               expand: true,
-                              onPressed: _controller.text.trim().isEmpty
-                                  ? null
-                                  : _submit,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: ListenableBuilder(
+                              listenable: _controller,
+                              builder: (context, _) => PrimaryButton(
+                                label: widget.confirmLabel,
+                                expand: true,
+                                onPressed: _controller.text.trim().isEmpty
+                                    ? null
+                                    : _submit,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,6 +43,11 @@ enum _Tab { text, style }
 /// caption stays in view on the preview.
 const _bodyHeightFraction = 0.36;
 
+/// Height of the sheet around the tab body: the handle, title, tabs, and
+/// their spacing.
+const double _sheetChrome =
+    AppSizes.minTouchTarget * 3 + AppSpacing.xxl + AppSpacing.lg;
+
 class CaptionEditorPanel extends ConsumerStatefulWidget {
   const new({
     required this.projectId,
@@ -77,33 +83,47 @@ class _CaptionEditorState extends ConsumerState<CaptionEditorPanel> {
     final l10n = AppLocalizations.of(context);
     final state = ref.watch(editorControllerProvider(widget.projectId)).value;
     if (state == null) return const SizedBox.shrink();
-    final height = MediaQuery.sizeOf(context).height * _bodyHeightFraction;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SegmentedControl<_Tab>(
-          segments: [
-            Segment(_Tab.text, l10n.tabText),
-            Segment(_Tab.style, l10n.tabStyle),
-          ],
-          selected: _tab,
-          onChanged: (tab) {
-            FocusScope.of(context).unfocus();
-            setState(() => _tab = tab);
-          },
-        ),
-        const SizedBox(height: AppSpacing.md),
-        ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: height),
-          child: switch (_tab) {
-            _Tab.text => _textTab(state),
-            _Tab.style => SingleChildScrollView(
-              child: _StyleTab(projectId: widget.projectId),
-            ),
-          },
-        ),
-      ],
+    // Above the keyboard: the sheet rises with it, and the list gives up
+    // height so the title, the tabs, and the row being typed in still fit.
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final screen = MediaQuery.sizeOf(context).height;
+    final top = MediaQuery.paddingOf(context).top;
+    final height = math.max(
+      AppSizes.minTouchTarget * 2,
+      math.min(
+        screen * _bodyHeightFraction,
+        screen - keyboard - top - _sheetChrome,
+      ),
+    );
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboard),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SegmentedControl<_Tab>(
+            segments: [
+              Segment(_Tab.text, l10n.tabText),
+              Segment(_Tab.style, l10n.tabStyle),
+            ],
+            selected: _tab,
+            onChanged: (tab) {
+              FocusScope.of(context).unfocus();
+              setState(() => _tab = tab);
+            },
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: height),
+            child: switch (_tab) {
+              _Tab.text => _textTab(state),
+              _Tab.style => SingleChildScrollView(
+                child: _StyleTab(projectId: widget.projectId),
+              ),
+            },
+          ),
+        ],
+      ),
     );
   }
 

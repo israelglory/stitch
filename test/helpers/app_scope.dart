@@ -7,6 +7,7 @@ import 'package:stitch/core/ids/ids.dart';
 import 'package:stitch/core/platform/system_services.dart';
 import 'package:stitch/engine/engine_provider.dart';
 import 'package:stitch/engine/fake_editor_engine.dart';
+import 'package:stitch/features/ads/ads.dart';
 import 'package:stitch/features/audio/application/audio_providers.dart';
 import 'package:stitch/features/audio/application/sound_library.dart';
 import 'package:stitch/features/audio/data/audio_device.dart';
@@ -52,7 +53,10 @@ final class TestEnv {
   /// Creates the environment. Call from a test (it registers tear-downs).
   /// Real file IO must run outside the widget tester's fake async zone,
   /// so widget tests call this through `tester.runAsync`.
-  static Future<TestEnv> create({bool onboarded = true}) async {
+  static Future<TestEnv> create({
+    bool onboarded = true,
+    Ads ads = const NoAds(),
+  }) async {
     final root = Directory.systemTemp.createTempSync('stitch_test');
     final libraryDir = Directory('${root.path}/library')..createSync();
     final library = FakeMediaLibrary(libraryDir);
@@ -71,6 +75,7 @@ final class TestEnv {
     final container = ProviderContainer(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
+        adsProvider.overrideWithValue(ads),
         storageRootProvider.overrideWithValue(root),
         cacheRootProvider.overrideWithValue(Directory('${root.path}/cache')),
         mediaLibraryProvider.overrideWithValue(library),

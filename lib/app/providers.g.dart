@@ -153,6 +153,51 @@ final class IdGeneratorProvider
 
 String _$idGeneratorHash() => r'33d878f6e343af1c672e0184b3b113cc4ea75cb3';
 
+/// Ads (Google AdMob). Tests replace it with [NoAds].
+
+@ProviderFor(ads)
+final adsProvider = AdsProvider._();
+
+/// Ads (Google AdMob). Tests replace it with [NoAds].
+
+final class AdsProvider extends $FunctionalProvider<Ads, Ads, Ads>
+    with $Provider<Ads> {
+  /// Ads (Google AdMob). Tests replace it with [NoAds].
+  AdsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'adsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$adsHash();
+
+  @$internal
+  @override
+  $ProviderElement<Ads> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  Ads create(Ref ref) {
+    return ads(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(Ads value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<Ads>(value),
+    );
+  }
+}
+
+String _$adsHash() => r'54b89575bd0acd7a749ff163a231be2972fc59de';
+
 /// Free space, the photo library, sharing, and links. Tests override it.
 
 @ProviderFor(systemServices)

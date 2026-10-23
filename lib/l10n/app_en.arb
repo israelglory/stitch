@@ -1523,6 +1523,10 @@
   "@settingsAbout": {
     "description": "Settings section."
   },
+  "settingsAdPrivacy": "Ad privacy choices",
+  "@settingsAdPrivacy": {
+    "description": "Settings row that opens Google's form for changing ad consent choices. Shown only where the law requires it."
+  },
   "settingsVersion": "Version",
   "@settingsVersion": {
     "description": "Settings row showing the app version."

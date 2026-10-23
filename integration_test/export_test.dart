@@ -20,6 +20,7 @@ import 'package:stitch/app/router.dart';
 import 'package:stitch/design/design.dart';
 import 'package:stitch/engine/engine_provider.dart';
 import 'package:stitch/engine/native_editor_engine.dart';
+import 'package:stitch/features/ads/ads.dart';
 import 'package:stitch/features/export/application/export_controller.dart';
 import 'package:stitch/features/export/presentation/export_screen.dart';
 import 'package:stitch/features/media/domain/library_item.dart';
@@ -65,6 +66,7 @@ void main() {
     await bootstrap(
       installErrorHandlers: false,
       overrides: [
+        adsProvider.overrideWithValue(const NoAds()),
         editorEngineProvider.overrideWithValue(engine),
         mediaLibraryProvider.overrideWithValue(library),
       ],

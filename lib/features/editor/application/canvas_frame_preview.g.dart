@@ -86,7 +86,7 @@ final class CanvasFramePreviewProvider
 }
 
 String _$canvasFramePreviewHash() =>
-    r'80c98cc8e90e4f684b27c6e94b15524bceba96fc';
+    r'c3ebf9117d57e182ef54c300c0a096a2ed56ea40';
 
 /// The preview while an overlay is moved, zoomed, turned, or faded by
 /// hand. The engine is sent the edit only when it ends, and its picture

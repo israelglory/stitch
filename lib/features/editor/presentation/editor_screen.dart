@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stitch/app/failure_messages.dart';
+import 'package:stitch/app/providers.dart';
 import 'package:stitch/app/router.dart';
 import 'package:stitch/design/design.dart';
 import 'package:stitch/features/captions/presentation/caption_progress.dart';
@@ -107,6 +108,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   Future<void> _export() async {
     final options = await showExportSheet(context, widget.projectId);
     if (options == null || !mounted) return;
+    // A full-screen ad first, when one is ready; the export starts after.
+    await ref.read(adsProvider).showInterstitial();
+    if (!mounted) return;
     await context.push(
       AppRoutes.editorExport(widget.projectId),
       extra: options,

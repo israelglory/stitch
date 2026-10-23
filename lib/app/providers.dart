@@ -6,6 +6,8 @@ import 'package:stitch/core/ids/ids.dart';
 import 'package:stitch/core/platform/system_services.dart';
 import 'package:stitch/core/time/clock.dart';
 import 'package:stitch/engine/engine_provider.dart';
+import 'package:stitch/features/ads/admob_ads.dart';
+import 'package:stitch/features/ads/ads.dart';
 import 'package:stitch/features/media/data/media_library.dart';
 import 'package:stitch/features/media/data/photo_manager_library.dart';
 import 'package:stitch/features/projects/data/media_importer.dart';
@@ -27,6 +29,10 @@ Directory storageRoot(Ref ref) =>
 
 @Riverpod(keepAlive: true)
 IdGenerator idGenerator(Ref ref) => RandomIdGenerator();
+
+/// Ads (Google AdMob). Tests replace it with [NoAds].
+@Riverpod(keepAlive: true)
+Ads ads(Ref ref) => AdMobAds();
 
 /// Free space, the photo library, sharing, and links. Tests override it.
 @Riverpod(keepAlive: true)

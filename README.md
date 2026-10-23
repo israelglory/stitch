@@ -1,6 +1,6 @@
 # Stitch
 
-A free, open source video editor for iOS and Android. Everything stays on your device: no accounts, no backend, no tracking. The app goes online only to download what you ask for: speech recognition models for captions, and music and sound effects from the online sound library (which can be turned off in Settings).
+A free, open source video editor for iOS and Android. Your projects stay on your device: no accounts and no backend. The app shows ads from Google AdMob (a banner on the projects screen, and a full-screen ad before generating captions and before an export); where the law requires it, Google's consent form asks first, and Settings offers "Ad privacy choices". Besides ads, the app goes online only to download what you ask for: speech recognition models for captions, and music and sound effects from the online sound library (which can be turned off in Settings).
 
 Status: early development. See [docs/architecture.md](docs/architecture.md) for how the code is organized, [docs/design-system.md](docs/design-system.md) for the design system, [docs/timeline.md](docs/timeline.md) for the editing model, and [docs/engine.md](docs/engine.md) for the native media engine.
 
@@ -97,12 +97,22 @@ keyPassword=...
 
 Without that file the release build falls back to the debug key and prints a warning. The app icon comes from `assets/light.png` and `assets/dark.png`. After changing either, run `tool/make_icons.sh`: it writes the iOS icon (light, plus dark and tinted variants for iOS 18) and the Android adaptive icon (light by default, dark in night mode, and a monochrome layer for themed icons). The same script makes the splash logo: the native launch screens (iOS `LaunchScreen.storyboard`, Android `launch_background.xml` and the Android 12 splash theme) and `assets/splash/`, which Flutter draws in the same place before fading into the app (`lib/app/splash.dart`).
 
+## Ads
+
+Ads come from Google AdMob (`google_mobile_ads`), behind one interface, `Ads` (`lib/features/ads/`):
+- `AdMobAds` asks for consent with Google's User Messaging Platform where required, then starts the SDK. No ad is requested without it.
+- A banner is pinned at the bottom of the projects screen; it takes no room until an ad loads.
+- A full-screen ad shows before captions are generated and before an export, when one is ready and none showed in the last minute. The action goes on when it closes, or at once when there is none.
+- Debug and profile builds use Google's test ad units; release builds use the app's own (`AdUnits`). The AdMob app ids are in `AndroidManifest.xml` and `Info.plist`.
+- `NoAds` replaces it in tests, and in a build without ads.
+- On Google Play, declare that the app contains ads and uses the advertising ID (the SDK adds `AD_ID`). On the App Store, the privacy details must list the data the SDK collects.
+
 ## F-Droid
 
-Stitch is built to meet F-Droid's inclusion policy: no proprietary libraries, no Google Play Services, no analytics, and every bundled asset is open (see below). Notes for reviewers:
+The AdMob SDK is proprietary, so builds with ads cannot go on F-Droid. A build for F-Droid would remove `google_mobile_ads` and provide `NoAds` instead of `AdMobAds` (`adsProvider` in `lib/app/providers.dart`). Everything else is built to meet F-Droid's inclusion policy: no other proprietary libraries, no Google Play Services, no analytics, and every bundled asset is open (see below). Notes for reviewers:
 
 - **Native code.** whisper.cpp is built from source in `third_party/whisper.cpp` by the Dart build hook (`hook/build.dart`), using the NDK's clang. There is no CMake or prebuilt binary. The NDK version is Flutter's default (`flutter.ndkVersion`, currently 28.2.13676358). Build paths are mapped out of the binary (`-ffile-prefix-map`), so builds are reproducible across machines.
-- **Network.** The app makes two kinds of request, and sends nothing about the user in either:
+- **Network.** Besides ads (above), the app makes two kinds of request, and sends nothing about the user in either:
   - **Caption models**, downloaded only when the user starts one from the captions tool. They come from Hugging Face (`huggingface.co/ggerganov/whisper.cpp`) at a pinned revision and are checked against a SHA-256 before use. They are OpenAI's Whisper weights (MIT).
   - **The online sound library** (see `tool/sound_catalog/`), hosted on the Internet Archive (`archive.org/details/stitch-sound-library`), a non-profit library:
     - The audio library fetches its catalog (`catalog.json`) once per run of the app when the Online tab is first opened.

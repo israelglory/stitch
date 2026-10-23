@@ -27,6 +27,11 @@ final FutureProvider<String> _appVersionProvider = FutureProvider(
   (ref) => ref.watch(systemServicesProvider).appVersion(),
 );
 
+/// Whether the law asks for a way to change ad privacy choices here.
+final FutureProvider<bool> _adPrivacyProvider = FutureProvider(
+  (ref) => ref.watch(adsProvider).privacyChoicesRequired(),
+);
+
 /// Export defaults, the new project format, theme, storage with Clear
 /// cache, caption models, and about.
 class SettingsScreen extends ConsumerWidget {
@@ -39,6 +44,7 @@ class SettingsScreen extends ConsumerWidget {
     final controller = ref.read(settingsControllerProvider.notifier);
     final caps = ref.watch(exportCapabilitiesProvider).value;
     final version = ref.watch(_appVersionProvider).value;
+    final adPrivacy = ref.watch(_adPrivacyProvider).value ?? false;
 
     String resolutionName(ExportResolution r) => switch (r) {
       ExportResolution.hd => l10n.resolution720,
@@ -178,6 +184,13 @@ class SettingsScreen extends ConsumerWidget {
                 for (final model in CaptionModel.values) _ModelRow(model),
                 _Section(l10n.settingsAbout),
                 ListRow(title: l10n.settingsVersion, value: version ?? ''),
+                if (adPrivacy)
+                  ListRow(
+                    title: l10n.settingsAdPrivacy,
+                    showChevron: true,
+                    onTap: () =>
+                        unawaited(ref.read(adsProvider).showPrivacyChoices()),
+                  ),
                 // ListRow(
                 //   title: l10n.openSourceLicenses,
                 //   showChevron: true,

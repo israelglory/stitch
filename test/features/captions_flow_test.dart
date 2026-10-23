@@ -144,7 +144,11 @@ void main() {
     final id = await open(tester);
     await generate(tester);
     await tester.tap(find.widgetWithText(AppTextButton, 'Cancel'));
-    await settle(tester);
+    // The job stops once its current step ends.
+    for (var i = 0; i < 100; i++) {
+      if (find.textContaining('Generating captions').evaluate().isEmpty) break;
+      await settle(tester, rounds: 1);
+    }
     expect(find.textContaining('Generating captions'), findsNothing);
     await settle(tester);
     expect(stateOf(tester, id).timeline.captionTrack.segments, isEmpty);

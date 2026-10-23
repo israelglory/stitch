@@ -2098,6 +2098,12 @@ abstract class AppLocalizations {
   /// **'About'**
   String get settingsAbout;
 
+  /// Settings row that opens Google's form for changing ad consent choices. Shown only where the law requires it.
+  ///
+  /// In en, this message translates to:
+  /// **'Ad privacy choices'**
+  String get settingsAdPrivacy;
+
   /// Settings row showing the app version.
   ///
   /// In en, this message translates to:

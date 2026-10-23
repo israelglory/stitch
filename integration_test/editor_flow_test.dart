@@ -31,6 +31,7 @@ import 'package:stitch/design/design.dart' hide AudioKind;
 import 'package:stitch/engine/editor_engine.dart';
 import 'package:stitch/engine/engine_provider.dart';
 import 'package:stitch/engine/native_editor_engine.dart';
+import 'package:stitch/features/ads/ads.dart';
 import 'package:stitch/features/audio/application/bundled_files.dart';
 import 'package:stitch/features/audio/data/bundled_audio.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
@@ -88,6 +89,7 @@ void main() {
     await bootstrap(
       installErrorHandlers: false,
       overrides: [
+        adsProvider.overrideWithValue(const NoAds()),
         editorEngineProvider.overrideWithValue(engine),
         mediaLibraryProvider.overrideWithValue(
           FolderLibrary(Directory(mediaDir), engine),

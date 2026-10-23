@@ -125,6 +125,15 @@ The audio library's Online tab offers music and sound effects to download. The l
   - Nothing is requested until the Online tab is opened, and nothing at all when "Online sound library" is off in Settings.
 - **Adding a sound copies the file into the project**, as for any audio. Deleting downloads never affects a project.
 
+## Ads
+
+`Ads` (`lib/features/ads/ads.dart`) is the only way the app touches ads; `adsProvider` gives `AdMobAds`, and tests give `NoAds` or a fake.
+- `start()` runs once, from the projects screen's banner: consent update, Google's consent form when required, then `MobileAds.initialize`. Nothing is requested when `canRequestAds` is false.
+- The banner is the projects screen's `bottomNavigationBar`, so it stays put while the list scrolls. It is anchored adaptive at the screen's width and takes no room until it loads.
+- `showInterstitial()` completes when the ad closes, or at once when none is loaded or one showed in the last 60 s. Captions: the sheet closes, the ad shows, then generation starts. Export: after the export sheet, the ad shows, then the export screen opens. The next ad loads right after one shows.
+- Settings shows "Ad privacy choices" when `getPrivacyOptionsRequirementStatus` says it is required.
+- `integration_test/ads_test.dart` checks live test ads on a device: the banner at the bottom, and a full-screen ad loading and showing.
+
 ## Errors
 
 Failures are subclasses of the sealed `Failure` in `core/errors`. They carry no user-facing text. Presentation maps each subclass to a localized message.

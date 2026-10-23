@@ -1125,6 +1125,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAbout => 'About';
 
   @override
+  String get settingsAdPrivacy => 'Ad privacy choices';
+
+  @override
   String get settingsVersion => 'Version';
 
   @override

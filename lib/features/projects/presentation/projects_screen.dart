@@ -31,6 +31,8 @@ class ProjectsScreen extends ConsumerWidget {
     final isEmpty = projects.hasValue && projects.requireValue.isEmpty;
 
     return Scaffold(
+      // The banner stays at the bottom while the projects scroll.
+      bottomNavigationBar: ref.watch(adsProvider).banner(),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

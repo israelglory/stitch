@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stitch/app/failure_messages.dart';
+import 'package:stitch/app/providers.dart';
 import 'package:stitch/core/storage/bytes.dart';
 import 'package:stitch/design/design.dart';
 import 'package:stitch/features/captions/application/caption_generation.dart';
@@ -69,12 +70,18 @@ class _CaptionsPanelState extends ConsumerState<CaptionsPanel> {
       setState(() => _waitingForModel = false);
       if (ref.read(captionModelsProvider)[_model] is! ModelReady) return;
     }
-    unawaited(
-      ref
-          .read(captionGenerationProvider(widget.projectId).notifier)
-          .start(model: _model, source: _source, language: _language),
+    // The sheet closes, a full-screen ad shows when one is ready, and
+    // captions start after it.
+    final ads = ref.read(adsProvider);
+    final generation = ref.read(
+      captionGenerationProvider(widget.projectId).notifier,
     );
+    final (model, source, language) = (_model, _source, _language);
     if (mounted) Navigator.of(context).pop();
+    await ads.showInterstitial();
+    unawaited(
+      generation.start(model: model, source: source, language: language),
+    );
   }
 
   Future<void> _pickLanguage() async {

@@ -12,6 +12,8 @@
 	<false/>
 	<key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS</key>
 	<false/>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This identifier will be used to deliver personalized ads to you.</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3925626843029360~3282776989</string>
 	<key>SKAdNetworkItems</key>

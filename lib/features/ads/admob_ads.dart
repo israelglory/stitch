@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -42,11 +43,21 @@ final class AdMobAds implements Ads {
   Future<void>? _started;
   bool _canRequest = false;
   InterstitialAd? _interstitial;
-  bool _loadingInterstitial = false;
+
+  /// Completes when the load in flight ends, however it ends.
+  Completer<void>? _loading;
+  Timer? _retry;
   DateTime? _lastShown;
 
   /// Shortest time between two full-screen ads.
   static const _minGap = Duration(seconds: 60);
+
+  /// A failed load is tried again after this.
+  static const _retryAfter = Duration(seconds: 60);
+
+  /// Longest a caller waits for an ad still loading before going on
+  /// without one.
+  static const _loadWait = Duration(seconds: 3);
 
   /// A full-screen ad is loaded and ready (for tests).
   @visibleForTesting
@@ -75,6 +86,9 @@ final class AdMobAds implements Ads {
       if (status == ConsentStatus.notRequired) {
         onConsentNotRequired?.call();
       }
+      // iOS: Apple's tracking dialog, once, after Google's consent form.
+      // Whatever the answer, ads keep working (personalized or not).
+      await _requestTracking();
       _canRequest = await ConsentInformation.instance.canRequestAds();
       if (!_canRequest) return;
       await MobileAds.instance.initialize();
@@ -84,21 +98,42 @@ final class AdMobAds implements Ads {
     }
   }
 
+  Future<void> _requestTracking() async {
+    if (defaultTargetPlatform != TargetPlatform.iOS) return;
+    try {
+      final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+      if (status == TrackingStatus.notDetermined) {
+        await AppTrackingTransparency.requestTrackingAuthorization();
+      }
+    } on Object catch (e) {
+      _log.warning('Tracking authorization failed: $e');
+    }
+  }
+
   void _loadInterstitial() {
-    if (!_canRequest || _interstitial != null || _loadingInterstitial) return;
-    _loadingInterstitial = true;
+    if (!_canRequest || _interstitial != null || _loading != null) return;
+    _retry?.cancel();
+    final loading = _loading = Completer<void>();
+    void done() {
+      if (identical(_loading, loading)) _loading = null;
+      if (!loading.isCompleted) loading.complete();
+    }
+
     unawaited(
       InterstitialAd.load(
         adUnitId: AdUnits.interstitial,
         request: const AdRequest(),
         adLoadCallback: InterstitialAdLoadCallback(
           onAdLoaded: (ad) {
-            _loadingInterstitial = false;
             _interstitial = ad;
+            done();
           },
           onAdFailedToLoad: (error) {
-            _loadingInterstitial = false;
             _log.warning('Interstitial did not load: ${error.message}');
+            done();
+            // No fill now does not mean none in a minute.
+            _retry?.cancel();
+            _retry = Timer(_retryAfter, _loadInterstitial);
           },
         ),
       ),
@@ -108,12 +143,21 @@ final class AdMobAds implements Ads {
   @override
   Future<void> showInterstitial() async {
     final last = _lastShown;
-    final ad = _interstitial;
-    if (ad == null ||
-        (last != null && DateTime.now().difference(last) < _minGap)) {
+    if (last != null && DateTime.now().difference(last) < _minGap) {
       _loadInterstitial();
       return;
     }
+    if (_interstitial == null) {
+      // One may be moments away (opening the app and exporting at once):
+      // start or join the load and give it a few seconds.
+      _loadInterstitial();
+      final loading = _loading;
+      if (loading != null) {
+        await loading.future.timeout(_loadWait, onTimeout: () {});
+      }
+    }
+    final ad = _interstitial;
+    if (ad == null) return;
     _interstitial = null;
     final closed = Completer<void>();
     ad.fullScreenContentCallback = FullScreenContentCallback(

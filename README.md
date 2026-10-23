@@ -102,10 +102,11 @@ Without that file the release build falls back to the debug key and prints a war
 Ads come from Google AdMob (`google_mobile_ads`), behind one interface, `Ads` (`lib/features/ads/`):
 - `AdMobAds` asks for consent with Google's User Messaging Platform where required, then starts the SDK. No ad is requested without it.
 - A banner is pinned at the bottom of the projects screen; it takes no room until an ad loads.
-- A full-screen ad shows before captions are generated and before an export, when one is ready and none showed in the last minute. The action goes on when it closes, or at once when there is none.
+- A full-screen ad shows before captions are generated and before an export, when one is ready and none showed in the last minute. One loads at launch, a failed load is retried every minute, and a caller waits up to 3 s for a load already in flight; after that the action goes on without one, and it goes on when the ad closes.
+- iOS asks Apple's tracking question (App Tracking Transparency) once, right after Google's consent form; either answer keeps ads working, personalized or not. `NSUserTrackingUsageDescription` is in Info.plist.
 - Debug and profile builds use Google's test ad units; release builds use the app's own (`AdUnits`). The AdMob app ids are in `AndroidManifest.xml` and `Info.plist`.
 - `NoAds` replaces it in tests, and in a build without ads.
-- On Google Play, declare that the app contains ads and uses the advertising ID (the SDK adds `AD_ID`). On the App Store, the privacy details must list the data the SDK collects.
+- On Google Play, declare that the app contains ads and uses the advertising ID (the SDK adds `AD_ID`). On the App Store, the privacy details must list the data the SDK collects, with "Tracking" set to yes (the ATT prompt).
 
 ## Analytics
 

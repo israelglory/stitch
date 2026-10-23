@@ -79,7 +79,7 @@ How each value is applied:
 
 Text is drawn once, in Dart, and placed by the engines as images, so it looks the same on both platforms, in preview, and in export. Neither engine lays out text or needs the fonts.
 
-- `OverlayTextLayout` (`lib/design/content/overlay_text.dart`) lays out and paints a text item: the box, the outline, then the text. Fonts are Inter and five display faces under the SIL Open Font License.
+- `OverlayTextLayout` (`lib/design/content/overlay_text.dart`) lays out and paints a text item: the box, the outline, then the text. Fonts are Inter and 27 more from Google Fonts (`OverlayFont`), grouped by style for the font picker (clean, bold, elegant, handwritten, rounded, retro, fun), each in one weight, under the SIL Open Font License or the Apache License.
 - `PngTextRasterizer` draws each text item to a PNG at twice the canvas resolution, cached on disk by content (`cache/text`, 50 MB, pruned at startup).
   - A typewriter animation gets up to 24 frames, from the first letter to all.
   - The document's `overlays` hold the image paths, the item's size on the canvas, its place (center, scale, rotation), and its animations.

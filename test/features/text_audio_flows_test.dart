@@ -111,6 +111,36 @@ void main() {
       await finishEditing(tester);
     });
 
+    testWidgets('fonts are picked by style', (tester) async {
+      final id = await open(tester);
+      await tester.tap(find.text('Text'));
+      await settle(tester);
+      await tester.enterText(find.byType(EditableText), 'Party');
+      await settle(tester);
+      // Every font at first; one style at a time from its chip.
+      expect(find.text('Inter'), findsOneWidget);
+      await tester.ensureVisible(find.widgetWithText(OptionChip, 'Fun'));
+      await tester.tap(find.widgetWithText(OptionChip, 'Fun'));
+      await tester.pump();
+      expect(find.text('Inter'), findsNothing);
+      expect(find.text('Lobster'), findsOneWidget);
+      expect(find.text('Creepster'), findsOneWidget);
+      await tester.tap(find.text('Lobster'));
+      await tester.pump();
+      expect(
+        stateOf(tester, id).timeline.textItems.single.style.fontId,
+        'lobster',
+      );
+      await tester.ensureVisible(find.widgetWithText(OptionChip, 'All'));
+      await tester.tap(find.widgetWithText(OptionChip, 'All'));
+      await tester.pump();
+      expect(find.text('Inter'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.bySemanticsLabel('Done'));
+      await settle(tester);
+      await finishEditing(tester);
+    });
+
     testWidgets('an empty editor adds nothing', (tester) async {
       final id = await open(tester);
       await tester.tap(find.text('Text'));

@@ -4,18 +4,123 @@ import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 import 'package:stitch/design/tokens.dart';
 
-/// Fonts offered for text in the video. User content, not UI type: the
-/// interface itself uses Inter only. All are under the SIL Open Font
-/// License (see assets/licenses/).
-enum OverlayFont {
-  inter('inter', 'Inter', 'Inter', FontWeight.w600),
-  anton('anton', 'Anton', 'Anton', FontWeight.w400),
-  bebas('bebas', 'BebasNeue', 'Bebas Neue', FontWeight.w400),
-  serif('dmSerif', 'DMSerifDisplay', 'DM Serif Display', FontWeight.w400),
-  script('pacifico', 'Pacifico', 'Pacifico', FontWeight.w400),
-  mono('spaceMono', 'SpaceMono', 'Space Mono', FontWeight.w700);
+/// Styles the fonts are grouped by in the font picker.
+enum FontGroup { sans, display, serif, script, rounded, retro, fun }
 
-  new(this.id, this.family, this.displayName, this.weight);
+/// Fonts offered for text in the video. User content, not UI type: the
+/// interface itself uses Inter only. All are from Google Fonts, under the
+/// SIL Open Font License or the Apache License (see assets/licenses/).
+/// Each ships in the one weight it is offered in. Listed by group; the
+/// ids are stored in projects and never change.
+enum OverlayFont {
+  inter('inter', 'Inter', 'Inter', FontWeight.w600, FontGroup.sans),
+  montserrat(
+    'montserrat',
+    'Montserrat',
+    'Montserrat',
+    FontWeight.w800,
+    FontGroup.sans,
+  ),
+  poppins('poppins', 'Poppins', 'Poppins', FontWeight.w600, FontGroup.sans),
+  anton('anton', 'Anton', 'Anton', FontWeight.w400, FontGroup.display),
+  bebas('bebas', 'BebasNeue', 'Bebas Neue', FontWeight.w400, FontGroup.display),
+  oswald('oswald', 'Oswald', 'Oswald', FontWeight.w700, FontGroup.display),
+  archivoBlack(
+    'archivoBlack',
+    'ArchivoBlack',
+    'Archivo Black',
+    FontWeight.w400,
+    FontGroup.display,
+  ),
+  serif(
+    'dmSerif',
+    'DMSerifDisplay',
+    'DM Serif Display',
+    FontWeight.w400,
+    FontGroup.serif,
+  ),
+  playfair(
+    'playfair',
+    'PlayfairDisplay',
+    'Playfair Display',
+    FontWeight.w700,
+    FontGroup.serif,
+  ),
+  lora('lora', 'Lora', 'Lora', FontWeight.w600, FontGroup.serif),
+  abrilFatface(
+    'abrilFatface',
+    'AbrilFatface',
+    'Abril Fatface',
+    FontWeight.w400,
+    FontGroup.serif,
+  ),
+  cinzel('cinzel', 'Cinzel', 'Cinzel', FontWeight.w700, FontGroup.serif),
+  script('pacifico', 'Pacifico', 'Pacifico', FontWeight.w400, FontGroup.script),
+  dancingScript(
+    'dancingScript',
+    'DancingScript',
+    'Dancing Script',
+    FontWeight.w700,
+    FontGroup.script,
+  ),
+  greatVibes(
+    'greatVibes',
+    'GreatVibes',
+    'Great Vibes',
+    FontWeight.w400,
+    FontGroup.script,
+  ),
+  caveat('caveat', 'Caveat', 'Caveat', FontWeight.w700, FontGroup.script),
+  permanentMarker(
+    'permanentMarker',
+    'PermanentMarker',
+    'Permanent Marker',
+    FontWeight.w400,
+    FontGroup.script,
+  ),
+  nunito('nunito', 'Nunito', 'Nunito', FontWeight.w800, FontGroup.rounded),
+  fredoka('fredoka', 'Fredoka', 'Fredoka', FontWeight.w600, FontGroup.rounded),
+  comfortaa(
+    'comfortaa',
+    'Comfortaa',
+    'Comfortaa',
+    FontWeight.w700,
+    FontGroup.rounded,
+  ),
+  mono(
+    'spaceMono',
+    'SpaceMono',
+    'Space Mono',
+    FontWeight.w700,
+    FontGroup.retro,
+  ),
+  pressStart(
+    'pressStart',
+    'PressStart2P',
+    'Press Start 2P',
+    FontWeight.w400,
+    FontGroup.retro,
+  ),
+  monoton('monoton', 'Monoton', 'Monoton', FontWeight.w400, FontGroup.retro),
+  vt323('vt323', 'VT323', 'VT323', FontWeight.w400, FontGroup.retro),
+  lobster('lobster', 'Lobster', 'Lobster', FontWeight.w400, FontGroup.fun),
+  bangers('bangers', 'Bangers', 'Bangers', FontWeight.w400, FontGroup.fun),
+  luckiestGuy(
+    'luckiestGuy',
+    'LuckiestGuy',
+    'Luckiest Guy',
+    FontWeight.w400,
+    FontGroup.fun,
+  ),
+  creepster(
+    'creepster',
+    'Creepster',
+    'Creepster',
+    FontWeight.w400,
+    FontGroup.fun,
+  );
+
+  new(this.id, this.family, this.displayName, this.weight, this.group);
 
   /// Stored in projects.
   final String id;
@@ -24,6 +129,7 @@ enum OverlayFont {
   /// The font's own name, shown in its own face in the font picker.
   final String displayName;
   final FontWeight weight;
+  final FontGroup group;
 
   /// The font for [id]; Inter when unknown.
   static OverlayFont byId(String id) =>

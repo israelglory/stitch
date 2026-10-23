@@ -1098,6 +1098,7 @@ class ChoicesSpecimen extends StatelessWidget {
               width: 64,
               child: ChoiceTile(
                 label: font.displayName,
+                labelLines: 2,
                 selected: font == OverlayFont.inter,
                 onTap: _noop,
                 visual: SizedBox.square(

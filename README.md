@@ -143,7 +143,7 @@ The AdMob and Firebase SDKs are proprietary, so builds with ads cannot go on F-D
 
 GPL-3.0. See [LICENSE](LICENSE). Bundled assets, with licenses in `assets/licenses/` (also shown in the app):
 
-- Fonts: Inter, Anton, Bebas Neue, DM Serif Display, Pacifico, and Space Mono (SIL Open Font License 1.1); Lucide icons (ISC).
+- Fonts: Inter, plus 27 fonts for text in the video from Google Fonts: Montserrat, Poppins, Anton, Bebas Neue, Oswald, Archivo Black, DM Serif Display, Playfair Display, Lora, Abril Fatface, Cinzel, Pacifico, Dancing Script, Great Vibes, Caveat, Nunito, Fredoka, Comfortaa, Space Mono, Press Start 2P, Monoton, VT323, Lobster, Bangers, and Creepster (SIL Open Font License 1.1), and Permanent Marker and Luckiest Guy (Apache License 2.0). Each ships in one weight; variable fonts are cut to it with fontTools. Licenses are in `assets/licenses/`. Lucide icons (ISC).
 - Music: eight tracks by Komiku, Loyalty Freak Music, and Lack of Color, under CC0 (sources in `assets/licenses/music.txt`).
 - Sound effects: Kenney's Interface Sounds, Impact Sounds, and Music Jingles, under CC0.
 - Speech recognition: [whisper.cpp](https://github.com/ggml-org/whisper.cpp) v1.9.4 (MIT), vendored in `third_party/whisper.cpp` and built from source. The caption models are OpenAI's Whisper models (MIT), downloaded on first use and not bundled.

@@ -1678,6 +1678,48 @@ abstract class AppLocalizations {
   /// **'Captions could not be made.'**
   String get failureCaptions;
 
+  /// A group of fonts in the text font picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Clean'**
+  String get fontGroupSans;
+
+  /// A group of fonts in the text font picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get fontGroupDisplay;
+
+  /// A group of fonts in the text font picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Elegant'**
+  String get fontGroupSerif;
+
+  /// A group of fonts in the text font picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Handwritten'**
+  String get fontGroupScript;
+
+  /// A group of fonts in the text font picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Rounded'**
+  String get fontGroupRounded;
+
+  /// A group of fonts in the text font picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Retro'**
+  String get fontGroupRetro;
+
+  /// A group of fonts in the text font picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Fun'**
+  String get fontGroupFun;
+
   /// Caption editor tab listing caption text.
   ///
   /// In en, this message translates to:

@@ -189,35 +189,88 @@ class _TextEditorPanelState extends ConsumerState<TextEditorPanel> {
   };
 }
 
-class _FontTab extends StatelessWidget {
+/// Fonts as a grid of samples, each in its own face, with chips to show
+/// one style at a time.
+class _FontTab extends StatefulWidget {
   const new({required this.selected, required this.onSelected});
 
   final String selected;
   final ValueChanged<String> onSelected;
 
+  @override
+  State<_FontTab> createState() => _FontTabState();
+}
+
+class _FontTabState extends State<_FontTab> {
+  /// Null shows every font.
+  FontGroup? _group;
+
   static const double _tile = 64;
 
   @override
-  Widget build(BuildContext context) => Wrap(
-    spacing: AppSpacing.sm,
-    runSpacing: AppSpacing.md,
-    children: [
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final fonts = [
       for (final font in OverlayFont.values)
-        SizedBox(
-          width: _tile,
-          child: ChoiceTile(
-            label: font.displayName,
-            selected: OverlayFont.byId(selected) == font,
-            onTap: () => onSelected(font.id),
-            visual: SizedBox.square(
-              dimension: _tile,
-              child: Center(child: OverlayFontSample(font)),
-            ),
+        if (_group == null || font.group == _group) font,
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final group in [null, ...FontGroup.values])
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
+                  child: OptionChip(
+                    label: group == null
+                        ? l10n.filterAll
+                        : fontGroupName(l10n, group),
+                    selected: group == _group,
+                    onTap: () => setState(() => _group = group),
+                  ),
+                ),
+            ],
           ),
         ),
-    ],
-  );
+        const SizedBox(height: AppSpacing.md),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.md,
+          children: [
+            for (final font in fonts)
+              SizedBox(
+                width: _tile,
+                child: ChoiceTile(
+                  label: font.displayName,
+                  labelLines: 2,
+                  selected: OverlayFont.byId(widget.selected) == font,
+                  onTap: () => widget.onSelected(font.id),
+                  visual: SizedBox.square(
+                    dimension: _tile,
+                    child: Center(child: OverlayFontSample(font)),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
 }
+
+/// The name of a group of fonts in the font picker.
+String fontGroupName(AppLocalizations l10n, FontGroup group) => switch (group) {
+  FontGroup.sans => l10n.fontGroupSans,
+  FontGroup.display => l10n.fontGroupDisplay,
+  FontGroup.serif => l10n.fontGroupSerif,
+  FontGroup.script => l10n.fontGroupScript,
+  FontGroup.rounded => l10n.fontGroupRounded,
+  FontGroup.retro => l10n.fontGroupRetro,
+  FontGroup.fun => l10n.fontGroupFun,
+};
 
 class _StyleTab extends StatelessWidget {
   const new({required this.style, required this.onChanged});

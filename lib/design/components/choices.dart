@@ -87,17 +87,67 @@ class ChoiceTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
-          Text(
+          _Label(
             label,
-            maxLines: labelLines,
-            overflow: TextOverflow.ellipsis,
-            textAlign: labelLines > 1 ? TextAlign.center : null,
+            lines: labelLines,
             style: AppTypography.caption.copyWith(
               color: selected ? colors.accent : colors.textSecondary,
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A tile's label. On more than one line, it wraps between words only:
+/// when its longest word is too wide for the tile (a long name, large
+/// text), the label's text shrinks just enough for that word to fit.
+class _Label extends StatelessWidget {
+  const new(this.text, {required this.lines, required this.style});
+
+  final String text;
+  final int lines;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    Text label() => Text(
+      text,
+      maxLines: lines,
+      overflow: TextOverflow.ellipsis,
+      textAlign: lines > 1 ? TextAlign.center : null,
+      style: style,
+    );
+    if (lines <= 1) return label();
+    return LayoutBuilder(
+      builder: (context, box) {
+        final longest = text
+            .split(' ')
+            .reduce((a, b) => a.length >= b.length ? a : b);
+        // As the Text will draw it: merged with the inherited style
+        // (letter spacing, say).
+        final drawn = DefaultTextStyle.of(context).style.merge(style);
+        final word = TextPainter(
+          text: TextSpan(text: longest, style: drawn),
+          textDirection: Directionality.of(context),
+          textScaler: TextScaler.noScaling,
+          maxLines: 1,
+        )..layout();
+        final unscaled = word.width;
+        word.dispose();
+        final size = drawn.fontSize ?? AppFontSizes.caption;
+        final scaler = MediaQuery.textScalerOf(context);
+        final scale = scaler.scale(size) / size;
+        // With a pixel to spare: a word that only just fits still wraps.
+        final room = box.maxWidth - 1;
+        if (unscaled * scale <= room || unscaled == 0) return label();
+        return MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(room / unscaled)),
+          child: label(),
+        );
+      },
     );
   }
 }

@@ -1216,6 +1216,34 @@
   "@failureCaptions": {
     "description": "Caption generation failed."
   },
+  "fontGroupSans": "Clean",
+  "@fontGroupSans": {
+    "description": "A group of fonts in the text font picker."
+  },
+  "fontGroupDisplay": "Bold",
+  "@fontGroupDisplay": {
+    "description": "A group of fonts in the text font picker."
+  },
+  "fontGroupSerif": "Elegant",
+  "@fontGroupSerif": {
+    "description": "A group of fonts in the text font picker."
+  },
+  "fontGroupScript": "Handwritten",
+  "@fontGroupScript": {
+    "description": "A group of fonts in the text font picker."
+  },
+  "fontGroupRounded": "Rounded",
+  "@fontGroupRounded": {
+    "description": "A group of fonts in the text font picker."
+  },
+  "fontGroupRetro": "Retro",
+  "@fontGroupRetro": {
+    "description": "A group of fonts in the text font picker."
+  },
+  "fontGroupFun": "Fun",
+  "@fontGroupFun": {
+    "description": "A group of fonts in the text font picker."
+  },
   "tabText": "Text",
   "@tabText": {
     "description": "Caption editor tab listing caption text."

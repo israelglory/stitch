@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -14,15 +15,12 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
     'assets/fonts/Inter-SemiBold.ttf',
   ]);
   await _loadFont('Lucide', ['assets/fonts/Lucide.ttf']);
-  // Fonts for text in the video.
-  for (final (family, file) in [
-    ('Anton', 'Anton-Regular'),
-    ('BebasNeue', 'BebasNeue-Regular'),
-    ('DMSerifDisplay', 'DMSerifDisplay-Regular'),
-    ('Pacifico', 'Pacifico-Regular'),
-    ('SpaceMono', 'SpaceMono-Bold'),
-  ]) {
-    await _loadFont(family, ['assets/fonts/text/$file.ttf']);
+  // Fonts for text in the video: every one pubspec.yaml declares.
+  final pubspec = File('pubspec.yaml').readAsStringSync();
+  for (final m in RegExp(
+    r'- family: (\w+)\n\s+fonts:\n\s+- asset: (assets/fonts/text/\S+)',
+  ).allMatches(pubspec)) {
+    await _loadFont(m.group(1)!, [m.group(2)!]);
   }
 
   if (goldenFileComparator case final LocalFileComparator local) {

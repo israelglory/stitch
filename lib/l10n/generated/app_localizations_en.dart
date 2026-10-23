@@ -902,6 +902,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get failureCaptions => 'Captions could not be made.';
 
   @override
+  String get fontGroupSans => 'Clean';
+
+  @override
+  String get fontGroupDisplay => 'Bold';
+
+  @override
+  String get fontGroupSerif => 'Elegant';
+
+  @override
+  String get fontGroupScript => 'Handwritten';
+
+  @override
+  String get fontGroupRounded => 'Rounded';
+
+  @override
+  String get fontGroupRetro => 'Retro';
+
+  @override
+  String get fontGroupFun => 'Fun';
+
+  @override
   String get tabText => 'Text';
 
   @override

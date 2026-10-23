@@ -141,3 +141,80 @@ flutter:
       fonts:
         - asset: assets/fonts/text/SpaceMono-Bold.ttf
           weight: 700
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/text/Montserrat-ExtraBold.ttf
+          weight: 800
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/text/Poppins-SemiBold.ttf
+          weight: 600
+    - family: Oswald
+      fonts:
+        - asset: assets/fonts/text/Oswald-Bold.ttf
+          weight: 700
+    - family: ArchivoBlack
+      fonts:
+        - asset: assets/fonts/text/ArchivoBlack-Regular.ttf
+    - family: PlayfairDisplay
+      fonts:
+        - asset: assets/fonts/text/PlayfairDisplay-Bold.ttf
+          weight: 700
+    - family: Lora
+      fonts:
+        - asset: assets/fonts/text/Lora-SemiBold.ttf
+          weight: 600
+    - family: AbrilFatface
+      fonts:
+        - asset: assets/fonts/text/AbrilFatface-Regular.ttf
+    - family: Cinzel
+      fonts:
+        - asset: assets/fonts/text/Cinzel-Bold.ttf
+          weight: 700
+    - family: DancingScript
+      fonts:
+        - asset: assets/fonts/text/DancingScript-Bold.ttf
+          weight: 700
+    - family: GreatVibes
+      fonts:
+        - asset: assets/fonts/text/GreatVibes-Regular.ttf
+    - family: Caveat
+      fonts:
+        - asset: assets/fonts/text/Caveat-Bold.ttf
+          weight: 700
+    - family: PermanentMarker
+      fonts:
+        - asset: assets/fonts/text/PermanentMarker-Regular.ttf
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/text/Nunito-ExtraBold.ttf
+          weight: 800
+    - family: Fredoka
+      fonts:
+        - asset: assets/fonts/text/Fredoka-SemiBold.ttf
+          weight: 600
+    - family: Comfortaa
+      fonts:
+        - asset: assets/fonts/text/Comfortaa-Bold.ttf
+          weight: 700
+    - family: PressStart2P
+      fonts:
+        - asset: assets/fonts/text/PressStart2P-Regular.ttf
+    - family: Monoton
+      fonts:
+        - asset: assets/fonts/text/Monoton-Regular.ttf
+    - family: VT323
+      fonts:
+        - asset: assets/fonts/text/VT323-Regular.ttf
+    - family: Lobster
+      fonts:
+        - asset: assets/fonts/text/Lobster-Regular.ttf
+    - family: Bangers
+      fonts:
+        - asset: assets/fonts/text/Bangers-Regular.ttf
+    - family: LuckiestGuy
+      fonts:
+        - asset: assets/fonts/text/LuckiestGuy-Regular.ttf
+    - family: Creepster
+      fonts:
+        - asset: assets/fonts/text/Creepster-Regular.ttf

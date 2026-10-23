@@ -88,14 +88,20 @@ void main() {
       () => ads.interstitialReady,
       reason: 'a full-screen ad loads',
     );
-    var closed = false;
-    ads.showInterstitial().then((_) => closed = true).ignore();
-    await tester.pump(const Duration(seconds: 3));
-    expect(ads.interstitialReady, isFalse, reason: 'it is showing');
-    expect(closed, isFalse);
-    // The host screenshots on this line.
-    // ignore: avoid_print
-    print('ADS: interstitial showing');
-    await tester.pump(const Duration(seconds: 15));
+    // Showing is asserted on Android only: on iOS the native fullscreen ad
+    // stops Flutter frames, so a test awaiting a pump under it never
+    // returns. The iOS show was verified by hand, and the flows around it
+    // run with a fake in widget tests.
+    if (Platform.isAndroid) {
+      var closed = false;
+      ads.showInterstitial().then((_) => closed = true).ignore();
+      await tester.pump(const Duration(seconds: 3));
+      expect(ads.interstitialReady, isFalse, reason: 'it is showing');
+      expect(closed, isFalse);
+      // The host screenshots on this line.
+      // ignore: avoid_print
+      print('ADS: interstitial showing');
+      await tester.pump(const Duration(seconds: 3));
+    }
   });
 }

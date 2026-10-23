@@ -9,3 +9,11 @@
 -keepclassmembers,allowobfuscation class androidx.media3.** {
     <fields>;
 }
+
+# WorkManager (pulled in by the ads SDK) finds its Room database by
+# reflection: Class.forName("androidx.work.impl.WorkDatabase_Impl"). R8
+# full mode removed the generated class's constructor, and release builds
+# crashed at startup ("Failed to create an instance of
+# androidx.work.impl.WorkDatabase"). Keep every Room database
+# implementation and its constructor.
+-keep class * extends androidx.room.RoomDatabase { <init>(); }

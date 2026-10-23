@@ -45,9 +45,11 @@ final class FirebaseAppAnalytics implements Analytics {
   );
 
   /// Analytics never gets in the way: failures are logged, not thrown.
+  /// Future.sync also catches synchronous throws (reading
+  /// FirebaseAnalytics.instance throws when Firebase could not start).
   void _send(Future<void> Function() call) {
     unawaited(
-      call().catchError((Object e, StackTrace st) {
+      Future<void>.sync(call).catchError((Object e, StackTrace st) {
         _log.warning('Analytics call failed: $e');
       }),
     );

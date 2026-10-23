@@ -142,6 +142,47 @@ const _$MediaKindEnumMap = {
   MediaKind.audio: 'audio',
 };
 
+_OverlayClip _$OverlayClipFromJson(Map<String, dynamic> json) => _OverlayClip(
+  id: json['id'] as String,
+  mediaId: json['mediaId'] as String,
+  kind: $enumDecode(_$MediaKindEnumMap, json['kind']),
+  anchor: Anchor.fromJson(json['anchor'] as Map<String, dynamic>),
+  mediaDurationUs: (json['mediaDurationUs'] as num?)?.toInt(),
+  sourceInUs: (json['sourceInUs'] as num).toInt(),
+  sourceOutUs: (json['sourceOutUs'] as num).toInt(),
+  laneIndex: (json['laneIndex'] as num?)?.toInt() ?? 0,
+  speed: (json['speed'] as num?)?.toDouble() ?? 1.0,
+  volume: (json['volume'] as num?)?.toDouble() ?? 1.0,
+  framing: json['framing'] == null
+      ? const ClipFraming()
+      : ClipFraming.fromJson(json['framing'] as Map<String, dynamic>),
+  opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
+  keyframes:
+      (json['keyframes'] as List<dynamic>?)
+          ?.map((e) => Keyframe.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <Keyframe>[],
+  needsReview: json['needsReview'] as bool? ?? false,
+);
+
+Map<String, dynamic> _$OverlayClipToJson(_OverlayClip instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'mediaId': instance.mediaId,
+      'kind': _$MediaKindEnumMap[instance.kind]!,
+      'anchor': instance.anchor.toJson(),
+      'mediaDurationUs': ?instance.mediaDurationUs,
+      'sourceInUs': instance.sourceInUs,
+      'sourceOutUs': instance.sourceOutUs,
+      'laneIndex': instance.laneIndex,
+      'speed': instance.speed,
+      'volume': instance.volume,
+      'framing': instance.framing.toJson(),
+      'opacity': instance.opacity,
+      'keyframes': instance.keyframes.map((e) => e.toJson()).toList(),
+      'needsReview': instance.needsReview,
+    };
+
 _Transition _$TransitionFromJson(Map<String, dynamic> json) => _Transition(
   afterClipId: json['afterClipId'] as String,
   type: json['type'] as String,
@@ -421,6 +462,11 @@ _Timeline _$TimelineFromJson(Map<String, dynamic> json) => _Timeline(
   audioMix: json['audioMix'] == null
       ? const AudioMix()
       : AudioMix.fromJson(json['audioMix'] as Map<String, dynamic>),
+  overlayClips:
+      (json['overlayClips'] as List<dynamic>?)
+          ?.map((e) => OverlayClip.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <OverlayClip>[],
 );
 
 Map<String, dynamic> _$TimelineToJson(_Timeline instance) => <String, dynamic>{
@@ -430,4 +476,5 @@ Map<String, dynamic> _$TimelineToJson(_Timeline instance) => <String, dynamic>{
   'captionTrack': instance.captionTrack.toJson(),
   'audioItems': instance.audioItems.map((e) => e.toJson()).toList(),
   'audioMix': instance.audioMix.toJson(),
+  'overlayClips': instance.overlayClips.map((e) => e.toJson()).toList(),
 };

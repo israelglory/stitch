@@ -152,10 +152,32 @@ class FakeEditorEngine implements EditorEngine {
 
   @override
   Future<void> seek(int positionUs, {bool exact = true}) async {
+    if (holdSeeks) {
+      _heldSeek = positionUs;
+      return;
+    }
     _emit(
       _current.copyWith(positionUs: positionUs.clamp(0, _current.durationUs)),
     );
   }
+
+  /// Seeks wait for [finishSeeks], like a native player busy with a
+  /// document: until then it still reports where it was.
+  bool holdSeeks = false;
+  int? _heldSeek;
+
+  /// Makes the newest held seek.
+  void finishSeeks() {
+    final at = _heldSeek;
+    _heldSeek = null;
+    if (at != null) {
+      _emit(_current.copyWith(positionUs: at.clamp(0, _current.durationUs)));
+    }
+  }
+
+  /// Reports the current state again, as players do on their own (a
+  /// buffering change, a periodic tick).
+  void reportAgain() => _emit(_current);
 
   @override
   ExportJob export(ExportSettings settings) {

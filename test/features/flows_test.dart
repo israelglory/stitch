@@ -206,6 +206,7 @@ void main() {
       tester,
     ) async {
       final (id, _) = await open(tester);
+      await scrollTimelineToFirstCut(tester, id);
       final first = find.byType(VideoClipTile).first;
       await tester.tap(first);
       await tester.pump();
@@ -226,6 +227,7 @@ void main() {
 
     testWidgets('transition sheet browses categories', (tester) async {
       final (id, _) = await open(tester);
+      await scrollTimelineToFirstCut(tester, id);
       await tester.tap(find.byType(TransitionButton).first);
       await settle(tester);
       expect(find.text('Heart'), findsNothing);
@@ -254,6 +256,7 @@ void main() {
 
     testWidgets('transition sheet sets a crossfade', (tester) async {
       final (id, _) = await open(tester);
+      await scrollTimelineToFirstCut(tester, id);
       await tester.tap(find.byType(TransitionButton).first);
       await settle(tester);
       expect(find.text('Transition'), findsOneWidget);

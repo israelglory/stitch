@@ -29,6 +29,9 @@ final class PreviewPlayer: NSObject, FlutterTexture, @unchecked Sendable {
   private var shownVersion: Int64 = 0
 
   private var seeking = false
+  /// Where a new document's item is being put, until it gets there: the
+  /// new item starts at 0, and reporting that would flick the playhead.
+  private var installingAt: CMTime?
   private var pendingSeek: (us: Int64, exact: Bool)?
   private var wantsPlay = false
 
@@ -94,7 +97,10 @@ final class PreviewPlayer: NSObject, FlutterTexture, @unchecked Sendable {
   /// Rebuilds the player item, keeping the position and play state.
   func setDocument(_ doc: EngineDocument) {
     buildTask?.cancel()
-    let keepPosition = player.currentTime()
+    // With nothing loaded (a project just opened) the time is invalid,
+    // which would clamp to the end: start at the beginning.
+    let current = player.currentTime()
+    let keepPosition = player.currentItem != nil && current.isNumeric ? current : .zero
     buildTask = Task { @MainActor [weak self] in
       do {
         let built = try await CompositionBuilder.build(doc, forExport: false)
@@ -128,11 +134,13 @@ final class PreviewPlayer: NSObject, FlutterTexture, @unchecked Sendable {
       self?.publish()
     }
 
+    let target = min(position, built.duration)
+    installingAt = target
     player.replaceCurrentItem(with: item)
     displayLink?.isPaused = false
-    let target = min(position, built.duration)
     player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
       guard let self else { return }
+      self.installingAt = nil
       self.shownVersion = version
       if self.wantsPlay { self.player.play() }
       self.publish()
@@ -188,7 +196,7 @@ final class PreviewPlayer: NSObject, FlutterTexture, @unchecked Sendable {
     let buffering = player.timeControlStatus == .waitingToPlayAtSpecifiedRate
     onState(
       PlaybackStateMessage(
-        positionUs: min(player.currentTime().microseconds, durationUs),
+        positionUs: min((installingAt ?? player.currentTime()).microseconds, durationUs),
         durationUs: durationUs,
         isPlaying: player.rate != 0 || (wantsPlay && buffering),
         isBuffering: buffering,

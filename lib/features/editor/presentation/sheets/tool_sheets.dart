@@ -14,6 +14,7 @@ import 'package:stitch/features/projects/presentation/format_screen.dart';
 import 'package:stitch/features/timeline/domain/audio_ops.dart';
 import 'package:stitch/features/timeline/domain/limits.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
+import 'package:stitch/features/timeline/domain/overlay_ops.dart';
 import 'package:stitch/features/timeline/domain/transition_catalog.g.dart';
 import 'package:stitch/features/timeline/domain/transition_ops.dart';
 import 'package:stitch/features/timeline/domain/video_ops.dart';
@@ -101,18 +102,24 @@ class SpeedSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final selection = this.selection;
     final id = selection.id;
-    final isClip = selection is ClipSelected;
     return _EditSlider(
       projectId: projectId,
       label: l10n.toolSpeed,
       min: TimelineLimits.minSpeed,
       max: TimelineLimits.maxSpeed,
       format: (v) => _speedText(l10n, v),
-      value: (s) => isClip
-          ? s.timeline.clipById(id)?.speed ?? 1
-          : s.timeline.audioById(id)?.speed ?? 1,
-      apply: (b, v) => isClip ? b.setClipSpeed(id, v) : b.setAudioSpeed(id, v),
+      value: (s) => switch (selection) {
+        ClipSelected() => s.timeline.clipById(id)?.speed ?? 1,
+        OverlaySelected() => s.timeline.overlayById(id)?.speed ?? 1,
+        _ => s.timeline.audioById(id)?.speed ?? 1,
+      },
+      apply: (b, v) => switch (selection) {
+        ClipSelected() => b.setClipSpeed(id, v),
+        OverlaySelected() => b.setOverlaySpeed(id, v),
+        _ => b.setAudioSpeed(id, v),
+      },
     );
   }
 }

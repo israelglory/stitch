@@ -59,8 +59,8 @@ SnapResult snap(
 }
 
 /// Everything a drag can snap to: the playhead, the start and end of the
-/// video, every cut, and the edges of every text, caption, and audio item
-/// except those in [excludeIds] (the ones being dragged).
+/// video, every cut, and the edges of every text, caption, audio item, and
+/// overlay except those in [excludeIds] (the ones being dragged).
 Set<int> snapTargets(
   Timeline timeline, {
   required int playheadUs,
@@ -89,6 +89,9 @@ Set<int> snapTargets(
   }
   for (final a in timeline.audioItems) {
     addItem(a.id, a.anchor, audioEndUs(a, layout));
+  }
+  for (final o in timeline.overlayClips) {
+    addItem(o.id, o.anchor, layout.startOf(o.anchor) + o.durationUs);
   }
   return targets;
 }

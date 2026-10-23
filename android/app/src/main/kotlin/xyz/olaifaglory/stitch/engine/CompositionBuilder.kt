@@ -30,11 +30,21 @@ import kotlin.math.min
  * Sound: each clip's own audio plays with its item, and fades in across an
  * incoming transition. The sound of a clip's part under a transition plays
  * from a second, audio-only sequence, fading out. Audio items get one
- * sequence each; loops are inserted repeatedly.
+ * sequence each; loops are inserted repeatedly. Overlay clips' sound gets
+ * a sequence each too; their pictures are drawn by every clip's effect
+ * from shared decoders ([OverlayClipFrames]).
  */
 @OptIn(UnstableApi::class)
 object CompositionBuilder {
-  data class Built(val composition: Composition, val durationUs: Long)
+  /**
+   * [overlayFrames] holds the overlay clips' decoders: release it when the
+   * composition is replaced or the export ends.
+   */
+  data class Built(
+    val composition: Composition,
+    val durationUs: Long,
+    val overlayFrames: OverlayClipFrames? = null,
+  )
 
   /**
    * [outputEffects] apply to the mixed result (export frame rate,
@@ -57,6 +67,27 @@ object CompositionBuilder {
     val incoming = comp.transitions.associateBy { it.toClipId }
     val outgoing = comp.transitions.associateBy { it.fromClipId }
     val sequences = mutableListOf<EditedMediaItemSequence>()
+    val overlayFrames = if (audioOnly || comp.overlayClips.isEmpty()) {
+      null
+    } else {
+      OverlayClipFrames(
+        layers = comp.overlayClips.map { o ->
+          OverlayLayer(o, doc.media[o.mediaId]?.let { sourcePath(it, forExport) })
+        },
+        timeoutMs = if (forExport) {
+          { EXPORT_FRAME_TIMEOUT_MS }
+        } else {
+          {
+            if (PreviewPlayback.playing) {
+              PreviewPlayback.PLAYING_FRAME_TIMEOUT_MS
+            } else {
+              PREVIEW_FRAME_TIMEOUT_MS
+            }
+          }
+        },
+        reportMisses = !forExport,
+      )
+    }
 
     // Video, with each clip's own sound.
     if (audioOnly) {
@@ -73,7 +104,7 @@ object CompositionBuilder {
           clipsById[t.fromClipId]?.let { from -> incomingFor(doc, t, from, forExport) }
         }
         // A missing file plays as black silence.
-        val item = clipItem(doc, clip, end, forExport, look, into, onVideoFrame)
+        val item = clipItem(doc, clip, end, forExport, look, into, onVideoFrame, overlayFrames)
         if (item == null) video.addGap(end - start) else video.addItem(item)
         cursor = end
       }
@@ -154,14 +185,47 @@ object CompositionBuilder {
       sequences += builder.build()
     }
 
-    if (sequences.isEmpty()) throw EngineException.badDocument("Nothing to play")
+    // Overlay clips' sound, one sequence each.
+    for (overlay in comp.overlayClips) {
+      if (overlay.kind != "video") continue
+      val media = doc.media[overlay.mediaId] ?: continue
+      val peak = overlay.keyframes.maxVolume ?: overlay.volume
+      if (peak <= 0 || !media.hasAudio || !File(media.path).exists() || !hasAudioTrack(media.path)) {
+        continue
+      }
+      val builder = EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO))
+      if (overlay.startUs > 0) builder.addGap(overlay.startUs)
+      builder.addItem(
+        audioItem(
+          path = media.path,
+          mediaDurationUs = media.durationUs,
+          sourceInUs = overlay.sourceInUs,
+          sourceOutUs = overlay.sourceOutUs,
+          speed = overlay.speed,
+          gain = Gain(
+            volume = overlay.volume.toFloat(),
+            clipDurationUs = overlay.endUs - overlay.startUs,
+            fadeInUs = 0,
+            fadeOutUs = 0,
+            keyframes = overlay.keyframes,
+            timelineStartUs = overlay.startUs,
+          ),
+        ),
+      )
+      sequences += builder.build()
+    }
+
+    if (sequences.isEmpty()) {
+      overlayFrames?.release()
+      throw EngineException.badDocument("Nothing to play")
+    }
 
     val composition = Composition.Builder(sequences)
       .setEffects(outputEffects)
       .setHdrMode(hdrMode)
       .experimentalSetForceAudioTrack(true)
       .build()
-    return Built(composition, comp.durationUs)
+    return Built(composition, comp.durationUs, overlayFrames)
   }
 
   /**
@@ -287,6 +351,7 @@ object CompositionBuilder {
     look: CanvasLook,
     incoming: Incoming?,
     onVideoFrame: ((Long) -> Unit)?,
+    overlayFrames: OverlayClipFrames?,
   ): EditedMediaItem? {
     val media = doc.media[clip.mediaId] ?: return null
     val path = sourcePath(media, forExport) ?: return null
@@ -294,6 +359,7 @@ object CompositionBuilder {
     val effects = listOf(
       ClipEffect(
         look, clip.framing, incoming, doc.overlays, clip.opacity, clip.keyframes, onVideoFrame,
+        overlayFrames,
       ),
     )
 

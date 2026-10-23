@@ -62,7 +62,16 @@ void main() {
         await tester.tap(find.byType(VideoClipTile).first);
         await tester.pump();
         expect(tester.takeException(), isNull);
-        // The tallest tool sheet: four sliders.
+        // The tallest tool sheet: four sliders. Off a narrow toolbar.
+        await tester.scrollUntilVisible(
+          find.text('Transform'),
+          100,
+          scrollable: find.descendant(
+            of: find.byType(ContextToolbar),
+            matching: find.byType(Scrollable),
+          ),
+        );
+        await tester.pump();
         await tester.tap(find.text('Transform'));
         await settle(tester);
         expect(tester.takeException(), isNull);

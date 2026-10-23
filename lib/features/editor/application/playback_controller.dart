@@ -17,10 +17,34 @@ class PlaybackController extends _$PlaybackController {
   /// ignored then, so the playhead follows the finger, not the decoder.
   bool _scrubbing = false;
 
+  /// Where the last seek went, until the engine reports being there.
+  /// Reports sent before the engine got to the seek still have the old
+  /// position: taken, the playhead would jump back for a moment, and an
+  /// edit made then (adding at the playhead, a freeze) would land there.
+  int? _seekTarget;
+  final _seekAge = Stopwatch();
+
+  /// Longest the playhead holds a seek's target for the engine to arrive.
+  static const _seekHold = Duration(seconds: 2);
+
+  /// Within this of the target, the engine is there (players report frame
+  /// times).
+  static const _seekSlackUs = 50000;
+
   @override
   PlaybackState build() {
     _engine = ref.watch(editorEngineProvider);
     final sub = _engine.playbackState.listen((s) {
+      final target = _seekTarget;
+      if (target != null && !_scrubbing) {
+        final arrived = (s.positionUs - target).abs() <= _seekSlackUs;
+        if (arrived || s.isPlaying || _seekAge.elapsed > _seekHold) {
+          _seekTarget = null;
+        } else {
+          state = s.copyWith(positionUs: target);
+          return;
+        }
+      }
       if (_scrubbing) {
         state = state.copyWith(
           durationUs: s.durationUs,
@@ -68,6 +92,7 @@ class PlaybackController extends _$PlaybackController {
   /// Ends a scrub with an exact seek to where the playhead stopped.
   void endScrub() {
     _scrubbing = false;
+    _holdUntilSeeked(state.positionUs);
     unawaited(_engine.seek(state.positionUs));
   }
 
@@ -75,6 +100,14 @@ class PlaybackController extends _$PlaybackController {
   Future<void> seek(int positionUs) {
     final clamped = positionUs.clamp(0, state.durationUs);
     state = state.copyWith(positionUs: clamped);
+    _holdUntilSeeked(clamped);
     return _engine.seek(clamped);
+  }
+
+  void _holdUntilSeeked(int targetUs) {
+    _seekTarget = targetUs;
+    _seekAge
+      ..reset()
+      ..start();
   }
 }

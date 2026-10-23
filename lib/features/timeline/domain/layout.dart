@@ -70,6 +70,17 @@ final class TimelineLayout {
   /// Zero for a hard cut.
   int transitionUs(String clipId) => _transitionUs[clipId] ?? 0;
 
+  /// Where clips added at [timeUs] go: at the cut nearest it. Before the
+  /// clip there in its first half, after it in its second half, and at the
+  /// end past the video.
+  int insertionIndexAt(int timeUs) {
+    var index = 0;
+    for (final s in spans) {
+      if (timeUs >= s.startUs + s.clip.durationUs ~/ 2) index = s.index + 1;
+    }
+    return index;
+  }
+
   /// The clip showing at [timeUs]. Inside a transition this is the incoming
   /// clip. Times outside the video clamp to the first or last clip.
   ClipSpan? spanAt(int timeUs) {

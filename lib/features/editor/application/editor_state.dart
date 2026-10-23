@@ -21,7 +21,7 @@ final class NoSelection extends Selection {
   int get hashCode => 0;
 }
 
-/// Something with an id: a clip, text, caption, or audio item.
+/// Something with an id: a clip, text, caption, audio item, or overlay.
 sealed class ItemSelection extends Selection {
   const new(this.id);
 
@@ -53,6 +53,10 @@ final class AudioSelected extends ItemSelection {
   const new(super.id);
 }
 
+final class OverlaySelected extends ItemSelection {
+  const new(super.id);
+}
+
 /// Everything the editor screen shows except the playhead, which lives in
 /// the playback controller so it can change every frame without rebuilding
 /// this state.
@@ -80,7 +84,8 @@ final class EditorState {
   late final Set<String> missingInUse = {
     for (final id in missingMedia)
       if (timeline.videoClips.any((c) => c.mediaId == id) ||
-          timeline.audioItems.any((a) => a.mediaId == id))
+          timeline.audioItems.any((a) => a.mediaId == id) ||
+          timeline.overlayClips.any((o) => o.mediaId == id))
         id,
   };
 
@@ -118,10 +123,11 @@ final class EditorState {
 }
 
 /// The item whose keyframes the editor shows and edits: the selected clip,
-/// text, or audio item. Captions have none.
+/// text, audio item, or overlay. Captions have none.
 KeyframeOwner? keyframeOwnerOf(Selection selection) => switch (selection) {
   ClipSelected(:final id) => (kind: KeyframeOwnerKind.clip, id: id),
   TextSelected(:final id) => (kind: KeyframeOwnerKind.text, id: id),
   AudioSelected(:final id) => (kind: KeyframeOwnerKind.audio, id: id),
+  OverlaySelected(:final id) => (kind: KeyframeOwnerKind.overlay, id: id),
   _ => null,
 };

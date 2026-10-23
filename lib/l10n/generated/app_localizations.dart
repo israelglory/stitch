@@ -424,6 +424,12 @@ abstract class AppLocalizations {
   /// **'Add media'**
   String get addMediaTitle;
 
+  /// Title of the media picker when adding an overlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Add overlay'**
+  String get addOverlayTitle;
+
   /// Title of the media picker when replacing a clip.
   ///
   /// In en, this message translates to:
@@ -760,6 +766,30 @@ abstract class AppLocalizations {
   /// **'Audio'**
   String get laneAudio;
 
+  /// Overlay lane label on the timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Overlay'**
+  String get laneOverlay;
+
+  /// Accessibility label for an overlay (a video or photo over the main video) on the timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Overlay, {duration}'**
+  String overlaySemantics(String duration);
+
+  /// Title of the notice when a freeze frame could not be made.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t freeze this frame'**
+  String get freezeFailedTitle;
+
+  /// Message of the notice when a freeze frame could not be made.
+  ///
+  /// In en, this message translates to:
+  /// **'The frame could not be read from the video. Try a moment nearby.'**
+  String get freezeFailedMessage;
+
   /// Accessibility label for a clip on the timeline.
   ///
   /// In en, this message translates to:
@@ -1005,6 +1035,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Text'**
   String get toolText;
+
+  /// Toolbar item: adds a video or photo over the main video (picture in picture).
+  ///
+  /// In en, this message translates to:
+  /// **'Overlay'**
+  String get toolOverlay;
+
+  /// Clip toolbar item: holds the frame under the playhead as a still for a few seconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Freeze'**
+  String get toolFreeze;
 
   /// Audio menu item.
   ///
@@ -1455,6 +1497,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Text: {text}'**
   String textItemSemantics(String text);
+
+  /// The angle shown while text or a clip is turned on the preview.
+  ///
+  /// In en, this message translates to:
+  /// **'{degrees}°'**
+  String angleDegrees(int degrees);
 
   /// Text color name.
   ///

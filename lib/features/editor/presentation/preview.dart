@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
@@ -9,16 +10,20 @@ import 'package:stitch/core/time/time.dart';
 import 'package:stitch/design/design.dart';
 import 'package:stitch/engine/engine_provider.dart';
 import 'package:stitch/features/captions/presentation/caption_preview_layer.dart';
+import 'package:stitch/features/editor/application/canvas_frame_preview.dart';
 import 'package:stitch/features/editor/application/clip_frame_preview.dart';
 import 'package:stitch/features/editor/application/current_clip.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/keyframing.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
 import 'package:stitch/features/editor/presentation/editor_media.dart';
+import 'package:stitch/features/editor/presentation/overlay_picture.dart';
 import 'package:stitch/features/projects/domain/project.dart';
 import 'package:stitch/features/text/presentation/text_overlay_layer.dart';
 import 'package:stitch/features/timeline/domain/keyframes.dart';
+import 'package:stitch/features/timeline/domain/layout.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
+import 'package:stitch/features/timeline/domain/overlay_ops.dart';
 import 'package:stitch/l10n/generated/app_localizations.dart';
 
 /// Blur applied to the "blurred copy" canvas background.
@@ -46,6 +51,7 @@ class EditorPreview extends ConsumerWidget {
       playbackControllerProvider.select((p) => p.isPlaying),
     );
     final frame = ref.watch(clipFramePreviewProvider(projectId));
+    final canvasFrames = ref.watch(canvasFramePreviewProvider(projectId));
     if (project == null) return const SizedBox.shrink();
     final framed = frame == null
         ? null
@@ -75,18 +81,14 @@ class EditorPreview extends ConsumerWidget {
                       textureId: texture,
                       filterQuality: FilterQuality.medium,
                     )
-                  else
+                  else ...[
                     _PlayheadCanvas(
                       projectId: projectId,
                       project: project,
                       clip: clip,
                     ),
-                  if (texture == null)
-                    CaptionPreviewLayer(projectId: projectId),
-                  TextOverlayLayer(
-                    projectId: projectId,
-                    drawAll: texture == null,
-                  ),
+                    _PlayheadOverlays(projectId: projectId, project: project),
+                  ],
                   // While a clip is edited by hand: its frame, placed by
                   // its values at that moment.
                   if (frame != null && framed != null)
@@ -98,13 +100,126 @@ class EditorPreview extends ConsumerWidget {
                         id: framed.id,
                       ), frame.atUs),
                       image: MemoryImage(frame.image),
-                    ),
+                    )
+                  // While an overlay is: the whole moment, drawn here.
+                  else if (canvasFrames != null)
+                    _CanvasAt(project: project, frames: canvasFrames),
+                  if (texture == null)
+                    CaptionPreviewLayer(projectId: projectId),
+                  // Last: it takes the taps, and draws the guides.
+                  TextOverlayLayer(
+                    projectId: projectId,
+                    drawAll: texture == null,
+                  ),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The overlays showing at the playhead, placed by their values there,
+/// lowest lane first. Only without the native engine, which draws them
+/// itself.
+class _PlayheadOverlays extends ConsumerWidget {
+  const new({required this.projectId, required this.project});
+
+  final String projectId;
+  final Project project;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final playhead = ref.watch(
+      playbackControllerProvider.select((p) => p.positionUs),
+    );
+    return _Overlays(project: project, atUs: playhead);
+  }
+}
+
+/// [project]'s overlays showing at [atUs], each placed by its values
+/// there; video overlays show [images] (frames) when given.
+class _Overlays extends StatelessWidget {
+  const new({
+    required this.project,
+    required this.atUs,
+    this.images = const {},
+  });
+
+  final Project project;
+  final int atUs;
+  final Map<String, Uint8List> images;
+
+  @override
+  Widget build(BuildContext context) {
+    final timeline = project.timeline;
+    final layout = TimelineLayout.of(timeline);
+    final showing = [
+      for (final o in timeline.overlayClips)
+        if (overlayShowsAt(o, atUs, layout)) o,
+    ]..sort((a, b) => a.laneIndex.compareTo(b.laneIndex));
+    if (showing.isEmpty) return const SizedBox.shrink();
+    return IgnorePointer(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          for (final o in showing)
+            OverlayPicture(
+              project: project,
+              overlay: o,
+              values: timeline.valuesAt(
+                (kind: KeyframeOwnerKind.overlay, id: o.id),
+                atUs,
+                layout,
+              )!,
+              image: switch (images[o.id]) {
+                final bytes? => MemoryImage(bytes),
+                null => null,
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The picture at [frames]' moment drawn by the editor: the clip under it
+/// and the overlays over it, placed by their values now.
+class _CanvasAt extends StatelessWidget {
+  const new({required this.project, required this.frames});
+
+  final Project project;
+  final CanvasFrames frames;
+
+  @override
+  Widget build(BuildContext context) {
+    final clipId = frames.clipId;
+    final clip = clipId == null ? null : project.timeline.clipById(clipId);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        _Canvas(
+          project: project,
+          clip: clip,
+          values: clip == null
+              ? null
+              : project.timeline.valuesAt((
+                  kind: KeyframeOwnerKind.clip,
+                  id: clip.id,
+                ), frames.atUs),
+          image: switch (frames.clipImage) {
+            final bytes? => MemoryImage(bytes),
+            null => null,
+          },
+        ),
+        _Overlays(
+          project: project,
+          atUs: frames.atUs,
+          images: frames.overlayImages,
+        ),
+      ],
     );
   }
 }

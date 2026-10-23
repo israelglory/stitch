@@ -1401,6 +1401,58 @@ class EngineTests {
   }
 
   @Test
+  fun overlayClipsAreDrawnOverThePicture() = runBlocking<Unit> {
+    val blue = solidPhoto("blue", Color.BLUE)
+    val red = solidPhoto("red", Color.RED)
+    val quarter = """{"mode": "fit", "scale": 0.5, "offsetX": -0.25, "offsetY": -0.25, "rotationDeg": 0}"""
+    val middle = """{"mode": "fit", "scale": 0.5, "offsetX": 0, "offsetY": 0, "rotationDeg": 0}"""
+    val fade = listOf(
+      keyframe(0, "\"x\": -0.25, \"y\": -0.25, \"scale\": 0.5, \"opacity\": 1"),
+      keyframe(1_000_000, "\"x\": -0.25, \"y\": -0.25, \"scale\": 0.5, \"opacity\": 0"),
+    ).joinToString(",")
+    // Two clips with a cut at 1 s. A red photo in the top left quarter
+    // until 1 s, fading out; a video in the middle, a lane up, from 0.5 s,
+    // across the cut.
+    val clip = { id: String, start: Long -> """
+      {"clipId": "$id", "mediaId": "b", "kind": "photo", "startUs": $start,
+       "endUs": ${start + 1_000_000}, "sourceInUs": 0, "sourceOutUs": 1000000, "speed": 1,
+       "volume": 0, "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": ${framing("fit")}}""" }
+    val doc = EngineDocument.decode(
+      """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190080},
+       "media": {"b": {"path": "$blue", "kind": "photo"},
+                 "r": {"path": "$red", "kind": "photo"},
+                 "v": {"path": "${media("vfr.mp4")}", "kind": "video", "durationUs": 5000000}},
+       "composition": {"durationUs": 2000000,
+        "clips": [${clip("c1", 0)}, ${clip("c2", 1_000_000)}],
+        "overlayClips": [
+         {"id": "o1", "mediaId": "r", "kind": "photo", "startUs": 0, "endUs": 1000000,
+          "sourceInUs": 0, "sourceOutUs": 1000000, "speed": 1, "volume": 0, "laneIndex": 0,
+          "framing": $quarter, "opacity": 1, "keyframes": [$fade]},
+         {"id": "o2", "mediaId": "v", "kind": "video", "startUs": 500000, "endUs": 2000000,
+          "sourceInUs": 0, "sourceOutUs": 1500000, "speed": 1, "volume": 1, "laneIndex": 1,
+          "framing": $middle}]}}
+      """,
+    )
+    assertEquals(2, doc.composition.overlayClips.size)
+    val out = export(doc, name = "overlayClips.mp4")
+    // The photo covers the top left quarter; the video, from x 0.25 to
+    // 0.75 and y 0.25 to 0.75, starts with a red bar.
+    val start = frameAt(out, 100_000)
+    assertRed("the photo, top left", pixelAt(start, 0.15f, 0.15f))
+    assertBlue("the picture under it", pixelAt(start, 0.75f, 0.85f))
+    assertBlue("no video yet", pixelAt(start, 0.3f, 0.6f))
+    val fading = pixelAt(frameAt(out, 600_000), 0.15f, 0.15f)
+    assertTrue("fading: ${Integer.toHexString(fading)}", Color.red(fading) > 25 && Color.blue(fading) > 25)
+    assertRed("the video", pixelAt(frameAt(out, 800_000), 0.3f, 0.6f))
+    val later = frameAt(out, 1_500_000)
+    assertBlue("the photo has ended", pixelAt(later, 0.15f, 0.15f))
+    assertRed("the video, after the cut", pixelAt(later, 0.3f, 0.6f))
+    assertBlue("the video is half the frame", pixelAt(later, 0.5f, 0.05f))
+  }
+
+  @Test
   fun keyframedVolumeShapesTheSound() = runBlocking<Unit> {
     // Full, eased down to silence at 1 s, then silent.
     val keyframes = listOf(

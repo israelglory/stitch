@@ -138,6 +138,34 @@ abstract class ResolvedAudio with _$ResolvedAudio {
   factory fromJson(Map<String, dynamic> json) => _$ResolvedAudioFromJson(json);
 }
 
+/// An overlay clip on the timeline: drawn over the picture (after the
+/// clips and transitions, before text) from [startUs] to [endUs], lower
+/// [laneIndex] first. Placed like a clip ([framing]) with no background.
+@freezed
+abstract class ResolvedOverlayClip with _$ResolvedOverlayClip {
+  const factory({
+    required String id,
+    required String mediaId,
+    required MediaKind kind,
+    required int startUs,
+    required int endUs,
+    required int sourceInUs,
+    required int sourceOutUs,
+    required double speed,
+
+    /// Final gain for its sound, with the original sound level applied.
+    /// Zero for photos.
+    required double volume,
+    required int laneIndex,
+    required ClipFraming framing,
+    @Default(1.0) double opacity,
+    @Default(<Keyframe>[]) List<Keyframe> keyframes,
+  }) = _ResolvedOverlayClip;
+
+  factory fromJson(Map<String, dynamic> json) =>
+      _$ResolvedOverlayClipFromJson(json);
+}
+
 @freezed
 abstract class ResolvedComposition with _$ResolvedComposition {
   const factory({
@@ -149,6 +177,9 @@ abstract class ResolvedComposition with _$ResolvedComposition {
     @Default(CaptionPreset.plain) CaptionPreset captionPreset,
     @Default(CaptionPosition.bottom) CaptionPosition captionPosition,
     @Default(<ResolvedAudio>[]) List<ResolvedAudio> audio,
+
+    /// In drawing order: by lane, then by start.
+    @Default(<ResolvedOverlayClip>[]) List<ResolvedOverlayClip> overlayClips,
   }) = _ResolvedComposition;
 
   factory fromJson(Map<String, dynamic> json) =>
@@ -257,6 +288,40 @@ ResolvedComposition _resolve(Timeline timeline) {
       ?_resolveAudio(timeline, item, layout, mix),
   ];
 
+  final overlayClips =
+      <ResolvedOverlayClip>[
+        for (final item in timeline.overlayClips)
+          if (_window(layout.startOf(item.anchor), item.durationUs, duration)
+              case (final start, final end))
+            ResolvedOverlayClip(
+              id: item.id,
+              mediaId: item.mediaId,
+              kind: item.kind,
+              startUs: start,
+              endUs: end,
+              sourceInUs: item.sourceInUs,
+              sourceOutUs: math.min(
+                item.sourceOutUs,
+                item.sourceInUs + timelineToSourceUs(end - start, item.speed),
+              ),
+              speed: item.speed,
+              volume: item.volume * _overlayGain(item, mix),
+              laneIndex: item.laneIndex,
+              framing: item.framing,
+              opacity: item.opacity,
+              keyframes: _withGain(
+                timeline.keyframesOnTimeline((
+                  kind: KeyframeOwnerKind.overlay,
+                  id: item.id,
+                ), layout),
+                _overlayGain(item, mix),
+              ),
+            ),
+      ]..sort((a, b) {
+        final byLane = a.laneIndex.compareTo(b.laneIndex);
+        return byLane != 0 ? byLane : a.startUs.compareTo(b.startUs);
+      });
+
   return ResolvedComposition(
     durationUs: duration,
     clips: clips,
@@ -266,6 +331,7 @@ ResolvedComposition _resolve(Timeline timeline) {
     captionPreset: timeline.captionTrack.preset,
     captionPosition: timeline.captionTrack.position,
     audio: audio,
+    overlayClips: overlayClips,
   );
 }
 
@@ -275,6 +341,12 @@ double _originalGain(VideoClip clip, AudioMix mix) =>
     clip.isPhoto || clip.audioDetached || !mix.originalSoundEnabled
     ? 0
     : mix.originalLevel;
+
+/// What an overlay's sound is multiplied by: the original sound level
+/// (its sound is a video's own), or 0 for photos. The main track's sound
+/// switch leaves overlays alone.
+double _overlayGain(OverlayClip item, AudioMix mix) =>
+    item.isPhoto ? 0 : mix.originalLevel;
 
 /// [keyframes] with their volume multiplied by [gain].
 List<Keyframe> _withGain(List<Keyframe> keyframes, double gain) => [

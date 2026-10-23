@@ -166,7 +166,7 @@ int audioOriginUs(AudioItem item, TimelineLayout layout) {
 }
 
 /// Kinds of item that hold keyframes.
-enum KeyframeOwnerKind { clip, text, audio }
+enum KeyframeOwnerKind { clip, text, audio, overlay }
 
 /// An item that holds keyframes.
 typedef KeyframeOwner = ({KeyframeOwnerKind kind, String id});
@@ -178,6 +178,7 @@ extension KeyframeOps on Timeline {
     KeyframeOwnerKind.clip => clipById(owner.id)?.keyframes ?? const [],
     KeyframeOwnerKind.text => _text(owner.id)?.keyframes ?? const [],
     KeyframeOwnerKind.audio => _audio(owner.id)?.keyframes ?? const [],
+    KeyframeOwnerKind.overlay => overlayById(owner.id)?.keyframes ?? const [],
   };
 
   /// The item's own fields, used when it has no keyframes.
@@ -207,6 +208,17 @@ extension KeyframeOps on Timeline {
       case KeyframeOwnerKind.audio:
         final a = _audio(owner.id);
         return a == null ? null : KeyframeValues(volume: a.volume);
+      case KeyframeOwnerKind.overlay:
+        final o = overlayById(owner.id);
+        if (o == null) return null;
+        return KeyframeValues(
+          x: o.framing.offsetX,
+          y: o.framing.offsetY,
+          scale: o.framing.scale,
+          rotationDeg: o.framing.rotationDeg,
+          opacity: o.opacity,
+          volume: o.volume,
+        );
     }
   }
 
@@ -243,6 +255,12 @@ extension KeyframeOps on Timeline {
             ? (atUs - origin) % pass
             : atUs - origin;
         return item.sourceInUs + timelineToSourceUs(into, item.speed);
+      case KeyframeOwnerKind.overlay:
+        final item = overlayById(owner.id);
+        if (item == null) return null;
+        final start = layout.startOf(item.anchor);
+        if (atUs < start || atUs > start + item.durationUs) return null;
+        return item.sourceInUs + timelineToSourceUs(atUs - start, item.speed);
     }
   }
 
@@ -270,6 +288,13 @@ extension KeyframeOps on Timeline {
         final a => (
           audioOriginUs(a, layout),
           audioOriginUs(a, layout) + a.durationUs,
+        ),
+      },
+      KeyframeOwnerKind.overlay => switch (overlayById(owner.id)) {
+        null => (0, -1),
+        final o => (
+          layout.startOf(o.anchor),
+          layout.startOf(o.anchor) + o.durationUs,
         ),
       },
     };
@@ -301,6 +326,11 @@ extension KeyframeOps on Timeline {
         final item = _audio(owner.id);
         if (item == null) return null;
         return audioOriginUs(item, layout) +
+            sourceToTimelineUs(timeUs - item.sourceInUs, item.speed);
+      case KeyframeOwnerKind.overlay:
+        final item = overlayById(owner.id);
+        if (item == null) return null;
+        return layout.startOf(item.anchor) +
             sourceToTimelineUs(timeUs - item.sourceInUs, item.speed);
     }
   }
@@ -425,6 +455,10 @@ extension KeyframeOps on Timeline {
       timelineUs,
       _audio(owner.id)?.speed ?? 1,
     ),
+    KeyframeOwnerKind.overlay => timelineToSourceUs(
+      timelineUs,
+      overlayById(owner.id)?.speed ?? 1,
+    ),
   };
 
   TextItem? _text(String id) => textItems.where((t) => t.id == id).firstOrNull;
@@ -457,6 +491,14 @@ extension KeyframeOps on Timeline {
           owner.id,
           (a) => a.id,
           (a) => a.copyWith(keyframes: sorted),
+        ),
+      ),
+      KeyframeOwnerKind.overlay => copyWith(
+        overlayClips: replaceById(
+          overlayClips,
+          owner.id,
+          (o) => o.id,
+          (o) => o.copyWith(keyframes: sorted),
         ),
       ),
     };
@@ -504,6 +546,23 @@ extension KeyframeOps on Timeline {
           owner.id,
           (a) => a.id,
           (a) => a.copyWith(volume: v.volume),
+        ),
+      ),
+      KeyframeOwnerKind.overlay => copyWith(
+        overlayClips: replaceById(
+          overlayClips,
+          owner.id,
+          (o) => o.id,
+          (o) => o.copyWith(
+            framing: o.framing.copyWith(
+              offsetX: v.x,
+              offsetY: v.y,
+              scale: v.scale,
+              rotationDeg: v.rotationDeg,
+            ),
+            opacity: v.opacity,
+            volume: v.volume,
+          ),
         ),
       ),
     };

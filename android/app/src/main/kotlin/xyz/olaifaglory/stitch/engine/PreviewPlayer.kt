@@ -115,6 +115,9 @@ class PreviewPlayer(
   /** The last document set, to rebuild a player that failed. */
   private var document: EngineDocument? = null
 
+  /** Decoders of the playing composition's overlay clips. */
+  private var overlayFrames: OverlayClipFrames? = null
+
   /** The player failed and is idle for good (see [Player.Listener.onPlayerError]). */
   private var failed = false
 
@@ -289,6 +292,9 @@ class PreviewPlayer(
     pendingVersion = doc.version.toLong()
     redrawsLeft = MAX_REDRAWS
     p.setComposition(built.composition, max(0, keepMs))
+    // The old composition's overlay decoders, now that it is replaced.
+    overlayFrames?.release()
+    overlayFrames = built.overlayFrames
     handler.removeCallbacks(markShownLater)
     handler.postDelayed(markShownLater, SHOWN_FALLBACK_MS)
     if (p.playbackState == Player.STATE_IDLE) p.prepare()
@@ -392,6 +398,8 @@ class PreviewPlayer(
   private fun releaseNow() {
     PreviewPlayback.playing = false
     discardPlayer()
+    overlayFrames?.release()
+    overlayFrames = null
     document = null
     durationUs = 0
     publish()

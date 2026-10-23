@@ -115,11 +115,33 @@ data class EngineDocument(
     val keyframes: Keyframes = Keyframes.NONE,
   )
 
+  /**
+   * A video or photo drawn over the picture (an overlay clip): placed like
+   * a clip, with no background. Listed in drawing order.
+   */
+  data class OverlayClip(
+    val id: String,
+    val mediaId: String,
+    val kind: String,
+    val startUs: Long,
+    val endUs: Long,
+    val sourceInUs: Long,
+    val sourceOutUs: Long,
+    val speed: Double,
+    val volume: Double,
+    val laneIndex: Int,
+    val framing: Framing,
+    val opacity: Double = 1.0,
+    /** Replace [framing], [opacity], and [volume] over time. */
+    val keyframes: Keyframes = Keyframes.NONE,
+  )
+
   data class Composition(
     val durationUs: Long,
     val clips: List<Clip>,
     val transitions: List<Transition>,
     val audio: List<Audio>,
+    val overlayClips: List<OverlayClip> = emptyList(),
   )
 
   companion object {
@@ -164,6 +186,7 @@ data class EngineDocument(
               ),
             )
           },
+          overlayClips = comp.optJSONArray("overlayClips").objects().map(::overlayClip),
         ),
         overlays = root.optJSONArray("overlays").objects().map(::overlay),
         version = root.optInt("version", 0),
@@ -193,6 +216,27 @@ data class EngineDocument(
         keyframes = Keyframes.decode(o.optJSONArray("keyframes")),
       )
     }
+
+    private fun framing(f: JSONObject) = Framing(
+      f.getString("mode"), f.getDouble("scale"), f.getDouble("offsetX"),
+      f.getDouble("offsetY"), f.getDouble("rotationDeg"),
+    )
+
+    private fun overlayClip(o: JSONObject) = OverlayClip(
+      id = o.getString("id"),
+      mediaId = o.getString("mediaId"),
+      kind = o.getString("kind"),
+      startUs = o.getLong("startUs"),
+      endUs = o.getLong("endUs"),
+      sourceInUs = o.getLong("sourceInUs"),
+      sourceOutUs = o.getLong("sourceOutUs"),
+      speed = o.getDouble("speed"),
+      volume = o.getDouble("volume"),
+      laneIndex = o.optInt("laneIndex", 0),
+      framing = framing(o.getJSONObject("framing")),
+      opacity = o.optDouble("opacity", 1.0),
+      keyframes = Keyframes.decode(o.optJSONArray("keyframes")),
+    )
 
     private fun clip(o: JSONObject): Clip {
       val f = o.getJSONObject("framing")

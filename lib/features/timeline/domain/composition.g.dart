@@ -206,6 +206,45 @@ const _$AudioKindEnumMap = {
   AudioKind.extracted: 'extracted',
 };
 
+_ResolvedOverlayClip _$ResolvedOverlayClipFromJson(Map<String, dynamic> json) =>
+    _ResolvedOverlayClip(
+      id: json['id'] as String,
+      mediaId: json['mediaId'] as String,
+      kind: $enumDecode(_$MediaKindEnumMap, json['kind']),
+      startUs: (json['startUs'] as num).toInt(),
+      endUs: (json['endUs'] as num).toInt(),
+      sourceInUs: (json['sourceInUs'] as num).toInt(),
+      sourceOutUs: (json['sourceOutUs'] as num).toInt(),
+      speed: (json['speed'] as num).toDouble(),
+      volume: (json['volume'] as num).toDouble(),
+      laneIndex: (json['laneIndex'] as num).toInt(),
+      framing: ClipFraming.fromJson(json['framing'] as Map<String, dynamic>),
+      opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
+      keyframes:
+          (json['keyframes'] as List<dynamic>?)
+              ?.map((e) => Keyframe.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <Keyframe>[],
+    );
+
+Map<String, dynamic> _$ResolvedOverlayClipToJson(
+  _ResolvedOverlayClip instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'mediaId': instance.mediaId,
+  'kind': _$MediaKindEnumMap[instance.kind]!,
+  'startUs': instance.startUs,
+  'endUs': instance.endUs,
+  'sourceInUs': instance.sourceInUs,
+  'sourceOutUs': instance.sourceOutUs,
+  'speed': instance.speed,
+  'volume': instance.volume,
+  'laneIndex': instance.laneIndex,
+  'framing': instance.framing.toJson(),
+  'opacity': instance.opacity,
+  'keyframes': instance.keyframes.map((e) => e.toJson()).toList(),
+};
+
 _ResolvedComposition _$ResolvedCompositionFromJson(
   Map<String, dynamic> json,
 ) => _ResolvedComposition(
@@ -241,6 +280,11 @@ _ResolvedComposition _$ResolvedCompositionFromJson(
           ?.map((e) => ResolvedAudio.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <ResolvedAudio>[],
+  overlayClips:
+      (json['overlayClips'] as List<dynamic>?)
+          ?.map((e) => ResolvedOverlayClip.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <ResolvedOverlayClip>[],
 );
 
 Map<String, dynamic> _$ResolvedCompositionToJson(
@@ -254,6 +298,7 @@ Map<String, dynamic> _$ResolvedCompositionToJson(
   'captionPreset': _$CaptionPresetEnumMap[instance.captionPreset]!,
   'captionPosition': _$CaptionPositionEnumMap[instance.captionPosition]!,
   'audio': instance.audio.map((e) => e.toJson()).toList(),
+  'overlayClips': instance.overlayClips.map((e) => e.toJson()).toList(),
 };
 
 const _$CaptionPresetEnumMap = {

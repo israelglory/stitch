@@ -9,7 +9,8 @@ import 'package:stitch/features/timeline/domain/models.dart';
 /// - each transition follows an existing clip that has a next clip, one
 ///   per cut, with its duration within the cap;
 /// - items are anchored to clip content whenever there are clips;
-/// - text items and audio items on the same lane do not overlap;
+/// - text items, audio items, and overlay clips on the same lane do not
+///   overlap;
 /// - keyframes are sorted by time, with values within the limits.
 ///
 /// Every operation ends with this, so individual operations only need to
@@ -57,6 +58,14 @@ Timeline normalize(Timeline timeline) {
         lane: item.laneIndex,
       ),
   ]);
+  final overlayLanes = packLanes([
+    for (final item in result.overlayClips)
+      (
+        startUs: layout.startOf(item.anchor),
+        endUs: layout.startOf(item.anchor) + item.durationUs,
+        lane: item.laneIndex,
+      ),
+  ]);
 
   return result.copyWith(
     videoClips: [
@@ -82,6 +91,16 @@ Timeline normalize(Timeline timeline) {
             ? item
             : item.copyWith(
                 laneIndex: audioLanes[i],
+                keyframes: item.keyframes.normalized(),
+              ),
+    ],
+    overlayClips: [
+      for (final (i, item) in result.overlayClips.indexed)
+        item.laneIndex == overlayLanes[i] &&
+                identical(item.keyframes.normalized(), item.keyframes)
+            ? item
+            : item.copyWith(
+                laneIndex: overlayLanes[i],
                 keyframes: item.keyframes.normalized(),
               ),
     ],
@@ -135,6 +154,12 @@ Timeline reanchorOrphans(
             ? item.copyWith(anchor: moved(item.anchor), needsReview: true)
             : item,
     ],
+    overlayClips: [
+      for (final item in timeline.overlayClips)
+        orphan(item.anchor)
+            ? item.copyWith(anchor: moved(item.anchor), needsReview: true)
+            : item,
+    ],
   );
 }
 
@@ -153,6 +178,10 @@ Timeline mapAnchors(Timeline timeline, Anchor Function(Anchor) map) =>
       ),
       audioItems: [
         for (final item in timeline.audioItems)
+          item.copyWith(anchor: map(item.anchor)),
+      ],
+      overlayClips: [
+        for (final item in timeline.overlayClips)
           item.copyWith(anchor: map(item.anchor)),
       ],
     );

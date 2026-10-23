@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stitch/features/timeline/domain/layout.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
+import 'package:stitch/features/timeline/domain/video_ops.dart';
 
 import 'fixtures.dart';
 
@@ -146,6 +147,39 @@ void main() {
         ]),
         [0, 0],
       );
+    });
+  });
+
+  group('where added clips go', () {
+    test('the cut nearest the time', () {
+      final l = track([2, 3, 1]).layout;
+      expect(l.insertionIndexAt(0), 0);
+      expect(l.insertionIndexAt(s(0.9)), 0);
+      // From a clip's middle on, after it.
+      expect(l.insertionIndexAt(s(1)), 1);
+      expect(l.insertionIndexAt(s(3)), 1);
+      expect(l.insertionIndexAt(s(3.5)), 2);
+      expect(l.insertionIndexAt(s(5.6)), 3);
+      // Past the end, at the end.
+      expect(l.insertionIndexAt(s(9)), 3);
+    });
+
+    test('an empty timeline takes them first', () {
+      expect(Timeline.empty.layout.insertionIndexAt(s(1)), 0);
+    });
+
+    test('inserted between two clips, the transition stays with the first', () {
+      final t = track([2, 3]).copyWith(
+        transitions: [
+          Transition(afterClipId: 'a', type: 'crossfade', durationUs: s(0.5)),
+        ],
+      );
+      final added = t.insertClips(t.layout.insertionIndexAt(s(1.5)), [
+        clip('n', 2),
+      ]);
+      expect(added.videoClips.map((c) => c.id), ['a', 'n', 'b']);
+      expect(added.transitionAfter('a')?.type, 'crossfade');
+      expect(added.transitionAfter('n'), isNull);
     });
   });
 }

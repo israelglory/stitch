@@ -274,6 +274,9 @@ abstract final class AppSizes {
   // Timeline.
   static const double rulerHeight = 24;
   static const double videoTrackHeight = 56;
+
+  /// An overlay lane: thumbnails, smaller than the main track's.
+  static const double overlayLaneHeight = 40;
   static const double laneHeight = 32;
   static const double laneHeaderWidth = 56;
   static const double trimHandleWidth = 12;

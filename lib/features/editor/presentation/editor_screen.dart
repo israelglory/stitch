@@ -77,12 +77,30 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     if (name != null) await _controller.rename(name);
   }
 
+  /// Adds clips at the cut nearest the playhead, then moves the playhead
+  /// to the first of them.
   Future<void> _addMedia() async {
+    final state = ref.read(editorControllerProvider(widget.projectId)).value;
+    final index = state?.layout.insertionIndexAt(
+      ref.read(playbackControllerProvider).positionUs,
+    );
     final items = await context.push<List<LibraryItem>>(
       AppRoutes.editorAdd(widget.projectId),
     );
     if (items == null || items.isEmpty || !mounted) return;
-    await runWithImportProgress(context, () => _controller.addMedia(items));
+    final added = await runWithImportProgress(
+      context,
+      () => _controller.addMedia(items, index: index),
+    );
+    if (!added || !mounted) return;
+    final now = ref.read(editorControllerProvider(widget.projectId)).value;
+    final selection = now?.selection;
+    if (now != null && selection is ClipSelected) {
+      final start = now.layout.span(selection.id)?.startUs;
+      if (start != null) {
+        await ref.read(playbackControllerProvider.notifier).seek(start);
+      }
+    }
   }
 
   /// The export sheet, then the export screen with what was chosen.
@@ -99,7 +117,10 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   List<Widget> _previewCopyBanners(EditorState state) {
     final l10n = AppLocalizations.of(context);
     final preparing = ref.watch(previewCopiesProvider(widget.projectId));
-    final inUse = {for (final c in state.timeline.videoClips) c.mediaId};
+    final inUse = {
+      for (final c in state.timeline.videoClips) c.mediaId,
+      for (final o in state.timeline.overlayClips) o.mediaId,
+    };
     final failed = state.project.media.values
         .where((m) => m.previewCopyFailed && inUse.contains(m.id))
         .length;

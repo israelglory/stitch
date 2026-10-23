@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stitch/app/app.dart';
 import 'package:stitch/app/router.dart';
+import 'package:stitch/features/editor/application/editor_controller.dart';
+import 'package:stitch/features/editor/application/playback_controller.dart';
 import 'package:stitch/features/projects/application/import_controller.dart';
 import 'package:stitch/features/projects/domain/project.dart';
 
@@ -91,4 +93,23 @@ Future<void> settleUntil(
     await settle(tester, rounds: 1);
   }
   fail('Timed out waiting for $finder');
+}
+
+/// Moves the playhead to [us], scrolling the timeline so that moment is
+/// under it (the middle of the screen, clear of the pinned add button).
+Future<void> scrollTimelineTo(WidgetTester tester, int us) async {
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(StitchApp)),
+  );
+  await container.read(playbackControllerProvider.notifier).seek(us);
+  await settle(tester);
+}
+
+/// Scrolls the timeline to the end of the first clip.
+Future<void> scrollTimelineToFirstCut(WidgetTester tester, String id) async {
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(StitchApp)),
+  );
+  final state = container.read(editorControllerProvider(id)).requireValue;
+  await scrollTimelineTo(tester, state.layout.spans.first.endUs);
 }

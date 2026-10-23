@@ -20,7 +20,7 @@ Everything visual lives in `lib/design/`. Feature code imports `package:stitch/d
 | `tokens.dart` | `AppColors` (theme extension, `context.colors`), `AppSpacing`, `AppRadius`, `AppSizes`, `AppTypography`, `AppMotion` |
 | `theme.dart` | Material theme built from tokens. Ripples, surface tint, and elevation are off. |
 | `icons.dart` | `AppIcons`, the complete icon list (Lucide 1.48.0, ISC). |
-| `haptics.dart` | `AppHaptics.snap`, `split`, `selection`. These are the only haptics. |
+| `haptics.dart` | `AppHaptics.snap` (timeline snaps, and snap guides on the preview), `split`, `selection`. These are the only haptics. |
 
 Font: Inter 4.1 (SIL OFL), weights 400 and 600, bundled in `assets/fonts/`. Use `.tabular` on any style showing a changing number.
 
@@ -67,6 +67,10 @@ These were needed to build the listed components. Each has one narrow use.
 | Onboarding mock-ups | `mocks/editor_mocks.dart` | Static mock-ups built from real components. Decorative, so hidden from screen readers. |
 | `TimeRuler`, `Playhead`, `LaneHeader` | `timeline/timeline_chrome.dart` | Ruler labels stay at least 64pt apart at any zoom. |
 | `VideoClipTile`, `TransitionButton`, `OverlayItemTile`, `AudioItemTile` | `timeline/timeline_items.dart` | Waveform, fades, past-the-end marker, needs-review flag. |
+| Snap guides | `features/text/presentation/text_overlay_layer.dart` | While text or a clip is moved on the preview. `accent` lines at what it snapped to (the frame's centre and edges, other text's edges and centres), the moved clip's outline, and a small centre mark. An `onOverlay` border when the clip exactly fills the frame. The angle, in a `MediaLabel` at the top, while turning. Snapping math is in `editor/domain/canvas_snap.dart`. |
+| Overlay lane tiles | `timeline/timeline_items.dart` | `VideoClipTile` at `AppSizes.overlayLaneHeight` (40): a filmstrip like the main track's, smaller. Overlay lanes sit above the main track, highest first, with a `layers-2` lane header. |
+| `OverlayPicture` | `editor/presentation/overlay_picture.dart` | An overlay drawn on the preview as the engines draw it (fitted, then zoomed, moved, and turned), with its poster or a frame. |
+| Add clip button | `editor/presentation/timeline_view.dart` | Filled "+" pinned at the right end of the video track, over a `background` fade, wherever the timeline is scrolled. Only the button takes taps. |
 | `TimelineItemFrame`, `TrimCallbacks`, `KeyframeMarkers` | `timeline/timeline_frame.dart` | Selection outline with trim handles inside the item bounds. On a selected item, each keyframe is a rhombus: accent for the one under the playhead, `onOverlay` for the rest, with an `overlay` edge. A rhombus never sits under a trim handle; each has a full 44pt tap target kept inside the item, and tapping it moves the playhead there. |
 
 ## Accessibility

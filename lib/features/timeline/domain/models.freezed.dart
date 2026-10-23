@@ -1556,6 +1556,364 @@ $ClipFramingCopyWith<$Res> get framing {
 
 
 /// @nodoc
+mixin _$OverlayClip {
+
+ String get id; String get mediaId; MediaKind get kind; Anchor get anchor;/// Length of the source file, or null for photos.
+ int? get mediaDurationUs; int get sourceInUs; int get sourceOutUs; int get laneIndex; double get speed; double get volume; ClipFraming get framing; double get opacity;/// Sorted by source time. Empty: the values above hold throughout.
+ List<Keyframe> get keyframes;/// The clip this overlay was anchored to was deleted.
+ bool get needsReview;
+/// Create a copy of OverlayClip
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$OverlayClipCopyWith<OverlayClip> get copyWith => _$OverlayClipCopyWithImpl<OverlayClip>(this as OverlayClip, _$identity);
+
+  /// Serializes this OverlayClip to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as OverlayClip;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OverlayClip&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.mediaId, _this.mediaId) || other.mediaId == _this.mediaId)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.anchor, _this.anchor) || other.anchor == _this.anchor)&&(identical(other.mediaDurationUs, _this.mediaDurationUs) || other.mediaDurationUs == _this.mediaDurationUs)&&(identical(other.sourceInUs, _this.sourceInUs) || other.sourceInUs == _this.sourceInUs)&&(identical(other.sourceOutUs, _this.sourceOutUs) || other.sourceOutUs == _this.sourceOutUs)&&(identical(other.laneIndex, _this.laneIndex) || other.laneIndex == _this.laneIndex)&&(identical(other.speed, _this.speed) || other.speed == _this.speed)&&(identical(other.volume, _this.volume) || other.volume == _this.volume)&&(identical(other.framing, _this.framing) || other.framing == _this.framing)&&(identical(other.opacity, _this.opacity) || other.opacity == _this.opacity)&&const DeepCollectionEquality().equals(other.keyframes, _this.keyframes)&&(identical(other.needsReview, _this.needsReview) || other.needsReview == _this.needsReview));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as OverlayClip;
+  return Object.hash(runtimeType,_this.id,_this.mediaId,_this.kind,_this.anchor,_this.mediaDurationUs,_this.sourceInUs,_this.sourceOutUs,_this.laneIndex,_this.speed,_this.volume,_this.framing,_this.opacity,const DeepCollectionEquality().hash(_this.keyframes),_this.needsReview);
+}
+
+@override
+String toString() {
+  final _this = this as OverlayClip;
+  return 'OverlayClip(id: ${_this.id}, mediaId: ${_this.mediaId}, kind: ${_this.kind}, anchor: ${_this.anchor}, mediaDurationUs: ${_this.mediaDurationUs}, sourceInUs: ${_this.sourceInUs}, sourceOutUs: ${_this.sourceOutUs}, laneIndex: ${_this.laneIndex}, speed: ${_this.speed}, volume: ${_this.volume}, framing: ${_this.framing}, opacity: ${_this.opacity}, keyframes: ${_this.keyframes}, needsReview: ${_this.needsReview})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $OverlayClipCopyWith<$Res>  {
+  factory $OverlayClipCopyWith(OverlayClip value, $Res Function(OverlayClip) _then) = _$OverlayClipCopyWithImpl;
+@useResult
+$Res call({
+ String id, String mediaId, MediaKind kind, Anchor anchor, int? mediaDurationUs, int sourceInUs, int sourceOutUs, int laneIndex, double speed, double volume, ClipFraming framing, double opacity, List<Keyframe> keyframes, bool needsReview
+});
+
+
+$AnchorCopyWith<$Res> get anchor;$ClipFramingCopyWith<$Res> get framing;
+
+}
+/// @nodoc
+class _$OverlayClipCopyWithImpl<$Res>
+    implements $OverlayClipCopyWith<$Res> {
+  _$OverlayClipCopyWithImpl(this._self, this._then);
+
+  final OverlayClip _self;
+  final $Res Function(OverlayClip) _then;
+
+/// Create a copy of OverlayClip
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? mediaId = null,Object? kind = null,Object? anchor = null,Object? mediaDurationUs = freezed,Object? sourceInUs = null,Object? sourceOutUs = null,Object? laneIndex = null,Object? speed = null,Object? volume = null,Object? framing = null,Object? opacity = null,Object? keyframes = null,Object? needsReview = null,}) {
+  return _then(OverlayClip(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,mediaId: null == mediaId ? _self.mediaId : mediaId // ignore: cast_nullable_to_non_nullable
+as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as MediaKind,anchor: null == anchor ? _self.anchor : anchor // ignore: cast_nullable_to_non_nullable
+as Anchor,mediaDurationUs: freezed == mediaDurationUs ? _self.mediaDurationUs : mediaDurationUs // ignore: cast_nullable_to_non_nullable
+as int?,sourceInUs: null == sourceInUs ? _self.sourceInUs : sourceInUs // ignore: cast_nullable_to_non_nullable
+as int,sourceOutUs: null == sourceOutUs ? _self.sourceOutUs : sourceOutUs // ignore: cast_nullable_to_non_nullable
+as int,laneIndex: null == laneIndex ? _self.laneIndex : laneIndex // ignore: cast_nullable_to_non_nullable
+as int,speed: null == speed ? _self.speed : speed // ignore: cast_nullable_to_non_nullable
+as double,volume: null == volume ? _self.volume : volume // ignore: cast_nullable_to_non_nullable
+as double,framing: null == framing ? _self.framing : framing // ignore: cast_nullable_to_non_nullable
+as ClipFraming,opacity: null == opacity ? _self.opacity : opacity // ignore: cast_nullable_to_non_nullable
+as double,keyframes: null == keyframes ? _self.keyframes : keyframes // ignore: cast_nullable_to_non_nullable
+as List<Keyframe>,needsReview: null == needsReview ? _self.needsReview : needsReview // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+/// Create a copy of OverlayClip
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AnchorCopyWith<$Res> get anchor {
+  
+  return $AnchorCopyWith<$Res>(_self.anchor, (value) {
+    return _then(_self.copyWith(anchor: value));
+  });
+}/// Create a copy of OverlayClip
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ClipFramingCopyWith<$Res> get framing {
+  
+  return $ClipFramingCopyWith<$Res>(_self.framing, (value) {
+    return _then(_self.copyWith(framing: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [OverlayClip].
+extension OverlayClipPatterns on OverlayClip {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _OverlayClip value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _OverlayClip() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _OverlayClip value)  $default,){
+final _that = this;
+switch (_that) {
+case _OverlayClip():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _OverlayClip value)?  $default,){
+final _that = this;
+switch (_that) {
+case _OverlayClip() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String mediaId,  MediaKind kind,  Anchor anchor,  int? mediaDurationUs,  int sourceInUs,  int sourceOutUs,  int laneIndex,  double speed,  double volume,  ClipFraming framing,  double opacity,  List<Keyframe> keyframes,  bool needsReview)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _OverlayClip() when $default != null:
+return $default(_that.id,_that.mediaId,_that.kind,_that.anchor,_that.mediaDurationUs,_that.sourceInUs,_that.sourceOutUs,_that.laneIndex,_that.speed,_that.volume,_that.framing,_that.opacity,_that.keyframes,_that.needsReview);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String mediaId,  MediaKind kind,  Anchor anchor,  int? mediaDurationUs,  int sourceInUs,  int sourceOutUs,  int laneIndex,  double speed,  double volume,  ClipFraming framing,  double opacity,  List<Keyframe> keyframes,  bool needsReview)  $default,) {final _that = this;
+switch (_that) {
+case _OverlayClip():
+return $default(_that.id,_that.mediaId,_that.kind,_that.anchor,_that.mediaDurationUs,_that.sourceInUs,_that.sourceOutUs,_that.laneIndex,_that.speed,_that.volume,_that.framing,_that.opacity,_that.keyframes,_that.needsReview);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String mediaId,  MediaKind kind,  Anchor anchor,  int? mediaDurationUs,  int sourceInUs,  int sourceOutUs,  int laneIndex,  double speed,  double volume,  ClipFraming framing,  double opacity,  List<Keyframe> keyframes,  bool needsReview)?  $default,) {final _that = this;
+switch (_that) {
+case _OverlayClip() when $default != null:
+return $default(_that.id,_that.mediaId,_that.kind,_that.anchor,_that.mediaDurationUs,_that.sourceInUs,_that.sourceOutUs,_that.laneIndex,_that.speed,_that.volume,_that.framing,_that.opacity,_that.keyframes,_that.needsReview);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _OverlayClip extends OverlayClip {
+  const _OverlayClip({required this.id, required this.mediaId, required this.kind, required this.anchor, required this.mediaDurationUs, required this.sourceInUs, required this.sourceOutUs, this.laneIndex = 0, this.speed = 1.0, this.volume = 1.0, this.framing = const ClipFraming(), this.opacity = 1.0,  List<Keyframe> keyframes = const <Keyframe>[], this.needsReview = false}): _keyframes = keyframes,super._();
+  factory _OverlayClip.fromJson(Map<String, dynamic> json) => _$OverlayClipFromJson(json);
+
+@override final  String id;
+@override final  String mediaId;
+@override final  MediaKind kind;
+@override final  Anchor anchor;
+/// Length of the source file, or null for photos.
+@override final  int? mediaDurationUs;
+@override final  int sourceInUs;
+@override final  int sourceOutUs;
+@override@JsonKey() final  int laneIndex;
+@override@JsonKey() final  double speed;
+@override@JsonKey() final  double volume;
+@override@JsonKey() final  ClipFraming framing;
+@override@JsonKey() final  double opacity;
+/// Sorted by source time. Empty: the values above hold throughout.
+ final  List<Keyframe> _keyframes;
+/// Sorted by source time. Empty: the values above hold throughout.
+@override@JsonKey() List<Keyframe> get keyframes {
+  if (_keyframes is EqualUnmodifiableListView) return _keyframes;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_keyframes);
+}
+
+/// The clip this overlay was anchored to was deleted.
+@override@JsonKey() final  bool needsReview;
+
+/// Create a copy of OverlayClip
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$OverlayClipCopyWith<_OverlayClip> get copyWith => __$OverlayClipCopyWithImpl<_OverlayClip>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$OverlayClipToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OverlayClip&&(identical(other.id, id) || other.id == id)&&(identical(other.mediaId, mediaId) || other.mediaId == mediaId)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.anchor, anchor) || other.anchor == anchor)&&(identical(other.mediaDurationUs, mediaDurationUs) || other.mediaDurationUs == mediaDurationUs)&&(identical(other.sourceInUs, sourceInUs) || other.sourceInUs == sourceInUs)&&(identical(other.sourceOutUs, sourceOutUs) || other.sourceOutUs == sourceOutUs)&&(identical(other.laneIndex, laneIndex) || other.laneIndex == laneIndex)&&(identical(other.speed, speed) || other.speed == speed)&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.framing, framing) || other.framing == framing)&&(identical(other.opacity, opacity) || other.opacity == opacity)&&const DeepCollectionEquality().equals(other.keyframes, _keyframes)&&(identical(other.needsReview, needsReview) || other.needsReview == needsReview));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id,mediaId,kind,anchor,mediaDurationUs,sourceInUs,sourceOutUs,laneIndex,speed,volume,framing,opacity,const DeepCollectionEquality().hash(_keyframes),needsReview);
+}
+
+@override
+String toString() {
+    return 'OverlayClip(id: $id, mediaId: $mediaId, kind: $kind, anchor: $anchor, mediaDurationUs: $mediaDurationUs, sourceInUs: $sourceInUs, sourceOutUs: $sourceOutUs, laneIndex: $laneIndex, speed: $speed, volume: $volume, framing: $framing, opacity: $opacity, keyframes: $keyframes, needsReview: $needsReview)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$OverlayClipCopyWith<$Res> implements $OverlayClipCopyWith<$Res> {
+  factory _$OverlayClipCopyWith(_OverlayClip value, $Res Function(_OverlayClip) _then) = __$OverlayClipCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String mediaId, MediaKind kind, Anchor anchor, int? mediaDurationUs, int sourceInUs, int sourceOutUs, int laneIndex, double speed, double volume, ClipFraming framing, double opacity, List<Keyframe> keyframes, bool needsReview
+});
+
+
+@override $AnchorCopyWith<$Res> get anchor;@override $ClipFramingCopyWith<$Res> get framing;
+
+}
+/// @nodoc
+class __$OverlayClipCopyWithImpl<$Res>
+    implements _$OverlayClipCopyWith<$Res> {
+  __$OverlayClipCopyWithImpl(this._self, this._then);
+
+  final _OverlayClip _self;
+  final $Res Function(_OverlayClip) _then;
+
+/// Create a copy of OverlayClip
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? mediaId = null,Object? kind = null,Object? anchor = null,Object? mediaDurationUs = freezed,Object? sourceInUs = null,Object? sourceOutUs = null,Object? laneIndex = null,Object? speed = null,Object? volume = null,Object? framing = null,Object? opacity = null,Object? keyframes = null,Object? needsReview = null,}) {
+  return _then(_OverlayClip(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,mediaId: null == mediaId ? _self.mediaId : mediaId // ignore: cast_nullable_to_non_nullable
+as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as MediaKind,anchor: null == anchor ? _self.anchor : anchor // ignore: cast_nullable_to_non_nullable
+as Anchor,mediaDurationUs: freezed == mediaDurationUs ? _self.mediaDurationUs : mediaDurationUs // ignore: cast_nullable_to_non_nullable
+as int?,sourceInUs: null == sourceInUs ? _self.sourceInUs : sourceInUs // ignore: cast_nullable_to_non_nullable
+as int,sourceOutUs: null == sourceOutUs ? _self.sourceOutUs : sourceOutUs // ignore: cast_nullable_to_non_nullable
+as int,laneIndex: null == laneIndex ? _self.laneIndex : laneIndex // ignore: cast_nullable_to_non_nullable
+as int,speed: null == speed ? _self.speed : speed // ignore: cast_nullable_to_non_nullable
+as double,volume: null == volume ? _self.volume : volume // ignore: cast_nullable_to_non_nullable
+as double,framing: null == framing ? _self.framing : framing // ignore: cast_nullable_to_non_nullable
+as ClipFraming,opacity: null == opacity ? _self.opacity : opacity // ignore: cast_nullable_to_non_nullable
+as double,keyframes: null == keyframes ? _self._keyframes : keyframes // ignore: cast_nullable_to_non_nullable
+as List<Keyframe>,needsReview: null == needsReview ? _self.needsReview : needsReview // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+/// Create a copy of OverlayClip
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AnchorCopyWith<$Res> get anchor {
+  
+  return $AnchorCopyWith<$Res>(_self.anchor, (value) {
+    return _then(_self.copyWith(anchor: value));
+  });
+}/// Create a copy of OverlayClip
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ClipFramingCopyWith<$Res> get framing {
+  
+  return $ClipFramingCopyWith<$Res>(_self.framing, (value) {
+    return _then(_self.copyWith(framing: value));
+  });
+}
+}
+
+
+/// @nodoc
 mixin _$Transition {
 
  String get afterClipId;/// An id from `transitionCatalog` (transitions/ in the repo). An
@@ -4285,7 +4643,7 @@ as double,
 /// @nodoc
 mixin _$Timeline {
 
- List<VideoClip> get videoClips; List<Transition> get transitions; List<TextItem> get textItems; CaptionTrack get captionTrack; List<AudioItem> get audioItems; AudioMix get audioMix;
+ List<VideoClip> get videoClips; List<Transition> get transitions; List<TextItem> get textItems; CaptionTrack get captionTrack; List<AudioItem> get audioItems; AudioMix get audioMix; List<OverlayClip> get overlayClips;
 /// Create a copy of Timeline
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -4299,20 +4657,20 @@ $TimelineCopyWith<Timeline> get copyWith => _$TimelineCopyWithImpl<Timeline>(thi
 @override
 bool operator ==(Object other) {
   final _this = this as Timeline;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Timeline&&const DeepCollectionEquality().equals(other.videoClips, _this.videoClips)&&const DeepCollectionEquality().equals(other.transitions, _this.transitions)&&const DeepCollectionEquality().equals(other.textItems, _this.textItems)&&(identical(other.captionTrack, _this.captionTrack) || other.captionTrack == _this.captionTrack)&&const DeepCollectionEquality().equals(other.audioItems, _this.audioItems)&&(identical(other.audioMix, _this.audioMix) || other.audioMix == _this.audioMix));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Timeline&&const DeepCollectionEquality().equals(other.videoClips, _this.videoClips)&&const DeepCollectionEquality().equals(other.transitions, _this.transitions)&&const DeepCollectionEquality().equals(other.textItems, _this.textItems)&&(identical(other.captionTrack, _this.captionTrack) || other.captionTrack == _this.captionTrack)&&const DeepCollectionEquality().equals(other.audioItems, _this.audioItems)&&(identical(other.audioMix, _this.audioMix) || other.audioMix == _this.audioMix)&&const DeepCollectionEquality().equals(other.overlayClips, _this.overlayClips));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as Timeline;
-  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.videoClips),const DeepCollectionEquality().hash(_this.transitions),const DeepCollectionEquality().hash(_this.textItems),_this.captionTrack,const DeepCollectionEquality().hash(_this.audioItems),_this.audioMix);
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.videoClips),const DeepCollectionEquality().hash(_this.transitions),const DeepCollectionEquality().hash(_this.textItems),_this.captionTrack,const DeepCollectionEquality().hash(_this.audioItems),_this.audioMix,const DeepCollectionEquality().hash(_this.overlayClips));
 }
 
 @override
 String toString() {
   final _this = this as Timeline;
-  return 'Timeline(videoClips: ${_this.videoClips}, transitions: ${_this.transitions}, textItems: ${_this.textItems}, captionTrack: ${_this.captionTrack}, audioItems: ${_this.audioItems}, audioMix: ${_this.audioMix})';
+  return 'Timeline(videoClips: ${_this.videoClips}, transitions: ${_this.transitions}, textItems: ${_this.textItems}, captionTrack: ${_this.captionTrack}, audioItems: ${_this.audioItems}, audioMix: ${_this.audioMix}, overlayClips: ${_this.overlayClips})';
 }
 
 
@@ -4323,7 +4681,7 @@ abstract mixin class $TimelineCopyWith<$Res>  {
   factory $TimelineCopyWith(Timeline value, $Res Function(Timeline) _then) = _$TimelineCopyWithImpl;
 @useResult
 $Res call({
- List<VideoClip> videoClips, List<Transition> transitions, List<TextItem> textItems, CaptionTrack captionTrack, List<AudioItem> audioItems, AudioMix audioMix
+ List<VideoClip> videoClips, List<Transition> transitions, List<TextItem> textItems, CaptionTrack captionTrack, List<AudioItem> audioItems, AudioMix audioMix, List<OverlayClip> overlayClips
 });
 
 
@@ -4340,7 +4698,7 @@ class _$TimelineCopyWithImpl<$Res>
 
 /// Create a copy of Timeline
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? videoClips = null,Object? transitions = null,Object? textItems = null,Object? captionTrack = null,Object? audioItems = null,Object? audioMix = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? videoClips = null,Object? transitions = null,Object? textItems = null,Object? captionTrack = null,Object? audioItems = null,Object? audioMix = null,Object? overlayClips = null,}) {
   return _then(Timeline(
 videoClips: null == videoClips ? _self.videoClips : videoClips // ignore: cast_nullable_to_non_nullable
 as List<VideoClip>,transitions: null == transitions ? _self.transitions : transitions // ignore: cast_nullable_to_non_nullable
@@ -4348,7 +4706,8 @@ as List<Transition>,textItems: null == textItems ? _self.textItems : textItems /
 as List<TextItem>,captionTrack: null == captionTrack ? _self.captionTrack : captionTrack // ignore: cast_nullable_to_non_nullable
 as CaptionTrack,audioItems: null == audioItems ? _self.audioItems : audioItems // ignore: cast_nullable_to_non_nullable
 as List<AudioItem>,audioMix: null == audioMix ? _self.audioMix : audioMix // ignore: cast_nullable_to_non_nullable
-as AudioMix,
+as AudioMix,overlayClips: null == overlayClips ? _self.overlayClips : overlayClips // ignore: cast_nullable_to_non_nullable
+as List<OverlayClip>,
   ));
 }
 /// Create a copy of Timeline
@@ -4451,10 +4810,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<VideoClip> videoClips,  List<Transition> transitions,  List<TextItem> textItems,  CaptionTrack captionTrack,  List<AudioItem> audioItems,  AudioMix audioMix)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<VideoClip> videoClips,  List<Transition> transitions,  List<TextItem> textItems,  CaptionTrack captionTrack,  List<AudioItem> audioItems,  AudioMix audioMix,  List<OverlayClip> overlayClips)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Timeline() when $default != null:
-return $default(_that.videoClips,_that.transitions,_that.textItems,_that.captionTrack,_that.audioItems,_that.audioMix);case _:
+return $default(_that.videoClips,_that.transitions,_that.textItems,_that.captionTrack,_that.audioItems,_that.audioMix,_that.overlayClips);case _:
   return orElse();
 
 }
@@ -4472,10 +4831,10 @@ return $default(_that.videoClips,_that.transitions,_that.textItems,_that.caption
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<VideoClip> videoClips,  List<Transition> transitions,  List<TextItem> textItems,  CaptionTrack captionTrack,  List<AudioItem> audioItems,  AudioMix audioMix)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<VideoClip> videoClips,  List<Transition> transitions,  List<TextItem> textItems,  CaptionTrack captionTrack,  List<AudioItem> audioItems,  AudioMix audioMix,  List<OverlayClip> overlayClips)  $default,) {final _that = this;
 switch (_that) {
 case _Timeline():
-return $default(_that.videoClips,_that.transitions,_that.textItems,_that.captionTrack,_that.audioItems,_that.audioMix);case _:
+return $default(_that.videoClips,_that.transitions,_that.textItems,_that.captionTrack,_that.audioItems,_that.audioMix,_that.overlayClips);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -4492,10 +4851,10 @@ return $default(_that.videoClips,_that.transitions,_that.textItems,_that.caption
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<VideoClip> videoClips,  List<Transition> transitions,  List<TextItem> textItems,  CaptionTrack captionTrack,  List<AudioItem> audioItems,  AudioMix audioMix)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<VideoClip> videoClips,  List<Transition> transitions,  List<TextItem> textItems,  CaptionTrack captionTrack,  List<AudioItem> audioItems,  AudioMix audioMix,  List<OverlayClip> overlayClips)?  $default,) {final _that = this;
 switch (_that) {
 case _Timeline() when $default != null:
-return $default(_that.videoClips,_that.transitions,_that.textItems,_that.captionTrack,_that.audioItems,_that.audioMix);case _:
+return $default(_that.videoClips,_that.transitions,_that.textItems,_that.captionTrack,_that.audioItems,_that.audioMix,_that.overlayClips);case _:
   return null;
 
 }
@@ -4507,7 +4866,7 @@ return $default(_that.videoClips,_that.transitions,_that.textItems,_that.caption
 @JsonSerializable()
 
 class _Timeline extends Timeline {
-  const _Timeline({ List<VideoClip> videoClips = const <VideoClip>[],  List<Transition> transitions = const <Transition>[],  List<TextItem> textItems = const <TextItem>[], this.captionTrack = const CaptionTrack(),  List<AudioItem> audioItems = const <AudioItem>[], this.audioMix = const AudioMix()}): _videoClips = videoClips,_transitions = transitions,_textItems = textItems,_audioItems = audioItems,super._();
+  const _Timeline({ List<VideoClip> videoClips = const <VideoClip>[],  List<Transition> transitions = const <Transition>[],  List<TextItem> textItems = const <TextItem>[], this.captionTrack = const CaptionTrack(),  List<AudioItem> audioItems = const <AudioItem>[], this.audioMix = const AudioMix(),  List<OverlayClip> overlayClips = const <OverlayClip>[]}): _videoClips = videoClips,_transitions = transitions,_textItems = textItems,_audioItems = audioItems,_overlayClips = overlayClips,super._();
   factory _Timeline.fromJson(Map<String, dynamic> json) => _$TimelineFromJson(json);
 
  final  List<VideoClip> _videoClips;
@@ -4540,6 +4899,13 @@ class _Timeline extends Timeline {
 }
 
 @override@JsonKey() final  AudioMix audioMix;
+ final  List<OverlayClip> _overlayClips;
+@override@JsonKey() List<OverlayClip> get overlayClips {
+  if (_overlayClips is EqualUnmodifiableListView) return _overlayClips;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_overlayClips);
+}
+
 
 /// Create a copy of Timeline
 /// with the given fields replaced by the non-null parameter values.
@@ -4554,18 +4920,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Timeline&&const DeepCollectionEquality().equals(other.videoClips, _videoClips)&&const DeepCollectionEquality().equals(other.transitions, _transitions)&&const DeepCollectionEquality().equals(other.textItems, _textItems)&&(identical(other.captionTrack, captionTrack) || other.captionTrack == captionTrack)&&const DeepCollectionEquality().equals(other.audioItems, _audioItems)&&(identical(other.audioMix, audioMix) || other.audioMix == audioMix));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Timeline&&const DeepCollectionEquality().equals(other.videoClips, _videoClips)&&const DeepCollectionEquality().equals(other.transitions, _transitions)&&const DeepCollectionEquality().equals(other.textItems, _textItems)&&(identical(other.captionTrack, captionTrack) || other.captionTrack == captionTrack)&&const DeepCollectionEquality().equals(other.audioItems, _audioItems)&&(identical(other.audioMix, audioMix) || other.audioMix == audioMix)&&const DeepCollectionEquality().equals(other.overlayClips, _overlayClips));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_videoClips),const DeepCollectionEquality().hash(_transitions),const DeepCollectionEquality().hash(_textItems),captionTrack,const DeepCollectionEquality().hash(_audioItems),audioMix);
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_videoClips),const DeepCollectionEquality().hash(_transitions),const DeepCollectionEquality().hash(_textItems),captionTrack,const DeepCollectionEquality().hash(_audioItems),audioMix,const DeepCollectionEquality().hash(_overlayClips));
 }
 
 @override
 String toString() {
-    return 'Timeline(videoClips: $videoClips, transitions: $transitions, textItems: $textItems, captionTrack: $captionTrack, audioItems: $audioItems, audioMix: $audioMix)';
+    return 'Timeline(videoClips: $videoClips, transitions: $transitions, textItems: $textItems, captionTrack: $captionTrack, audioItems: $audioItems, audioMix: $audioMix, overlayClips: $overlayClips)';
 }
 
 
@@ -4576,7 +4942,7 @@ abstract mixin class _$TimelineCopyWith<$Res> implements $TimelineCopyWith<$Res>
   factory _$TimelineCopyWith(_Timeline value, $Res Function(_Timeline) _then) = __$TimelineCopyWithImpl;
 @override @useResult
 $Res call({
- List<VideoClip> videoClips, List<Transition> transitions, List<TextItem> textItems, CaptionTrack captionTrack, List<AudioItem> audioItems, AudioMix audioMix
+ List<VideoClip> videoClips, List<Transition> transitions, List<TextItem> textItems, CaptionTrack captionTrack, List<AudioItem> audioItems, AudioMix audioMix, List<OverlayClip> overlayClips
 });
 
 
@@ -4593,7 +4959,7 @@ class __$TimelineCopyWithImpl<$Res>
 
 /// Create a copy of Timeline
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? videoClips = null,Object? transitions = null,Object? textItems = null,Object? captionTrack = null,Object? audioItems = null,Object? audioMix = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? videoClips = null,Object? transitions = null,Object? textItems = null,Object? captionTrack = null,Object? audioItems = null,Object? audioMix = null,Object? overlayClips = null,}) {
   return _then(_Timeline(
 videoClips: null == videoClips ? _self._videoClips : videoClips // ignore: cast_nullable_to_non_nullable
 as List<VideoClip>,transitions: null == transitions ? _self._transitions : transitions // ignore: cast_nullable_to_non_nullable
@@ -4601,7 +4967,8 @@ as List<Transition>,textItems: null == textItems ? _self._textItems : textItems 
 as List<TextItem>,captionTrack: null == captionTrack ? _self.captionTrack : captionTrack // ignore: cast_nullable_to_non_nullable
 as CaptionTrack,audioItems: null == audioItems ? _self._audioItems : audioItems // ignore: cast_nullable_to_non_nullable
 as List<AudioItem>,audioMix: null == audioMix ? _self.audioMix : audioMix // ignore: cast_nullable_to_non_nullable
-as AudioMix,
+as AudioMix,overlayClips: null == overlayClips ? _self._overlayClips : overlayClips // ignore: cast_nullable_to_non_nullable
+as List<OverlayClip>,
   ));
 }
 

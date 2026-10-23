@@ -21,6 +21,7 @@ import 'package:stitch/features/text/presentation/text_editor_sheet.dart';
 import 'package:stitch/features/timeline/domain/audio_ops.dart';
 import 'package:stitch/features/timeline/domain/caption_ops.dart';
 import 'package:stitch/features/timeline/domain/keyframes.dart';
+import 'package:stitch/features/timeline/domain/overlay_ops.dart';
 import 'package:stitch/features/timeline/domain/text_ops.dart';
 import 'package:stitch/features/timeline/domain/video_ops.dart';
 import 'package:stitch/l10n/generated/app_localizations.dart';
@@ -83,6 +84,13 @@ class _EditorToolbarState extends ConsumerState<EditorToolbar> {
                 : () => showTextEditor(context, projectId),
           ),
           ToolbarItem(
+            icon: AppIcons.overlay,
+            label: l10n.toolOverlay,
+            onPressed: state.timeline.videoClips.isEmpty
+                ? null
+                : () => unawaited(_addOverlay(context)),
+          ),
+          ToolbarItem(
             icon: AppIcons.captions,
             label: l10n.toolCaptions,
             onPressed: state.timeline.videoClips.isEmpty
@@ -131,7 +139,26 @@ class _EditorToolbarState extends ConsumerState<EditorToolbar> {
         captionId: id,
         onBack: deselect,
       ),
+      OverlaySelected(:final id) => _OverlayTools(
+        projectId: projectId,
+        overlayId: id,
+        onBack: deselect,
+      ),
     };
+  }
+
+  /// Picks videos or photos and adds them over the video at the playhead.
+  Future<void> _addOverlay(BuildContext context) async {
+    final at = ref.read(playbackControllerProvider).positionUs;
+    final items = await context.push<List<LibraryItem>>(
+      AppRoutes.editorOverlay(projectId),
+    );
+    if (items == null || items.isEmpty || !context.mounted) return;
+    final controller = ref.read(editorControllerProvider(projectId).notifier);
+    await runWithImportProgress(
+      context,
+      () => controller.addOverlays(items, atUs: at),
+    );
   }
 }
 
@@ -335,6 +362,11 @@ class _ClipTools extends ConsumerWidget {
         !clip.isPhoto &&
         !clip.audioDetached &&
         (state.project.media[clip.mediaId]?.hasAudio ?? true);
+    final canFreeze = ref.watch(
+      playbackControllerProvider.select(
+        (p) => state.timeline.canFreezeClip(clipId, p.positionUs),
+      ),
+    );
 
     return ContextToolbar(
       onBack: onBack,
@@ -364,6 +396,13 @@ class _ClipTools extends ConsumerWidget {
               selection: ClipSelected(clipId),
             ),
           ),
+        ),
+        ToolbarItem(
+          icon: AppIcons.freeze,
+          label: l10n.toolFreeze,
+          onPressed: canFreeze
+              ? () => unawaited(_freezeClip(context, ref, projectId, clipId))
+              : null,
         ),
         ToolbarItem(
           icon: AppIcons.volume,
@@ -458,6 +497,41 @@ class _ClipTools extends ConsumerWidget {
         ),
       ],
     );
+  }
+}
+
+/// Freezes the clip's frame at the playhead, then moves the playhead to
+/// the still.
+Future<void> _freezeClip(
+  BuildContext context,
+  WidgetRef ref,
+  String projectId,
+  String clipId,
+) async {
+  final l10n = AppLocalizations.of(context);
+  final controller = ref.read(editorControllerProvider(projectId).notifier);
+  final at = ref.read(playbackControllerProvider).positionUs;
+  unawaited(AppHaptics.split());
+  final stillId = await controller.freezeFrame(clipId, at);
+  if (!context.mounted) return;
+  if (stillId == null && controller.isFreezing) return;
+  if (stillId == null) {
+    await showNoticeDialog(
+      context: context,
+      title: l10n.freezeFailedTitle,
+      message: l10n.freezeFailedMessage,
+      buttonLabel: l10n.ok,
+    );
+    return;
+  }
+  final start = ref
+      .read(editorControllerProvider(projectId))
+      .value
+      ?.layout
+      .span(stillId)
+      ?.startUs;
+  if (start != null) {
+    await ref.read(playbackControllerProvider.notifier).seek(start);
   }
 }
 
@@ -558,6 +632,135 @@ class _AudioTools extends ConsumerWidget {
           label: l10n.delete,
           destructive: true,
           onPressed: () => controller.apply((t) => t.deleteAudio(audioId)),
+        ),
+      ],
+    );
+  }
+}
+
+/// A selected overlay: split, sound, speed, place, opacity, duplicate, and
+/// delete.
+class _OverlayTools extends ConsumerWidget {
+  const new({
+    required this.projectId,
+    required this.overlayId,
+    required this.onBack,
+  });
+
+  final String projectId;
+  final String overlayId;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final state = ref.watch(editorControllerProvider(projectId)).requireValue;
+    final controller = ref.read(editorControllerProvider(projectId).notifier);
+    final item = state.timeline.overlayById(overlayId);
+    if (item == null) return const SizedBox.shrink();
+    final canSplit = ref.watch(
+      playbackControllerProvider.select(
+        (p) => state.timeline.canSplitOverlay(overlayId, p.positionUs),
+      ),
+    );
+    final hasSound =
+        !item.isPhoto && (state.project.media[item.mediaId]?.hasAudio ?? true);
+    const owner = KeyframeOwnerKind.overlay;
+
+    return ContextToolbar(
+      onBack: onBack,
+      items: [
+        ToolbarItem(
+          icon: AppIcons.split,
+          label: l10n.toolSplit,
+          onPressed: canSplit
+              ? () {
+                  unawaited(AppHaptics.split());
+                  final at = ref.read(playbackControllerProvider).positionUs;
+                  final newId = ref.read(idGeneratorProvider).next();
+                  controller.apply(
+                    (t) => t.splitOverlay(overlayId, at, newId: newId),
+                  );
+                }
+              : null,
+        ),
+        ToolbarItem(
+          icon: AppIcons.transform,
+          label: l10n.toolTransform,
+          onPressed: () => showToolSheet(
+            context,
+            title: l10n.toolTransform,
+            child: TransformSheet(
+              projectId: projectId,
+              owner: (kind: owner, id: overlayId),
+            ),
+          ),
+        ),
+        ToolbarItem(
+          icon: AppIcons.opacity,
+          label: l10n.toolOpacity,
+          onPressed: () => showToolSheet(
+            context,
+            title: l10n.toolOpacity,
+            child: OpacitySheet(
+              projectId: projectId,
+              owner: (kind: owner, id: overlayId),
+            ),
+          ),
+        ),
+        if (ref.watch(keyframeTargetProvider(projectId))?.current != null)
+          ToolbarItem(
+            icon: AppIcons.easing,
+            label: l10n.toolEasing,
+            onPressed: () => showToolSheet(
+              context,
+              title: l10n.toolEasing,
+              child: EasingSheet(projectId: projectId),
+            ),
+          ),
+        ToolbarItem(
+          icon: AppIcons.volume,
+          label: l10n.toolVolume,
+          onPressed: hasSound
+              ? () => showToolSheet(
+                  context,
+                  title: l10n.toolVolume,
+                  child: VolumeSheet(
+                    projectId: projectId,
+                    selection: OverlaySelected(overlayId),
+                  ),
+                )
+              : null,
+        ),
+        ToolbarItem(
+          icon: AppIcons.speed,
+          label: l10n.toolSpeed,
+          onPressed: item.isPhoto
+              ? null
+              : () => showToolSheet(
+                  context,
+                  title: l10n.toolSpeed,
+                  child: SpeedSheet(
+                    projectId: projectId,
+                    selection: OverlaySelected(overlayId),
+                  ),
+                ),
+        ),
+        ToolbarItem(
+          icon: AppIcons.duplicate,
+          label: l10n.duplicate,
+          onPressed: () {
+            final newId = ref.read(idGeneratorProvider).next();
+            controller
+              ..apply((t) => t.duplicateOverlay(overlayId, newId: newId))
+              ..select(OverlaySelected(newId));
+          },
+        ),
+        ToolbarItem(
+          icon: AppIcons.delete,
+          label: l10n.delete,
+          destructive: true,
+          onPressed: () => controller.apply((t) => t.deleteOverlay(overlayId)),
         ),
       ],
     );

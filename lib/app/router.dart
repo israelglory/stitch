@@ -44,6 +44,10 @@ abstract final class AppRoutes {
   static String editorReplace(String projectId) =>
       '${editor(projectId)}/replace';
 
+  /// Picker for adding overlays; pops with the chosen `List<LibraryItem>`.
+  static String editorOverlay(String projectId) =>
+      '${editor(projectId)}/overlay';
+
   static String editorPreview(String projectId) =>
       '${editor(projectId)}/preview';
 
@@ -151,6 +155,11 @@ GoRouter router(Ref ref) {
             path: 'replace',
             builder: (context, state) =>
                 const MediaPickerScreen(mode: PickerMode.replace),
+          ),
+          GoRoute(
+            path: 'overlay',
+            builder: (context, state) =>
+                const MediaPickerScreen(mode: PickerMode.overlay),
           ),
           GoRoute(
             path: 'music',

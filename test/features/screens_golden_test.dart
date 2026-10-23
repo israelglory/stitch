@@ -2,16 +2,21 @@
 library;
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stitch/app/app.dart';
 import 'package:stitch/app/router.dart';
 import 'package:stitch/design/design.dart';
 import 'package:stitch/features/captions/domain/transcript.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
+import 'package:stitch/features/editor/application/editor_state.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
 import 'package:stitch/features/media/domain/library_item.dart';
 import 'package:stitch/features/settings/application/settings_controller.dart';
 import 'package:stitch/features/settings/domain/app_settings.dart';
+import 'package:stitch/features/text/presentation/text_overlay_layer.dart';
+import 'package:stitch/features/timeline/domain/models.dart';
+import 'package:stitch/features/timeline/domain/overlay_ops.dart';
 
 import '../helpers/app_scope.dart';
 import '../helpers/fake_captions.dart';
@@ -107,11 +112,12 @@ void main() {
   });
 
   group('editor', () {
-    Future<void> openEditor(WidgetTester tester) async {
+    Future<String> openEditor(WidgetTester tester) async {
       final env = await createEnv(tester);
       final id = await createProject(tester, env);
       await pumpApp(tester, env, location: AppRoutes.editor(id));
       await settleUntil(tester, find.byType(VideoClipTile));
+      return id;
     }
 
     testWidgets('nothing selected', (tester) async {
@@ -122,7 +128,14 @@ void main() {
 
     testWidgets('clip selected', (tester) async {
       await openEditor(tester);
-      await tester.tap(find.byType(VideoClipTile).at(1));
+      // The second clip (3 s to 7 s) under the playhead.
+      await scrollTimelineTo(tester, 3500000);
+      await tester.tapAt(
+        Offset(
+          tester.getCenter(find.byType(Playhead)).dx + 10,
+          tester.getCenter(find.byType(VideoClipTile).first).dy,
+        ),
+      );
       await tester.pump();
       await _golden(tester, 'editor_clip_selected');
       await _finish(tester);
@@ -374,11 +387,91 @@ void main() {
 
     testWidgets('transition sheet', (tester) async {
       await openEditor(tester);
+      // The first cut, at 3 s, under the playhead.
+      await scrollTimelineTo(tester, 3000000);
       await tester.tap(find.byType(TransitionButton).first);
       await settle(tester);
       await tester.tap(find.text('Crossfade'));
       await tester.pump();
       await _golden(tester, 'editor_transition_sheet');
+      await _finish(tester);
+    });
+
+    testWidgets('overlay selected', (tester) async {
+      final id = await openEditor(tester);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(StitchApp)),
+      );
+      final controller = container.read(editorControllerProvider(id).notifier);
+      final media = container
+          .read(editorControllerProvider(id))
+          .requireValue
+          .timeline
+          .videoClips
+          .last
+          .mediaId;
+      controller
+        ..apply(
+          (t) => t.addOverlays([
+            (
+              id: 'pip',
+              mediaId: media,
+              kind: MediaKind.video,
+              mediaDurationUs: 2000000,
+            ),
+          ], atUs: 0),
+        )
+        ..select(const OverlaySelected('pip'));
+      await settle(tester);
+      await _golden(tester, 'editor_overlay_selected');
+      await _finish(tester);
+    });
+
+    testWidgets('clip guides while zoomed out and turned', (tester) async {
+      await openEditor(tester);
+      await tester.tap(find.byType(VideoClipTile).first);
+      await settle(tester);
+      final c = tester.getCenter(find.byType(TextOverlayLayer));
+      final a = await tester.startGesture(c - const Offset(60, 0), pointer: 1);
+      final b = await tester.startGesture(c + const Offset(60, 0), pointer: 2);
+      for (var i = 0; i < 8; i++) {
+        await a.moveBy(const Offset(4, -2));
+        await b.moveBy(const Offset(-4, 2));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      await _golden(tester, 'editor_clip_guides');
+      await a.up();
+      await b.up();
+      await _finish(tester);
+    });
+
+    testWidgets('clip guides when it fills the frame', (tester) async {
+      final id = await openEditor(tester);
+      await tester.tap(find.byType(VideoClipTile).first);
+      await settle(tester);
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(TextOverlayLayer)),
+      );
+      for (var i = 0; i < 4; i++) {
+        await gesture.moveBy(const Offset(0, 10));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      // Back to 3 points short of where it started.
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(StitchApp)),
+      );
+      final state = container.read(editorControllerProvider(id)).requireValue;
+      await gesture.moveBy(
+        Offset(
+          0,
+          -state.timeline.videoClips.first.framing.offsetY *
+                  tester.getSize(find.byType(TextOverlayLayer)).height +
+              3,
+        ),
+      );
+      await tester.pump();
+      await _golden(tester, 'editor_clip_fills');
+      await gesture.up();
       await _finish(tester);
     });
   });

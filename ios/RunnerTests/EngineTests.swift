@@ -797,6 +797,77 @@ final class EngineTests: XCTestCase {
     XCTAssertGreaterThan(pixel(end, 0.5, 0.25).blue, 0.8)
   }
 
+  func testOverlayClipsAreDrawnOverThePicture() async throws {
+    let blue = solidPhoto("blue", .blue)
+    let red = solidPhoto("red", .red)
+    let framing = #"{"mode": "fit", "scale": 1, "offsetX": 0, "offsetY": 0, "rotationDeg": 0}"#
+    // A red photo in the top left quarter until 1 s, fading out by then;
+    // a video in the middle, a lane up, from 0.5 s.
+    let quarter = #"{"mode": "fit", "scale": 0.5, "offsetX": -0.25, "offsetY": -0.25, "rotationDeg": 0}"#
+    let middle = #"{"mode": "fit", "scale": 0.5, "offsetX": 0, "offsetY": 0, "rotationDeg": 0}"#
+    let fade = [
+      keyframe(0, #""x": -0.25, "y": -0.25, "scale": 0.5, "opacity": 1"#),
+      keyframe(1_000_000, #""x": -0.25, "y": -0.25, "scale": 0.5, "opacity": 0"#),
+    ].joined(separator: ",")
+    let json = """
+      {"canvas": {"width": 360, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190080},
+       "media": {"b": {"path": "\(blue)", "kind": "photo"},
+                 "r": {"path": "\(red)", "kind": "photo"},
+                 "v": {"path": "\(media("vfr.mp4"))", "kind": "video"}},
+       "composition": {"durationUs": 2000000, "clips": [
+         {"clipId": "c", "mediaId": "b", "kind": "photo", "startUs": 0, "endUs": 2000000,
+          "sourceInUs": 0, "sourceOutUs": 2000000, "speed": 1, "volume": 0,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": \(framing)}],
+        "overlayClips": [
+         {"id": "o1", "mediaId": "r", "kind": "photo", "startUs": 0, "endUs": 1000000,
+          "sourceInUs": 0, "sourceOutUs": 1000000, "speed": 1, "volume": 0, "laneIndex": 0,
+          "framing": \(quarter), "opacity": 1, "keyframes": [\(fade)]},
+         {"id": "o2", "mediaId": "v", "kind": "video", "startUs": 500000, "endUs": 2000000,
+          "sourceInUs": 0, "sourceOutUs": 1500000, "speed": 1, "volume": 1, "laneIndex": 1,
+          "framing": \(middle)}]}}
+      """
+    let doc = try EngineDocument.decode(json)
+    let built = try await CompositionBuilder.build(doc, forExport: true)
+    XCTAssertEqual(
+      built.composition.tracks(withMediaType: .audio).count, 1, "the overlay video's sound")
+
+    let frame = frames(try await export(doc, name: "overlayClips"))
+    // The photo covers the top left quarter; the video, from x 0.25 to
+    // 0.75 and y 0.25 to 0.75, starts with a red bar.
+    let start = try await frame(0.1)
+    XCTAssertGreaterThan(pixel(start, 0.15, 0.15).red, 0.8, "the photo, top left")
+    XCTAssertGreaterThan(pixel(start, 0.75, 0.85).blue, 0.8, "the picture under it")
+    XCTAssertGreaterThan(pixel(start, 0.3, 0.6).blue, 0.8, "no video yet")
+    let fading = try await frame(0.6)
+    let half = pixel(fading, 0.15, 0.15)
+    XCTAssertGreaterThan(half.red, 0.1, "fading")
+    XCTAssertGreaterThan(half.blue, 0.1)
+    let later = try await frame(1.5)
+    XCTAssertGreaterThan(pixel(later, 0.15, 0.15).blue, 0.8, "the photo has ended")
+    XCTAssertGreaterThan(pixel(later, 0.3, 0.6).red, 0.8, "the video")
+    XCTAssertGreaterThan(pixel(later, 0.5, 0.05).blue, 0.8, "the video is half the frame")
+  }
+
+  func testLetterboxBarsTakeTheBackgroundColor() async throws {
+    let framing = #"{"mode": "fit", "scale": 1, "offsetX": 0, "offsetY": 0, "rotationDeg": 0}"#
+    // A portrait video in a square frame: bars at the sides.
+    let json = """
+      {"canvas": {"width": 640, "height": 640, "frameRate": 30},
+       "background": {"type": "solid", "color": 4278190335},
+       "media": {"v": {"path": "\(media("vfr.mp4"))", "kind": "video"}},
+       "composition": {"durationUs": 1000000, "clips": [
+         {"clipId": "c", "mediaId": "v", "kind": "video", "startUs": 0, "endUs": 1000000,
+          "sourceInUs": 0, "sourceOutUs": 1000000, "speed": 1, "volume": 0,
+          "audioFadeInUs": 0, "audioFadeOutUs": 0, "framing": \(framing)}]}}
+      """
+    let frame = frames(
+      try await export(try EngineDocument.decode(json), width: 640, height: 640, name: "bars"))
+    let image = try await frame(0.5)
+    XCTAssertGreaterThan(pixel(image, 0.05, 0.5).blue, 0.8, "left bar")
+    XCTAssertGreaterThan(pixel(image, 0.95, 0.5).blue, 0.8, "right bar")
+  }
+
   func testKeyframedVolumeShapesTheSound() async throws {
     let tone = try loudTone()
     let framing = #"{"mode": "fit", "scale": 1, "offsetX": 0, "offsetY": 0, "rotationDeg": 0}"#

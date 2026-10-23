@@ -105,6 +105,57 @@ extension VideoTrackOps on Timeline {
     );
   }
 
+  /// Whether [clipId] can be frozen at timeline time [atUs]: a video,
+  /// with [atUs] on it.
+  bool canFreezeClip(String clipId, int atUs) {
+    final span = TimelineLayout.of(this).span(clipId);
+    return span != null &&
+        !span.clip.isPhoto &&
+        atUs >= span.startUs &&
+        atUs <= span.endUs;
+  }
+
+  /// Holds [clipId]'s frame at timeline time [atUs] for the photo length,
+  /// as CapCut's Freeze: the clip is split there (the second part gets
+  /// [splitId]) and a still of that frame ([stillId], showing [mediaId])
+  /// goes between the parts. Too near an end of the clip to split, the
+  /// still goes before or after it instead. The still keeps the clip's
+  /// place, zoom, turn, and opacity at that moment; later items move on
+  /// with their content.
+  Timeline freezeClip(
+    String clipId,
+    int atUs, {
+    required String stillId,
+    required String splitId,
+    required String mediaId,
+  }) {
+    if (!canFreezeClip(clipId, atUs) || clipById(stillId) != null) return this;
+    final layout = TimelineLayout.of(this);
+    final span = layout.span(clipId)!;
+    final clip = span.clip;
+    final values = valuesAt(
+      (kind: KeyframeOwnerKind.clip, id: clipId),
+      atUs,
+      layout,
+    )!;
+    final still = VideoClip.photo(id: stillId, mediaId: mediaId).copyWith(
+      framing: clip.framing.copyWith(
+        offsetX: values.x,
+        offsetY: values.y,
+        scale: values.scale,
+        rotationDeg: values.rotationDeg,
+      ),
+      opacity: values.opacity,
+    );
+    if (canSplitClip(clipId, atUs) && clipById(splitId) == null) {
+      final split = splitClip(clipId, atUs, newId: splitId);
+      return split.insertClips(split.indexOfClip(splitId), [still]);
+    }
+    final index = indexOfClip(clipId);
+    final nearStart = atUs - span.startUs < span.endUs - atUs;
+    return insertClips(nearStart ? index : index + 1, [still]);
+  }
+
   /// Moves an edge of [clipId] by [deltaUs] of timeline time. Positive
   /// moves right. Clamped to the source bounds and the minimum length.
   /// Later clips ripple.
@@ -215,8 +266,8 @@ extension VideoTrackOps on Timeline {
     return _replaceClip(clipId, (c) => c.copyWith(framing: framing));
   }
 
-  /// Points everything that used [fromMediaId] (clips, and sound taken
-  /// from them) at [toMediaId]: the same footage, found again. Trims,
+  /// Points everything that used [fromMediaId] (clips, overlays, and sound
+  /// taken from clips) at [toMediaId]: the same footage, found again. Trims,
   /// speed, and detached sound are kept; ranges past the end of a shorter
   /// file are cut back.
   Timeline relinkMedia(
@@ -226,7 +277,8 @@ extension VideoTrackOps on Timeline {
   }) {
     final uses =
         videoClips.any((c) => c.mediaId == fromMediaId) ||
-        audioItems.any((a) => a.mediaId == fromMediaId);
+        audioItems.any((a) => a.mediaId == fromMediaId) ||
+        overlayClips.any((o) => o.mediaId == fromMediaId);
     if (!uses) return this;
     final limit = mediaDurationUs ?? _unbounded;
     (int, int) fit(int sourceIn, int sourceOut) {
@@ -265,6 +317,21 @@ extension VideoTrackOps on Timeline {
                 return a.copyWith(
                   mediaId: toMediaId,
                   mediaDurationUs: mediaDurationUs ?? a.mediaDurationUs,
+                  sourceInUs: sourceIn,
+                  sourceOutUs: sourceOut,
+                );
+              }(),
+        ],
+        overlayClips: [
+          for (final o in overlayClips)
+            if (o.mediaId != fromMediaId)
+              o
+            else
+              () {
+                final (sourceIn, sourceOut) = fit(o.sourceInUs, o.sourceOutUs);
+                return o.copyWith(
+                  mediaId: toMediaId,
+                  mediaDurationUs: mediaDurationUs,
                   sourceInUs: sourceIn,
                   sourceOutUs: sourceOut,
                 );

@@ -11,8 +11,9 @@ import 'package:stitch/design/tokens.dart';
 /// Below this width a clip has no room for its duration and speed labels.
 const double _minLabelledClipWidth = 72;
 
-/// A clip on the main video track: a strip of square thumbnails. When
-/// selected, shows the accent frame with trim handles and its duration.
+/// A clip on the main video track, or an overlay on its lane: a strip of
+/// square thumbnails. When selected, shows the accent frame with trim
+/// handles and its duration.
 class VideoClipTile extends StatelessWidget {
   const new({
     required this.width,
@@ -26,13 +27,17 @@ class VideoClipTile extends StatelessWidget {
     this.isMissing = false,
     this.trim,
     this.keyframes,
+    this.height = AppSizes.videoTrackHeight,
     super.key,
   });
 
   final double width;
 
+  /// The main track's height, or an overlay lane's.
+  final double height;
+
   /// Builds thumbnail `index` of the strip (usually an Image). The strip
-  /// has one square frame per [AppSizes.videoTrackHeight] of width.
+  /// has one square frame per [height] of width.
   final Widget Function(BuildContext context, int index) frameBuilder;
   final String durationLabel;
   final VoidCallback? onTap;
@@ -58,12 +63,12 @@ class VideoClipTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final frameCount = math.max(1, (width / AppSizes.videoTrackHeight).ceil());
+    final frameCount = math.max(1, (width / height).ceil());
     return MediaQuery.withClampedTextScaling(
       maxScaleFactor: kTimelineMaxTextScale,
       child: SizedBox(
         width: width,
-        height: AppSizes.videoTrackHeight,
+        height: height,
         // The frame wraps the item so its keyframe markers stay separate
         // controls for screen readers.
         child: TimelineItemFrame(
@@ -95,12 +100,12 @@ class VideoClipTile extends StatelessWidget {
                       ClipRect(
                         child: OverflowBox(
                           alignment: AlignmentDirectional.centerStart,
-                          maxWidth: frameCount * AppSizes.videoTrackHeight,
+                          maxWidth: frameCount * height,
                           child: Row(
                             children: [
                               for (var i = 0; i < frameCount; i++)
                                 SizedBox.square(
-                                  dimension: AppSizes.videoTrackHeight,
+                                  dimension: height,
                                   child: frameBuilder(context, i),
                                 ),
                             ],

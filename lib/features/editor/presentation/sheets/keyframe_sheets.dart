@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stitch/design/design.dart';
+import 'package:stitch/features/editor/application/canvas_frame_preview.dart';
 import 'package:stitch/features/editor/application/clip_frame_preview.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/keyframing.dart';
@@ -49,13 +50,17 @@ class KeyframedSlider extends ConsumerStatefulWidget {
 }
 
 class _KeyframedSliderState extends ConsumerState<KeyframedSlider> {
-  /// The clip's frame is showing for this drag.
+  /// The clip's frame (or, for an overlay, the whole picture) is showing
+  /// for this drag.
   bool _following = false;
 
-  /// Starts showing the clip's frame at the playhead, when there is one.
+  /// Starts showing the clip's frame at the playhead, when there is one;
+  /// for an overlay, the picture there drawn by the editor.
   bool _follow() {
     final owner = widget.owner;
-    if (!widget.showFrame || owner.kind != KeyframeOwnerKind.clip) {
+    if (!widget.showFrame ||
+        (owner.kind != KeyframeOwnerKind.clip &&
+            owner.kind != KeyframeOwnerKind.overlay)) {
       return false;
     }
     final state = ref.read(editorControllerProvider(widget.projectId)).value;
@@ -69,9 +74,17 @@ class _KeyframedSliderState extends ConsumerState<KeyframedSlider> {
     if (playback.isPlaying) {
       unawaited(ref.read(playbackControllerProvider.notifier).pause());
     }
-    ref
-        .read(clipFramePreviewProvider(widget.projectId).notifier)
-        .follow(owner.id, sourceUs);
+    if (owner.kind == KeyframeOwnerKind.overlay) {
+      unawaited(
+        ref
+            .read(canvasFramePreviewProvider(widget.projectId).notifier)
+            .follow(playback.positionUs),
+      );
+    } else {
+      ref
+          .read(clipFramePreviewProvider(widget.projectId).notifier)
+          .follow(owner.id, sourceUs);
+    }
     return true;
   }
 
@@ -109,7 +122,9 @@ class _KeyframedSliderState extends ConsumerState<KeyframedSlider> {
       onChangeEnd: (_) {
         controller.endGesture();
         // After the edit is sent: the frame stays until the engine shows it.
-        if (_following) {
+        if (_following && owner.kind == KeyframeOwnerKind.overlay) {
+          ref.read(canvasFramePreviewProvider(widget.projectId).notifier).end();
+        } else if (_following) {
           ref.read(clipFramePreviewProvider(widget.projectId).notifier).end();
         }
         _following = false;
@@ -133,10 +148,11 @@ class TransformSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     String percent(double v) => l10n.valuePercent((v * 100).round());
-    // A clip's place is an offset from the center; text's is its center.
-    final (double low, double high) = owner.kind == KeyframeOwnerKind.clip
-        ? (-1, 1)
-        : (0, 1);
+    // A clip's (or overlay's) place is an offset from the center; text's
+    // is its center.
+    final (double low, double high) = owner.kind == KeyframeOwnerKind.text
+        ? (0, 1)
+        : (-1, 1);
     KeyframedSlider slider({
       required String label,
       required double min,

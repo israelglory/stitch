@@ -196,6 +196,9 @@ void main() {
       size: const Size(320, 568),
       textScale: 2,
     );
+    // Off the narrow screen: the toolbar scrolls.
+    await tester.ensureVisible(find.text('Captions'));
+    await tester.pump();
     await tester.tap(find.text('Captions'));
     await settle(tester);
     expect(find.text('Auto captions'), findsOneWidget);

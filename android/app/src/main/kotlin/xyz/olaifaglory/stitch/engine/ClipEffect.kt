@@ -103,9 +103,11 @@ class ClipEffect(
   private val keyframes: Keyframes = Keyframes.NONE,
   /** Told the time of each frame drawn (export progress). */
   private val onFrame: ((Long) -> Unit)? = null,
+  /** The composition's overlay clips, drawn over the picture. */
+  private val overlayClips: OverlayClipFrames? = null,
 ) : GlEffect {
   override fun toGlShaderProgram(context: Context, useHdr: Boolean): GlShaderProgram =
-    ClipProgram(look, framing, incoming, overlays, opacity, keyframes, onFrame, useHdr)
+    ClipProgram(look, framing, incoming, overlays, opacity, keyframes, onFrame, overlayClips, useHdr)
 
   override fun isNoOp(inputWidth: Int, inputHeight: Int) = false
 }
@@ -119,6 +121,7 @@ private class ClipProgram(
   private val opacity: Double,
   private val keyframes: Keyframes,
   private val onFrame: ((Long) -> Unit)?,
+  private val overlayClips: OverlayClipFrames?,
   useHdr: Boolean,
 ) : BaseGlShaderProgram(useHdr, /* texturePoolCapacity= */ 1) {
   private val blur = look.background.type == "blur"
@@ -224,11 +227,56 @@ private class ClipProgram(
       }
       program.bindAttributesAndUniforms()
       GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+      drawOverlayClips(presentationTimeUs)
       drawOverlays(presentationTimeUs)
       GlUtil.checkGlError()
       onFrame?.invoke(presentationTimeUs)
     } catch (e: GlUtil.GlException) {
       throw VideoFrameProcessingException(e, presentationTimeUs)
+    }
+  }
+
+  /**
+   * Draws the overlay clips showing at [timeUs] over the picture, in order:
+   * each placed like a clip, at its opacity, with no background.
+   */
+  private fun drawOverlayClips(timeUs: Long) {
+    val showing = overlayClips?.showing(timeUs) ?: return
+    if (showing.isEmpty()) return
+    GLES20.glEnable(GLES20.GL_BLEND)
+    // Premultiplied: photos are uploaded that way, and video is opaque.
+    GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+    try {
+      for ((layer, frame) in showing) {
+        val clip = layer.clip
+        val values = clip.keyframes.valuesAt(timeUs)
+        val alpha = values?.opacity ?: clip.opacity
+        if (alpha < 0.001) continue
+        val framing = values?.let(clip.framing::animated) ?: clip.framing
+        val program = program(if (frame.isYuv) "overlayClipYuv" else "overlayClip") {
+          GlProgram(VERTEX, overlayClipFragment(frame.isYuv))
+        }
+        program.use()
+        if (frame.isYuv) {
+          program.setSamplerTexIdUniform("uSourceY", frame.textures[0], 0)
+          program.setSamplerTexIdUniform("uSourceU", frame.textures[1], 1)
+          program.setSamplerTexIdUniform("uSourceV", frame.textures[2], 2)
+          program.setFloatsUniform("uYuv", frame.yuvToRgb!!)
+          program.setFloatsUniform("uYuvOffset", frame.yuvOffset!!)
+        } else {
+          program.setSamplerTexIdUniform("uSource", frame.textures[0], 0)
+        }
+        program.setFloatsUniform(
+          "uPlace",
+          placement(look, frame.width, frame.height, framing.mode, framing),
+        )
+        program.setFloatsUniform("uTex", frame.texMatrix)
+        program.setFloatUniform("uAlpha", alpha.toFloat())
+        program.bindAttributesAndUniforms()
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+      }
+    } finally {
+      GLES20.glDisable(GLES20.GL_BLEND)
     }
   }
 
@@ -595,6 +643,18 @@ void main() {
 }
 """
 }
+
+/** An overlay clip placed on the canvas, at [uAlpha], with nothing around it. */
+private fun overlayClipFragment(yuv: Boolean): String = HEADER + sampler("uSource", yuv) + """
+uniform mat3 uPlace;
+uniform mat3 uTex;
+uniform float uAlpha;
+void main() {
+  vec2 p = (uPlace * vec3(vUv, 1.0)).xy;
+  if (p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0) discard;
+  gl_FragColor = sampleuSource((uTex * vec3(p, 1.0)).xy) * uAlpha;
+}
+"""
 
 private fun coverFragment(yuv: Boolean): String = HEADER + sampler("uSource", yuv) + """
 uniform mat3 uCover;

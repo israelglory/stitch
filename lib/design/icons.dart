@@ -70,6 +70,8 @@ abstract final class AppIcons {
   static const image = IconData(57590, fontFamily: _f);
   static const video = IconData(57765, fontFamily: _f);
   static const film = IconData(57552, fontFamily: _f);
+  static const overlay = IconData(58666, fontFamily: _f); // layers-2
+  static const freeze = IconData(57701, fontFamily: _f); // snowflake
   static const share = IconData(57685, fontFamily: _f);
   static const download = IconData(57522, fontFamily: _f);
   static const link = IconData(57602, fontFamily: _f);

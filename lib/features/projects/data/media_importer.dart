@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
 import 'package:stitch/core/async/cancellation.dart';
@@ -179,6 +180,30 @@ class MediaImporter {
       }
       rethrow;
     }
+  }
+
+  /// Adds a still the app made ([jpeg], [width] x [height]: a frame held
+  /// by Freeze) to [projectId] as a photo. It is its own poster.
+  Future<MediaAsset> importStill(
+    String projectId,
+    Uint8List jpeg, {
+    required int width,
+    required int height,
+  }) async {
+    final mediaId = ids.next();
+    final mediaPath = p.join('media', '$mediaId.jpg');
+    final target = File(store.resolve(projectId, mediaPath));
+    await target.parent.create(recursive: true);
+    await target.writeAsBytes(jpeg, flush: true);
+    return MediaAsset(
+      id: mediaId,
+      kind: MediaKind.photo,
+      path: mediaPath,
+      width: width,
+      height: height,
+      posterPath: mediaPath,
+      hasAudio: false,
+    );
   }
 
   /// Adds an audio file (picked, bundled, or recorded) to [projectId] as

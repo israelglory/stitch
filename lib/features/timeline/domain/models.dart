@@ -150,6 +150,49 @@ abstract class VideoClip with _$VideoClip {
   bool get isPhoto => kind == MediaKind.photo;
 }
 
+/// A video or photo over the main track, on a lane of its own (CapCut's
+/// overlay, or picture in picture). It is placed, zoomed, and turned like
+/// a clip's [ClipFraming], but drawn over the picture with no background
+/// of its own. Like text and audio, it is anchored into the main track's
+/// content. Lanes stack: a higher lane is drawn over a lower one.
+///
+/// Keyframe times are in source time, as for clips.
+@freezed
+abstract class OverlayClip with _$OverlayClip {
+  const factory({
+    required String id,
+    required String mediaId,
+    required MediaKind kind,
+    required Anchor anchor,
+
+    /// Length of the source file, or null for photos.
+    required int? mediaDurationUs,
+    required int sourceInUs,
+    required int sourceOutUs,
+    @Default(0) int laneIndex,
+    @Default(1.0) double speed,
+    @Default(1.0) double volume,
+    @Default(ClipFraming()) ClipFraming framing,
+    @Default(1.0) double opacity,
+
+    /// Sorted by source time. Empty: the values above hold throughout.
+    @Default(<Keyframe>[]) List<Keyframe> keyframes,
+
+    /// The clip this overlay was anchored to was deleted.
+    @Default(false) bool needsReview,
+  }) = _OverlayClip;
+  const new _();
+
+  factory fromJson(Map<String, dynamic> json) => _$OverlayClipFromJson(json);
+
+  int get sourceDurationUs => sourceOutUs - sourceInUs;
+
+  /// Length on the timeline after speed.
+  int get durationUs => sourceToTimelineUs(sourceDurationUs, speed);
+
+  bool get isPhoto => kind == MediaKind.photo;
+}
+
 /// A transition in the cut after clip [afterClipId]. The two clips overlap
 /// by [durationUs]. No transition means a hard cut.
 @freezed
@@ -338,6 +381,7 @@ abstract class Timeline with _$Timeline {
     @Default(CaptionTrack()) CaptionTrack captionTrack,
     @Default(<AudioItem>[]) List<AudioItem> audioItems,
     @Default(AudioMix()) AudioMix audioMix,
+    @Default(<OverlayClip>[]) List<OverlayClip> overlayClips,
   }) = _Timeline;
   const new _();
 
@@ -358,6 +402,19 @@ abstract class Timeline with _$Timeline {
             if (item.laneIndex == lane) item,
         ],
     ];
+  }
+
+  /// Number of overlay lanes in use (the highest lane plus one).
+  int get overlayLaneCount => overlayClips.isEmpty
+      ? 0
+      : overlayClips.map((o) => o.laneIndex).reduce((a, b) => a > b ? a : b) +
+            1;
+
+  OverlayClip? overlayById(String id) {
+    for (final o in overlayClips) {
+      if (o.id == id) return o;
+    }
+    return null;
   }
 
   VideoClip? clipById(String id) {

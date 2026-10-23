@@ -56,7 +56,7 @@ final class EditorControllerProvider
   }
 }
 
-String _$editorControllerHash() => r'9778a55fec9d42e1d429a17d081baec7fc7a8852';
+String _$editorControllerHash() => r'e73cc8a379ea29cdfe2288d3eb916265019bb59b';
 
 /// Owns an open project. All edits go through [apply] (or a gesture),
 /// which records undo history, autosaves, and keeps the engine in sync.

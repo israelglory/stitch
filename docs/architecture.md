@@ -34,6 +34,11 @@ Still to come: transitions, text, captions, audio, export.
 - All timeline edits go through one `EditorController`, which applies pure domain operations and pushes immutable snapshots to undo and redo history (M3, M4).
 - Playback position streams from the engine through a separate provider. Widgets `select` the fields they need, so the timeline does not rebuild at display rate.
 - `keyframing.dart` derives what the keyframe button acts on (`keyframeTarget`) and the selected item's values at the playhead (`valuesAtPlayhead`). Sliders and canvas gestures start from those values.
+- Moving text or a clip on the preview snaps it (`editor/domain/canvas_snap.dart`): its position to the frame's centre and edges and to other text, a twist to a quarter turn, and a clip's zoom to its own size, filling the frame, or fitting it. The snapped values are what is stored, keyframes included.
+- New clips from the add button go in at the cut nearest the playhead (`TimelineLayout.insertionIndexAt`): before the clip under it in its first half, after it in its second half. A transition at that cut stays with the clip before it, so the new clips end in a plain cut.
+- Overlays are moved, zoomed, and turned on the preview like clips, with the same guides. While one is edited by hand, the engine's picture still has it where it was, so the editor draws the whole moment itself (`CanvasFramePreview`: the clip under the playhead and every overlay, each a frame read from its file) until the engine shows the edit. A clip edited by hand shows its frame the same way (`ClipFramePreview`).
+- Tapping the preview selects text first, then an overlay (the topmost under the finger), and otherwise deselects or plays. A drag moves the selected overlay or clip; on an unselected overlay, it selects that overlay and moves it.
+- After a seek, the playhead holds the target until the engine reports being there (`PlaybackController`): reports the engine sent before it got to the seek still have the old place, and an edit made at the playhead then (adding an overlay, a freeze) would land there.
 - During a gesture (a drag, pinch, or slider move), edits update the editor state only. The engine gets one document when the gesture ends, which keeps dragging smooth on slower Android phones.
 
 ## Engine boundary

@@ -42,6 +42,9 @@ Timeline timelineForSource(Timeline timeline, CaptionSource source) =>
         videoClips: [
           for (final c in timeline.videoClips) c.copyWith(volume: 0),
         ],
+        overlayClips: [
+          for (final o in timeline.overlayClips) o.copyWith(volume: 0),
+        ],
         audioItems: [
           for (final a in timeline.audioItems)
             if (a.kind == AudioKind.voiceover) a,

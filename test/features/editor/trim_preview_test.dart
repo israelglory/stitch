@@ -42,6 +42,7 @@ void main() {
       ),
     );
 
+    await scrollTimelineToFirstCut(tester, id);
     final tile = find.byType(VideoClipTile).first;
     await tester.tap(tile);
     await tester.pump();

@@ -1882,9 +1882,344 @@ as int,
 
 
 /// @nodoc
+mixin _$ResolvedOverlayClip {
+
+ String get id; String get mediaId; MediaKind get kind; int get startUs; int get endUs; int get sourceInUs; int get sourceOutUs; double get speed;/// Final gain for its sound, with the original sound level applied.
+/// Zero for photos.
+ double get volume; int get laneIndex; ClipFraming get framing; double get opacity; List<Keyframe> get keyframes;
+/// Create a copy of ResolvedOverlayClip
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ResolvedOverlayClipCopyWith<ResolvedOverlayClip> get copyWith => _$ResolvedOverlayClipCopyWithImpl<ResolvedOverlayClip>(this as ResolvedOverlayClip, _$identity);
+
+  /// Serializes this ResolvedOverlayClip to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as ResolvedOverlayClip;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ResolvedOverlayClip&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.mediaId, _this.mediaId) || other.mediaId == _this.mediaId)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.startUs, _this.startUs) || other.startUs == _this.startUs)&&(identical(other.endUs, _this.endUs) || other.endUs == _this.endUs)&&(identical(other.sourceInUs, _this.sourceInUs) || other.sourceInUs == _this.sourceInUs)&&(identical(other.sourceOutUs, _this.sourceOutUs) || other.sourceOutUs == _this.sourceOutUs)&&(identical(other.speed, _this.speed) || other.speed == _this.speed)&&(identical(other.volume, _this.volume) || other.volume == _this.volume)&&(identical(other.laneIndex, _this.laneIndex) || other.laneIndex == _this.laneIndex)&&(identical(other.framing, _this.framing) || other.framing == _this.framing)&&(identical(other.opacity, _this.opacity) || other.opacity == _this.opacity)&&const DeepCollectionEquality().equals(other.keyframes, _this.keyframes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as ResolvedOverlayClip;
+  return Object.hash(runtimeType,_this.id,_this.mediaId,_this.kind,_this.startUs,_this.endUs,_this.sourceInUs,_this.sourceOutUs,_this.speed,_this.volume,_this.laneIndex,_this.framing,_this.opacity,const DeepCollectionEquality().hash(_this.keyframes));
+}
+
+@override
+String toString() {
+  final _this = this as ResolvedOverlayClip;
+  return 'ResolvedOverlayClip(id: ${_this.id}, mediaId: ${_this.mediaId}, kind: ${_this.kind}, startUs: ${_this.startUs}, endUs: ${_this.endUs}, sourceInUs: ${_this.sourceInUs}, sourceOutUs: ${_this.sourceOutUs}, speed: ${_this.speed}, volume: ${_this.volume}, laneIndex: ${_this.laneIndex}, framing: ${_this.framing}, opacity: ${_this.opacity}, keyframes: ${_this.keyframes})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ResolvedOverlayClipCopyWith<$Res>  {
+  factory $ResolvedOverlayClipCopyWith(ResolvedOverlayClip value, $Res Function(ResolvedOverlayClip) _then) = _$ResolvedOverlayClipCopyWithImpl;
+@useResult
+$Res call({
+ String id, String mediaId, MediaKind kind, int startUs, int endUs, int sourceInUs, int sourceOutUs, double speed, double volume, int laneIndex, ClipFraming framing, double opacity, List<Keyframe> keyframes
+});
+
+
+$ClipFramingCopyWith<$Res> get framing;
+
+}
+/// @nodoc
+class _$ResolvedOverlayClipCopyWithImpl<$Res>
+    implements $ResolvedOverlayClipCopyWith<$Res> {
+  _$ResolvedOverlayClipCopyWithImpl(this._self, this._then);
+
+  final ResolvedOverlayClip _self;
+  final $Res Function(ResolvedOverlayClip) _then;
+
+/// Create a copy of ResolvedOverlayClip
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? mediaId = null,Object? kind = null,Object? startUs = null,Object? endUs = null,Object? sourceInUs = null,Object? sourceOutUs = null,Object? speed = null,Object? volume = null,Object? laneIndex = null,Object? framing = null,Object? opacity = null,Object? keyframes = null,}) {
+  return _then(ResolvedOverlayClip(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,mediaId: null == mediaId ? _self.mediaId : mediaId // ignore: cast_nullable_to_non_nullable
+as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as MediaKind,startUs: null == startUs ? _self.startUs : startUs // ignore: cast_nullable_to_non_nullable
+as int,endUs: null == endUs ? _self.endUs : endUs // ignore: cast_nullable_to_non_nullable
+as int,sourceInUs: null == sourceInUs ? _self.sourceInUs : sourceInUs // ignore: cast_nullable_to_non_nullable
+as int,sourceOutUs: null == sourceOutUs ? _self.sourceOutUs : sourceOutUs // ignore: cast_nullable_to_non_nullable
+as int,speed: null == speed ? _self.speed : speed // ignore: cast_nullable_to_non_nullable
+as double,volume: null == volume ? _self.volume : volume // ignore: cast_nullable_to_non_nullable
+as double,laneIndex: null == laneIndex ? _self.laneIndex : laneIndex // ignore: cast_nullable_to_non_nullable
+as int,framing: null == framing ? _self.framing : framing // ignore: cast_nullable_to_non_nullable
+as ClipFraming,opacity: null == opacity ? _self.opacity : opacity // ignore: cast_nullable_to_non_nullable
+as double,keyframes: null == keyframes ? _self.keyframes : keyframes // ignore: cast_nullable_to_non_nullable
+as List<Keyframe>,
+  ));
+}
+/// Create a copy of ResolvedOverlayClip
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ClipFramingCopyWith<$Res> get framing {
+  
+  return $ClipFramingCopyWith<$Res>(_self.framing, (value) {
+    return _then(_self.copyWith(framing: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [ResolvedOverlayClip].
+extension ResolvedOverlayClipPatterns on ResolvedOverlayClip {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ResolvedOverlayClip value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ResolvedOverlayClip() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ResolvedOverlayClip value)  $default,){
+final _that = this;
+switch (_that) {
+case _ResolvedOverlayClip():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ResolvedOverlayClip value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ResolvedOverlayClip() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String mediaId,  MediaKind kind,  int startUs,  int endUs,  int sourceInUs,  int sourceOutUs,  double speed,  double volume,  int laneIndex,  ClipFraming framing,  double opacity,  List<Keyframe> keyframes)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ResolvedOverlayClip() when $default != null:
+return $default(_that.id,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_that.sourceInUs,_that.sourceOutUs,_that.speed,_that.volume,_that.laneIndex,_that.framing,_that.opacity,_that.keyframes);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String mediaId,  MediaKind kind,  int startUs,  int endUs,  int sourceInUs,  int sourceOutUs,  double speed,  double volume,  int laneIndex,  ClipFraming framing,  double opacity,  List<Keyframe> keyframes)  $default,) {final _that = this;
+switch (_that) {
+case _ResolvedOverlayClip():
+return $default(_that.id,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_that.sourceInUs,_that.sourceOutUs,_that.speed,_that.volume,_that.laneIndex,_that.framing,_that.opacity,_that.keyframes);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String mediaId,  MediaKind kind,  int startUs,  int endUs,  int sourceInUs,  int sourceOutUs,  double speed,  double volume,  int laneIndex,  ClipFraming framing,  double opacity,  List<Keyframe> keyframes)?  $default,) {final _that = this;
+switch (_that) {
+case _ResolvedOverlayClip() when $default != null:
+return $default(_that.id,_that.mediaId,_that.kind,_that.startUs,_that.endUs,_that.sourceInUs,_that.sourceOutUs,_that.speed,_that.volume,_that.laneIndex,_that.framing,_that.opacity,_that.keyframes);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ResolvedOverlayClip implements ResolvedOverlayClip {
+  const _ResolvedOverlayClip({required this.id, required this.mediaId, required this.kind, required this.startUs, required this.endUs, required this.sourceInUs, required this.sourceOutUs, required this.speed, required this.volume, required this.laneIndex, required this.framing, this.opacity = 1.0,  List<Keyframe> keyframes = const <Keyframe>[]}): _keyframes = keyframes;
+  factory _ResolvedOverlayClip.fromJson(Map<String, dynamic> json) => _$ResolvedOverlayClipFromJson(json);
+
+@override final  String id;
+@override final  String mediaId;
+@override final  MediaKind kind;
+@override final  int startUs;
+@override final  int endUs;
+@override final  int sourceInUs;
+@override final  int sourceOutUs;
+@override final  double speed;
+/// Final gain for its sound, with the original sound level applied.
+/// Zero for photos.
+@override final  double volume;
+@override final  int laneIndex;
+@override final  ClipFraming framing;
+@override@JsonKey() final  double opacity;
+ final  List<Keyframe> _keyframes;
+@override@JsonKey() List<Keyframe> get keyframes {
+  if (_keyframes is EqualUnmodifiableListView) return _keyframes;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_keyframes);
+}
+
+
+/// Create a copy of ResolvedOverlayClip
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ResolvedOverlayClipCopyWith<_ResolvedOverlayClip> get copyWith => __$ResolvedOverlayClipCopyWithImpl<_ResolvedOverlayClip>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ResolvedOverlayClipToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ResolvedOverlayClip&&(identical(other.id, id) || other.id == id)&&(identical(other.mediaId, mediaId) || other.mediaId == mediaId)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.startUs, startUs) || other.startUs == startUs)&&(identical(other.endUs, endUs) || other.endUs == endUs)&&(identical(other.sourceInUs, sourceInUs) || other.sourceInUs == sourceInUs)&&(identical(other.sourceOutUs, sourceOutUs) || other.sourceOutUs == sourceOutUs)&&(identical(other.speed, speed) || other.speed == speed)&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.laneIndex, laneIndex) || other.laneIndex == laneIndex)&&(identical(other.framing, framing) || other.framing == framing)&&(identical(other.opacity, opacity) || other.opacity == opacity)&&const DeepCollectionEquality().equals(other.keyframes, _keyframes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id,mediaId,kind,startUs,endUs,sourceInUs,sourceOutUs,speed,volume,laneIndex,framing,opacity,const DeepCollectionEquality().hash(_keyframes));
+}
+
+@override
+String toString() {
+    return 'ResolvedOverlayClip(id: $id, mediaId: $mediaId, kind: $kind, startUs: $startUs, endUs: $endUs, sourceInUs: $sourceInUs, sourceOutUs: $sourceOutUs, speed: $speed, volume: $volume, laneIndex: $laneIndex, framing: $framing, opacity: $opacity, keyframes: $keyframes)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ResolvedOverlayClipCopyWith<$Res> implements $ResolvedOverlayClipCopyWith<$Res> {
+  factory _$ResolvedOverlayClipCopyWith(_ResolvedOverlayClip value, $Res Function(_ResolvedOverlayClip) _then) = __$ResolvedOverlayClipCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String mediaId, MediaKind kind, int startUs, int endUs, int sourceInUs, int sourceOutUs, double speed, double volume, int laneIndex, ClipFraming framing, double opacity, List<Keyframe> keyframes
+});
+
+
+@override $ClipFramingCopyWith<$Res> get framing;
+
+}
+/// @nodoc
+class __$ResolvedOverlayClipCopyWithImpl<$Res>
+    implements _$ResolvedOverlayClipCopyWith<$Res> {
+  __$ResolvedOverlayClipCopyWithImpl(this._self, this._then);
+
+  final _ResolvedOverlayClip _self;
+  final $Res Function(_ResolvedOverlayClip) _then;
+
+/// Create a copy of ResolvedOverlayClip
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? mediaId = null,Object? kind = null,Object? startUs = null,Object? endUs = null,Object? sourceInUs = null,Object? sourceOutUs = null,Object? speed = null,Object? volume = null,Object? laneIndex = null,Object? framing = null,Object? opacity = null,Object? keyframes = null,}) {
+  return _then(_ResolvedOverlayClip(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,mediaId: null == mediaId ? _self.mediaId : mediaId // ignore: cast_nullable_to_non_nullable
+as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as MediaKind,startUs: null == startUs ? _self.startUs : startUs // ignore: cast_nullable_to_non_nullable
+as int,endUs: null == endUs ? _self.endUs : endUs // ignore: cast_nullable_to_non_nullable
+as int,sourceInUs: null == sourceInUs ? _self.sourceInUs : sourceInUs // ignore: cast_nullable_to_non_nullable
+as int,sourceOutUs: null == sourceOutUs ? _self.sourceOutUs : sourceOutUs // ignore: cast_nullable_to_non_nullable
+as int,speed: null == speed ? _self.speed : speed // ignore: cast_nullable_to_non_nullable
+as double,volume: null == volume ? _self.volume : volume // ignore: cast_nullable_to_non_nullable
+as double,laneIndex: null == laneIndex ? _self.laneIndex : laneIndex // ignore: cast_nullable_to_non_nullable
+as int,framing: null == framing ? _self.framing : framing // ignore: cast_nullable_to_non_nullable
+as ClipFraming,opacity: null == opacity ? _self.opacity : opacity // ignore: cast_nullable_to_non_nullable
+as double,keyframes: null == keyframes ? _self._keyframes : keyframes // ignore: cast_nullable_to_non_nullable
+as List<Keyframe>,
+  ));
+}
+
+/// Create a copy of ResolvedOverlayClip
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ClipFramingCopyWith<$Res> get framing {
+  
+  return $ClipFramingCopyWith<$Res>(_self.framing, (value) {
+    return _then(_self.copyWith(framing: value));
+  });
+}
+}
+
+
+/// @nodoc
 mixin _$ResolvedComposition {
 
- int get durationUs; List<ResolvedClip> get clips; List<ResolvedTransition> get transitions; List<ResolvedText> get texts; List<ResolvedCaption> get captions; CaptionPreset get captionPreset; CaptionPosition get captionPosition; List<ResolvedAudio> get audio;
+ int get durationUs; List<ResolvedClip> get clips; List<ResolvedTransition> get transitions; List<ResolvedText> get texts; List<ResolvedCaption> get captions; CaptionPreset get captionPreset; CaptionPosition get captionPosition; List<ResolvedAudio> get audio;/// In drawing order: by lane, then by start.
+ List<ResolvedOverlayClip> get overlayClips;
 /// Create a copy of ResolvedComposition
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1898,20 +2233,20 @@ $ResolvedCompositionCopyWith<ResolvedComposition> get copyWith => _$ResolvedComp
 @override
 bool operator ==(Object other) {
   final _this = this as ResolvedComposition;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ResolvedComposition&&(identical(other.durationUs, _this.durationUs) || other.durationUs == _this.durationUs)&&const DeepCollectionEquality().equals(other.clips, _this.clips)&&const DeepCollectionEquality().equals(other.transitions, _this.transitions)&&const DeepCollectionEquality().equals(other.texts, _this.texts)&&const DeepCollectionEquality().equals(other.captions, _this.captions)&&(identical(other.captionPreset, _this.captionPreset) || other.captionPreset == _this.captionPreset)&&(identical(other.captionPosition, _this.captionPosition) || other.captionPosition == _this.captionPosition)&&const DeepCollectionEquality().equals(other.audio, _this.audio));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ResolvedComposition&&(identical(other.durationUs, _this.durationUs) || other.durationUs == _this.durationUs)&&const DeepCollectionEquality().equals(other.clips, _this.clips)&&const DeepCollectionEquality().equals(other.transitions, _this.transitions)&&const DeepCollectionEquality().equals(other.texts, _this.texts)&&const DeepCollectionEquality().equals(other.captions, _this.captions)&&(identical(other.captionPreset, _this.captionPreset) || other.captionPreset == _this.captionPreset)&&(identical(other.captionPosition, _this.captionPosition) || other.captionPosition == _this.captionPosition)&&const DeepCollectionEquality().equals(other.audio, _this.audio)&&const DeepCollectionEquality().equals(other.overlayClips, _this.overlayClips));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ResolvedComposition;
-  return Object.hash(runtimeType,_this.durationUs,const DeepCollectionEquality().hash(_this.clips),const DeepCollectionEquality().hash(_this.transitions),const DeepCollectionEquality().hash(_this.texts),const DeepCollectionEquality().hash(_this.captions),_this.captionPreset,_this.captionPosition,const DeepCollectionEquality().hash(_this.audio));
+  return Object.hash(runtimeType,_this.durationUs,const DeepCollectionEquality().hash(_this.clips),const DeepCollectionEquality().hash(_this.transitions),const DeepCollectionEquality().hash(_this.texts),const DeepCollectionEquality().hash(_this.captions),_this.captionPreset,_this.captionPosition,const DeepCollectionEquality().hash(_this.audio),const DeepCollectionEquality().hash(_this.overlayClips));
 }
 
 @override
 String toString() {
   final _this = this as ResolvedComposition;
-  return 'ResolvedComposition(durationUs: ${_this.durationUs}, clips: ${_this.clips}, transitions: ${_this.transitions}, texts: ${_this.texts}, captions: ${_this.captions}, captionPreset: ${_this.captionPreset}, captionPosition: ${_this.captionPosition}, audio: ${_this.audio})';
+  return 'ResolvedComposition(durationUs: ${_this.durationUs}, clips: ${_this.clips}, transitions: ${_this.transitions}, texts: ${_this.texts}, captions: ${_this.captions}, captionPreset: ${_this.captionPreset}, captionPosition: ${_this.captionPosition}, audio: ${_this.audio}, overlayClips: ${_this.overlayClips})';
 }
 
 
@@ -1922,7 +2257,7 @@ abstract mixin class $ResolvedCompositionCopyWith<$Res>  {
   factory $ResolvedCompositionCopyWith(ResolvedComposition value, $Res Function(ResolvedComposition) _then) = _$ResolvedCompositionCopyWithImpl;
 @useResult
 $Res call({
- int durationUs, List<ResolvedClip> clips, List<ResolvedTransition> transitions, List<ResolvedText> texts, List<ResolvedCaption> captions, CaptionPreset captionPreset, CaptionPosition captionPosition, List<ResolvedAudio> audio
+ int durationUs, List<ResolvedClip> clips, List<ResolvedTransition> transitions, List<ResolvedText> texts, List<ResolvedCaption> captions, CaptionPreset captionPreset, CaptionPosition captionPosition, List<ResolvedAudio> audio, List<ResolvedOverlayClip> overlayClips
 });
 
 
@@ -1939,7 +2274,7 @@ class _$ResolvedCompositionCopyWithImpl<$Res>
 
 /// Create a copy of ResolvedComposition
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? durationUs = null,Object? clips = null,Object? transitions = null,Object? texts = null,Object? captions = null,Object? captionPreset = null,Object? captionPosition = null,Object? audio = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? durationUs = null,Object? clips = null,Object? transitions = null,Object? texts = null,Object? captions = null,Object? captionPreset = null,Object? captionPosition = null,Object? audio = null,Object? overlayClips = null,}) {
   return _then(ResolvedComposition(
 durationUs: null == durationUs ? _self.durationUs : durationUs // ignore: cast_nullable_to_non_nullable
 as int,clips: null == clips ? _self.clips : clips // ignore: cast_nullable_to_non_nullable
@@ -1949,7 +2284,8 @@ as List<ResolvedText>,captions: null == captions ? _self.captions : captions // 
 as List<ResolvedCaption>,captionPreset: null == captionPreset ? _self.captionPreset : captionPreset // ignore: cast_nullable_to_non_nullable
 as CaptionPreset,captionPosition: null == captionPosition ? _self.captionPosition : captionPosition // ignore: cast_nullable_to_non_nullable
 as CaptionPosition,audio: null == audio ? _self.audio : audio // ignore: cast_nullable_to_non_nullable
-as List<ResolvedAudio>,
+as List<ResolvedAudio>,overlayClips: null == overlayClips ? _self.overlayClips : overlayClips // ignore: cast_nullable_to_non_nullable
+as List<ResolvedOverlayClip>,
   ));
 }
 
@@ -2034,10 +2370,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int durationUs,  List<ResolvedClip> clips,  List<ResolvedTransition> transitions,  List<ResolvedText> texts,  List<ResolvedCaption> captions,  CaptionPreset captionPreset,  CaptionPosition captionPosition,  List<ResolvedAudio> audio)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int durationUs,  List<ResolvedClip> clips,  List<ResolvedTransition> transitions,  List<ResolvedText> texts,  List<ResolvedCaption> captions,  CaptionPreset captionPreset,  CaptionPosition captionPosition,  List<ResolvedAudio> audio,  List<ResolvedOverlayClip> overlayClips)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ResolvedComposition() when $default != null:
-return $default(_that.durationUs,_that.clips,_that.transitions,_that.texts,_that.captions,_that.captionPreset,_that.captionPosition,_that.audio);case _:
+return $default(_that.durationUs,_that.clips,_that.transitions,_that.texts,_that.captions,_that.captionPreset,_that.captionPosition,_that.audio,_that.overlayClips);case _:
   return orElse();
 
 }
@@ -2055,10 +2391,10 @@ return $default(_that.durationUs,_that.clips,_that.transitions,_that.texts,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int durationUs,  List<ResolvedClip> clips,  List<ResolvedTransition> transitions,  List<ResolvedText> texts,  List<ResolvedCaption> captions,  CaptionPreset captionPreset,  CaptionPosition captionPosition,  List<ResolvedAudio> audio)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int durationUs,  List<ResolvedClip> clips,  List<ResolvedTransition> transitions,  List<ResolvedText> texts,  List<ResolvedCaption> captions,  CaptionPreset captionPreset,  CaptionPosition captionPosition,  List<ResolvedAudio> audio,  List<ResolvedOverlayClip> overlayClips)  $default,) {final _that = this;
 switch (_that) {
 case _ResolvedComposition():
-return $default(_that.durationUs,_that.clips,_that.transitions,_that.texts,_that.captions,_that.captionPreset,_that.captionPosition,_that.audio);case _:
+return $default(_that.durationUs,_that.clips,_that.transitions,_that.texts,_that.captions,_that.captionPreset,_that.captionPosition,_that.audio,_that.overlayClips);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2075,10 +2411,10 @@ return $default(_that.durationUs,_that.clips,_that.transitions,_that.texts,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int durationUs,  List<ResolvedClip> clips,  List<ResolvedTransition> transitions,  List<ResolvedText> texts,  List<ResolvedCaption> captions,  CaptionPreset captionPreset,  CaptionPosition captionPosition,  List<ResolvedAudio> audio)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int durationUs,  List<ResolvedClip> clips,  List<ResolvedTransition> transitions,  List<ResolvedText> texts,  List<ResolvedCaption> captions,  CaptionPreset captionPreset,  CaptionPosition captionPosition,  List<ResolvedAudio> audio,  List<ResolvedOverlayClip> overlayClips)?  $default,) {final _that = this;
 switch (_that) {
 case _ResolvedComposition() when $default != null:
-return $default(_that.durationUs,_that.clips,_that.transitions,_that.texts,_that.captions,_that.captionPreset,_that.captionPosition,_that.audio);case _:
+return $default(_that.durationUs,_that.clips,_that.transitions,_that.texts,_that.captions,_that.captionPreset,_that.captionPosition,_that.audio,_that.overlayClips);case _:
   return null;
 
 }
@@ -2090,7 +2426,7 @@ return $default(_that.durationUs,_that.clips,_that.transitions,_that.texts,_that
 @JsonSerializable()
 
 class _ResolvedComposition implements ResolvedComposition {
-  const _ResolvedComposition({required this.durationUs,  List<ResolvedClip> clips = const <ResolvedClip>[],  List<ResolvedTransition> transitions = const <ResolvedTransition>[],  List<ResolvedText> texts = const <ResolvedText>[],  List<ResolvedCaption> captions = const <ResolvedCaption>[], this.captionPreset = CaptionPreset.plain, this.captionPosition = CaptionPosition.bottom,  List<ResolvedAudio> audio = const <ResolvedAudio>[]}): _clips = clips,_transitions = transitions,_texts = texts,_captions = captions,_audio = audio;
+  const _ResolvedComposition({required this.durationUs,  List<ResolvedClip> clips = const <ResolvedClip>[],  List<ResolvedTransition> transitions = const <ResolvedTransition>[],  List<ResolvedText> texts = const <ResolvedText>[],  List<ResolvedCaption> captions = const <ResolvedCaption>[], this.captionPreset = CaptionPreset.plain, this.captionPosition = CaptionPosition.bottom,  List<ResolvedAudio> audio = const <ResolvedAudio>[],  List<ResolvedOverlayClip> overlayClips = const <ResolvedOverlayClip>[]}): _clips = clips,_transitions = transitions,_texts = texts,_captions = captions,_audio = audio,_overlayClips = overlayClips;
   factory _ResolvedComposition.fromJson(Map<String, dynamic> json) => _$ResolvedCompositionFromJson(json);
 
 @override final  int durationUs;
@@ -2131,6 +2467,15 @@ class _ResolvedComposition implements ResolvedComposition {
   return EqualUnmodifiableListView(_audio);
 }
 
+/// In drawing order: by lane, then by start.
+ final  List<ResolvedOverlayClip> _overlayClips;
+/// In drawing order: by lane, then by start.
+@override@JsonKey() List<ResolvedOverlayClip> get overlayClips {
+  if (_overlayClips is EqualUnmodifiableListView) return _overlayClips;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_overlayClips);
+}
+
 
 /// Create a copy of ResolvedComposition
 /// with the given fields replaced by the non-null parameter values.
@@ -2145,18 +2490,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ResolvedComposition&&(identical(other.durationUs, durationUs) || other.durationUs == durationUs)&&const DeepCollectionEquality().equals(other.clips, _clips)&&const DeepCollectionEquality().equals(other.transitions, _transitions)&&const DeepCollectionEquality().equals(other.texts, _texts)&&const DeepCollectionEquality().equals(other.captions, _captions)&&(identical(other.captionPreset, captionPreset) || other.captionPreset == captionPreset)&&(identical(other.captionPosition, captionPosition) || other.captionPosition == captionPosition)&&const DeepCollectionEquality().equals(other.audio, _audio));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ResolvedComposition&&(identical(other.durationUs, durationUs) || other.durationUs == durationUs)&&const DeepCollectionEquality().equals(other.clips, _clips)&&const DeepCollectionEquality().equals(other.transitions, _transitions)&&const DeepCollectionEquality().equals(other.texts, _texts)&&const DeepCollectionEquality().equals(other.captions, _captions)&&(identical(other.captionPreset, captionPreset) || other.captionPreset == captionPreset)&&(identical(other.captionPosition, captionPosition) || other.captionPosition == captionPosition)&&const DeepCollectionEquality().equals(other.audio, _audio)&&const DeepCollectionEquality().equals(other.overlayClips, _overlayClips));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,durationUs,const DeepCollectionEquality().hash(_clips),const DeepCollectionEquality().hash(_transitions),const DeepCollectionEquality().hash(_texts),const DeepCollectionEquality().hash(_captions),captionPreset,captionPosition,const DeepCollectionEquality().hash(_audio));
+    return Object.hash(runtimeType,durationUs,const DeepCollectionEquality().hash(_clips),const DeepCollectionEquality().hash(_transitions),const DeepCollectionEquality().hash(_texts),const DeepCollectionEquality().hash(_captions),captionPreset,captionPosition,const DeepCollectionEquality().hash(_audio),const DeepCollectionEquality().hash(_overlayClips));
 }
 
 @override
 String toString() {
-    return 'ResolvedComposition(durationUs: $durationUs, clips: $clips, transitions: $transitions, texts: $texts, captions: $captions, captionPreset: $captionPreset, captionPosition: $captionPosition, audio: $audio)';
+    return 'ResolvedComposition(durationUs: $durationUs, clips: $clips, transitions: $transitions, texts: $texts, captions: $captions, captionPreset: $captionPreset, captionPosition: $captionPosition, audio: $audio, overlayClips: $overlayClips)';
 }
 
 
@@ -2167,7 +2512,7 @@ abstract mixin class _$ResolvedCompositionCopyWith<$Res> implements $ResolvedCom
   factory _$ResolvedCompositionCopyWith(_ResolvedComposition value, $Res Function(_ResolvedComposition) _then) = __$ResolvedCompositionCopyWithImpl;
 @override @useResult
 $Res call({
- int durationUs, List<ResolvedClip> clips, List<ResolvedTransition> transitions, List<ResolvedText> texts, List<ResolvedCaption> captions, CaptionPreset captionPreset, CaptionPosition captionPosition, List<ResolvedAudio> audio
+ int durationUs, List<ResolvedClip> clips, List<ResolvedTransition> transitions, List<ResolvedText> texts, List<ResolvedCaption> captions, CaptionPreset captionPreset, CaptionPosition captionPosition, List<ResolvedAudio> audio, List<ResolvedOverlayClip> overlayClips
 });
 
 
@@ -2184,7 +2529,7 @@ class __$ResolvedCompositionCopyWithImpl<$Res>
 
 /// Create a copy of ResolvedComposition
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? durationUs = null,Object? clips = null,Object? transitions = null,Object? texts = null,Object? captions = null,Object? captionPreset = null,Object? captionPosition = null,Object? audio = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? durationUs = null,Object? clips = null,Object? transitions = null,Object? texts = null,Object? captions = null,Object? captionPreset = null,Object? captionPosition = null,Object? audio = null,Object? overlayClips = null,}) {
   return _then(_ResolvedComposition(
 durationUs: null == durationUs ? _self.durationUs : durationUs // ignore: cast_nullable_to_non_nullable
 as int,clips: null == clips ? _self._clips : clips // ignore: cast_nullable_to_non_nullable
@@ -2194,7 +2539,8 @@ as List<ResolvedText>,captions: null == captions ? _self._captions : captions //
 as List<ResolvedCaption>,captionPreset: null == captionPreset ? _self.captionPreset : captionPreset // ignore: cast_nullable_to_non_nullable
 as CaptionPreset,captionPosition: null == captionPosition ? _self.captionPosition : captionPosition // ignore: cast_nullable_to_non_nullable
 as CaptionPosition,audio: null == audio ? _self._audio : audio // ignore: cast_nullable_to_non_nullable
-as List<ResolvedAudio>,
+as List<ResolvedAudio>,overlayClips: null == overlayClips ? _self._overlayClips : overlayClips // ignore: cast_nullable_to_non_nullable
+as List<ResolvedOverlayClip>,
   ));
 }
 

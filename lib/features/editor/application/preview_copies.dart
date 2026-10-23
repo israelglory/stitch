@@ -110,7 +110,10 @@ class PreviewCopies extends _$PreviewCopies {
     if (state == null) return const [];
     final project = state.project;
     final store = ref.read(projectStoreProvider);
-    final inUse = {for (final c in project.timeline.videoClips) c.mediaId};
+    final inUse = {
+      for (final c in project.timeline.videoClips) c.mediaId,
+      for (final o in project.timeline.overlayClips) o.mediaId,
+    };
     return [
       for (final asset in project.media.values)
         if (inUse.contains(asset.id) &&

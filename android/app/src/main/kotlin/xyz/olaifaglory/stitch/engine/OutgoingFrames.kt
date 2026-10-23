@@ -47,6 +47,12 @@ interface OutgoingFrames {
 
   fun release()
 
+  /**
+   * Frees the decoder without touching GL, from any thread. Returns the
+   * textures, to delete later on their GL thread (see [GlGarbage]).
+   */
+  fun abandon(): IntArray
+
   companion object {
     /**
      * Frames of [path]. A video frame not decoded within [timeoutMs] is
@@ -99,6 +105,8 @@ private class OutgoingPhoto(path: String) : OutgoingFrames {
   override fun release() {
     runCatching { GlUtil.deleteTexture(frame.textures[0]) }
   }
+
+  override fun abandon(): IntArray = intArrayOf(frame.textures[0])
 
   companion object {
     const val MAX_SIDE = 4096
@@ -344,10 +352,15 @@ private class OutgoingVideo(path: String, private val timeoutMs: () -> Long) : O
   }
 
   override fun release() {
+    abandon()
+    planes.forEach { runCatching { GlUtil.deleteTexture(it) } }
+  }
+
+  override fun abandon(): IntArray {
     runCatching { codec.stop() }
     runCatching { codec.release() }
     runCatching { extractor.release() }
-    planes.forEach { runCatching { GlUtil.deleteTexture(it) } }
+    return planes
   }
 
   companion object {

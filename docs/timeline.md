@@ -4,7 +4,7 @@ Pure Dart. The model is in `lib/features/timeline/domain/`, undo history is in `
 
 ## Data
 
-`Timeline` holds `videoClips`, `transitions`, `textItems`, `captionTrack`, `audioItems`, and `audioMix`. `audioLanes` is derived from each item's `laneIndex`. Every type is immutable (freezed) and serializes to JSON.
+`Timeline` holds `videoClips`, `transitions`, `textItems`, `captionTrack`, `audioItems`, `audioMix`, and `overlayClips`. `audioLanes` and `overlayLaneCount` are derived from each item's `laneIndex`. Every type is immutable (freezed) and serializes to JSON.
 
 ## Rules
 
@@ -21,12 +21,21 @@ Pure Dart. The model is in `lib/features/timeline/domain/`, undo history is in `
 
 **Lanes.** Text and audio items on one lane never overlap. After any edit, an item that would overlap moves to the next free lane. Earlier items keep their lanes.
 
+**Overlays.** An `OverlayClip` is a video or photo drawn over the main track (CapCut's Overlay, or picture in picture).
+- It is anchored like text and audio, and trimmed, split, and sped up like a clip. Photos last 3 s and can be lengthened up to the end of the video.
+- It is placed like a clip: its `framing` fits (or fills) it into the canvas, then zooms, moves (offsets from the centre), and turns it. A new one is 60 percent of that size (`newOverlayScale`). Unlike a clip, it has no background of its own.
+- Lanes stack: lane 0 sits just over the main track and higher lanes over it. A new overlay goes on the lowest lane free for its whole length, so existing ones keep their places.
+- Its sound is a video's own: its `volume` times the original sound level. The main track's sound switch leaves it alone.
+- Like other items, the part after the end of the video is not shown.
+
+**Freeze.** `freezeClip` holds a video clip's frame at a moment: the clip is split there and a 3 s photo of that frame goes between the parts, keeping the clip's place, zoom, turn, and opacity at that moment. Too near an end of the clip to split, the still goes before or after it. The editor reads the frame from the file at full size (`EditorController.freezeFrame`) and adds it to the project as a photo. Later items move on with their content.
+
 **Audio.** Looping audio fills to the end of the video. Anything past the video end is cut at export and flagged in the composition (`cutAtVideoEnd`). Fades always fit inside the item.
 
-**Keyframes.** Clips, text, and audio items can animate. The code is in `keyframes.dart`.
+**Keyframes.** Clips, text, audio items, and overlays can animate. The code is in `keyframes.dart`.
 - Each keyframe is a snapshot of the whole item: `KeyframeValues` holds position (`x`, `y`, as fractions of the canvas), `scale`, `rotationDeg`, `opacity`, and `volume`. Each keyframe also has an easing preset: linear, ease in, ease out, ease in and out, or hold.
 - Keyframe times follow the item's content:
-  - Clip and audio keyframes are stored in source time, so they stay with their content through trims, splits, and speed changes.
+  - Clip, overlay, and audio keyframes are stored in source time, so they stay with their content through trims, splits, and speed changes.
   - Text keyframes are offsets from the item's start.
   - Looping audio repeats its keyframes on every pass.
 - Values between two keyframes use the easing of the earlier keyframe. Before the first keyframe and after the last, that keyframe's values hold.
@@ -52,7 +61,7 @@ Pure Dart. The model is in `lib/features/timeline/domain/`, undo history is in `
 
 ## Operations
 
-Operations are extension methods grouped by area: `VideoTrackOps`, `TransitionOps`, `TextOps`, `CaptionOps`, `AudioOps`, and `KeyframeOps`.
+Operations are extension methods grouped by area: `VideoTrackOps`, `TransitionOps`, `TextOps`, `CaptionOps`, `AudioOps`, `OverlayOps`, and `KeyframeOps`.
 - Every operation is total. When it does not apply (an unknown id, a split too close to an edge, a value already set), it returns the same instance. The editor controller checks `identical` to skip pushing undo history.
 - `can*` methods tell the UI when to disable a tool.
 - New ids are passed in by the caller, so operations stay deterministic.
@@ -65,6 +74,7 @@ Operations are extension methods grouped by area: `VideoTrackOps`, `TransitionOp
 - transition windows, with matching audio crossfades
 - final gains, after the original sound and added audio levels are applied
 - captions with absolute word times
+- overlay clips in drawing order (by lane, then start), cut at the end of the video
 - keyframes with their times on the timeline and their volume as the final gain (see "Keyframes" in [engine.md](engine.md)); `engineValuesAt` is what the engines compute from them, and tests check it matches the editor at every moment
 
 The native engines receive this document as JSON. Preview and export both use it, so they cannot disagree.

@@ -204,6 +204,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addMediaTitle => 'Add media';
 
   @override
+  String get addOverlayTitle => 'Add overlay';
+
+  @override
   String get replaceMediaTitle => 'Replace clip';
 
   @override
@@ -389,6 +392,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get laneAudio => 'Audio';
 
   @override
+  String get laneOverlay => 'Overlay';
+
+  @override
+  String overlaySemantics(String duration) {
+    return 'Overlay, $duration';
+  }
+
+  @override
+  String get freezeFailedTitle => 'Couldn\'t freeze this frame';
+
+  @override
+  String get freezeFailedMessage =>
+      'The frame could not be read from the video. Try a moment nearby.';
+
+  @override
   String clipSemantics(int index, int count, String duration) {
     return 'Clip $index of $count, $duration';
   }
@@ -534,6 +552,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get toolText => 'Text';
+
+  @override
+  String get toolOverlay => 'Overlay';
+
+  @override
+  String get toolFreeze => 'Freeze';
 
   @override
   String get toolMusic => 'Music';
@@ -775,6 +799,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String textItemSemantics(String text) {
     return 'Text: $text';
+  }
+
+  @override
+  String angleDegrees(int degrees) {
+    return '$degrees°';
   }
 
   @override

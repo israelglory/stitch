@@ -41,6 +41,8 @@ final class StitchInstruction: NSObject, AVVideoCompositionInstructionProtocol,
 
   let layers: [CompositorLayer]
   let transition: CompositorTransition?
+  /// Overlay clips showing during this time range, in drawing order.
+  let overlayLayers: [CompositorLayer]
   let canvasSize: CGSize
   let background: EngineDocument.Background
   /// Every overlay of the document; the compositor draws those showing.
@@ -52,7 +54,8 @@ final class StitchInstruction: NSObject, AVVideoCompositionInstructionProtocol,
     transition: CompositorTransition?,
     canvasSize: CGSize,
     background: EngineDocument.Background,
-    overlays: [EngineDocument.Overlay] = []
+    overlays: [EngineDocument.Overlay] = [],
+    overlayLayers: [CompositorLayer] = []
   ) {
     self.timeRange = timeRange
     self.layers = layers
@@ -60,7 +63,8 @@ final class StitchInstruction: NSObject, AVVideoCompositionInstructionProtocol,
     self.canvasSize = canvasSize
     self.background = background
     self.overlays = overlays
-    let ids = layers.compactMap(\.trackID)
+    self.overlayLayers = overlayLayers
+    let ids = (layers + overlayLayers).compactMap(\.trackID)
     requiredSourceTrackIDs = ids.isEmpty ? nil : ids.map { NSNumber(value: $0) }
   }
 }
@@ -184,6 +188,81 @@ enum CompositionBuilder {
       params.audioTimePitchAlgorithm = .spectral
     }
 
+    // Overlay clips: their pictures packed onto as few video tracks as
+    // possible, their sound onto audio tracks the same way.
+    var overlayVideoTracks: [(track: AVMutableCompositionTrack, endUs: Int64)] = []
+    var overlayAudioTracks: [(track: AVMutableCompositionTrack, endUs: Int64)] = []
+    var overlayAudioParams: [AVMutableAudioMixInputParameters] = []
+    var overlayLayers: [CompositorLayer] = []
+    for overlay in comp.overlayClips {
+      let timelineRange = cmRange(startUs: overlay.startUs, endUs: overlay.endUs)
+      let sourceRange = cmRange(startUs: overlay.sourceInUs, endUs: overlay.sourceOutUs)
+      var usedTrack: CMPersistentTrackID? = nil
+      var rotation = 0
+      if overlay.kind == "video", let a = asset(for: overlay.mediaId),
+        let source = try await a.loadTracks(withMediaType: .video).first
+      {
+        let slot: Int
+        if let free = overlayVideoTracks.firstIndex(where: { $0.endUs <= overlay.startUs }) {
+          slot = free
+        } else {
+          overlayVideoTracks.append(
+            (
+              composition.addMutableTrack(
+                withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)!,
+              0
+            ))
+          slot = overlayVideoTracks.count - 1
+        }
+        let track = overlayVideoTracks[slot].track
+        try await insert(source: source, sourceRange: sourceRange, into: track, at: timelineRange)
+        overlayVideoTracks[slot].endUs = overlay.endUs
+        usedTrack = track.trackID
+        rotation = try await rotationDegrees(of: source)
+
+        if overlay.maxVolume > 0, let audio = try await a.loadTracks(withMediaType: .audio).first {
+          let audioSlot: Int
+          // Strictly after, as for audio items.
+          if let free = overlayAudioTracks.firstIndex(where: { $0.endUs < overlay.startUs }) {
+            audioSlot = free
+          } else {
+            overlayAudioTracks.append(
+              (
+                composition.addMutableTrack(
+                  withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)!,
+                0
+              ))
+            audioSlot = overlayAudioTracks.count - 1
+            overlayAudioParams.append(
+              AVMutableAudioMixInputParameters(track: overlayAudioTracks[audioSlot].track))
+          }
+          try await insert(
+            source: audio, sourceRange: sourceRange, into: overlayAudioTracks[audioSlot].track,
+            at: timelineRange)
+          overlayAudioTracks[audioSlot].endUs = overlay.endUs
+          let params = overlayAudioParams[audioSlot]
+          params.audioTimePitchAlgorithm = .spectral
+          applyVolume(
+            to: params, volume: overlay.volume, keyframes: overlay.animation,
+            startUs: overlay.startUs, endUs: overlay.endUs, fadeInUs: 0, fadeOutUs: 0)
+        }
+      }
+      let photoPath = overlay.kind == "photo" ? doc.media[overlay.mediaId]?.path : nil
+      // A missing file draws nothing.
+      guard usedTrack != nil || photoPath != nil else { continue }
+      overlayLayers.append(
+        CompositorLayer(
+          trackID: usedTrack,
+          photoPath: photoPath,
+          sourceRotationDeg: rotation,
+          framing: overlay.framing,
+          opacity: overlay.baseOpacity,
+          keyframes: overlay.animation,
+          clipStartUs: overlay.startUs,
+          clipEndUs: overlay.endUs
+        ))
+    }
+
     // Audio items, packed onto tracks so none overlap on a track.
     var itemTracks: [(track: AVMutableCompositionTrack, endUs: Int64)] = []
     var itemParams: [AVMutableAudioMixInputParameters] = []
@@ -232,7 +311,7 @@ enum CompositionBuilder {
     }
 
     let audioMix = AVMutableAudioMix()
-    audioMix.inputParameters = Array(clipAudioParams.values) + itemParams
+    audioMix.inputParameters = Array(clipAudioParams.values) + itemParams + overlayAudioParams
 
     // Remove unused tracks so readers and players do not see empty ones.
     for track in composition.tracks where track.segments.isEmpty {
@@ -240,7 +319,7 @@ enum CompositionBuilder {
     }
 
     let videoComposition = try buildVideoComposition(
-      doc: doc, layers: layerInfo, canvas: canvas,
+      doc: doc, layers: layerInfo, overlayLayers: overlayLayers, canvas: canvas,
       renderSize: renderSize ?? canvas)
 
     return BuiltComposition(
@@ -324,18 +403,23 @@ enum CompositionBuilder {
   static let rampStepUs: Int64 = 40_000
 
   private static func buildVideoComposition(
-    doc: EngineDocument, layers: [String: CompositorLayer], canvas: CGSize,
-    renderSize: CGSize
+    doc: EngineDocument, layers: [String: CompositorLayer], overlayLayers: [CompositorLayer],
+    canvas: CGSize, renderSize: CGSize
   ) throws -> AVMutableVideoComposition? {
     let comp = doc.composition
     guard comp.durationUs > 0, !comp.clips.isEmpty else { return nil }
 
-    // Cut the timeline where any clip starts or ends; each piece shows one
-    // clip, or two during a transition.
+    // Cut the timeline where any clip or overlay starts or ends; each
+    // piece shows one clip, or two during a transition, and the overlays
+    // over it.
     var cuts = Set<Int64>([0, comp.durationUs])
     for c in comp.clips {
       cuts.insert(c.startUs)
       cuts.insert(c.endUs)
+    }
+    for o in overlayLayers {
+      cuts.insert(o.clipStartUs)
+      cuts.insert(o.clipEndUs)
     }
     let times = cuts.filter { $0 >= 0 && $0 <= comp.durationUs }.sorted()
     let transitionsByTo = Dictionary(
@@ -357,7 +441,8 @@ enum CompositionBuilder {
           transition: transition,
           canvasSize: canvas,
           background: doc.background,
-          overlays: doc.overlays))
+          overlays: doc.overlays,
+          overlayLayers: overlayLayers.filter { $0.clipStartUs < t1 && $0.clipEndUs > t0 }))
     }
 
     let videoComposition = AVMutableVideoComposition()

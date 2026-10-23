@@ -261,6 +261,10 @@
   "@addMediaTitle": {
     "description": "Title of the media picker."
   },
+  "addOverlayTitle": "Add overlay",
+  "@addOverlayTitle": {
+    "description": "Title of the media picker when adding an overlay."
+  },
   "replaceMediaTitle": "Replace clip",
   "@replaceMediaTitle": {
     "description": "Title of the media picker when replacing a clip."
@@ -514,6 +518,27 @@
   "@laneAudio": {
     "description": "Audio lane label."
   },
+  "laneOverlay": "Overlay",
+  "@laneOverlay": {
+    "description": "Overlay lane label on the timeline."
+  },
+  "overlaySemantics": "Overlay, {duration}",
+  "@overlaySemantics": {
+    "description": "Accessibility label for an overlay (a video or photo over the main video) on the timeline.",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "freezeFailedTitle": "Couldn't freeze this frame",
+  "@freezeFailedTitle": {
+    "description": "Title of the notice when a freeze frame could not be made."
+  },
+  "freezeFailedMessage": "The frame could not be read from the video. Try a moment nearby.",
+  "@freezeFailedMessage": {
+    "description": "Message of the notice when a freeze frame could not be made."
+  },
   "clipSemantics": "Clip {index} of {count}, {duration}",
   "@clipSemantics": {
     "description": "Accessibility label for a clip on the timeline.",
@@ -711,6 +736,14 @@
   "toolText": "Text",
   "@toolText": {
     "description": "Toolbar item: adds text to the video."
+  },
+  "toolOverlay": "Overlay",
+  "@toolOverlay": {
+    "description": "Toolbar item: adds a video or photo over the main video (picture in picture)."
+  },
+  "toolFreeze": "Freeze",
+  "@toolFreeze": {
+    "description": "Clip toolbar item: holds the frame under the playhead as a still for a few seconds."
   },
   "toolMusic": "Music",
   "@toolMusic": {
@@ -1039,6 +1072,15 @@
     "placeholders": {
       "text": {
         "type": "String"
+      }
+    }
+  },
+  "angleDegrees": "{degrees}°",
+  "@angleDegrees": {
+    "description": "The angle shown while text or a clip is turned on the preview.",
+    "placeholders": {
+      "degrees": {
+        "type": "int"
       }
     }
   },

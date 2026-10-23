@@ -54,6 +54,9 @@ class Exporter(
   private var transformer: Transformer? = null
   private var finished = false
 
+  /** Decoders of the exported composition's overlay clips. */
+  private var overlayFrames: OverlayClipFrames? = null
+
   /**
    * Timeline time of the last video frame drawn. Media3's own progress for
    * a composition trails the real one (it read 49 percent with 70 percent
@@ -73,6 +76,7 @@ class Exporter(
         outputEffects = outputEffects(),
         onVideoFrame = { us -> drawnUs.accumulateAndGet(us) { a, b -> maxOf(a, b) } },
       )
+      overlayFrames = built.overlayFrames
       if (built.durationUs <= 0) throw EngineException.exportFailed("Nothing to export")
       durationUs = built.durationUs
       built.composition
@@ -163,6 +167,8 @@ class Exporter(
     if (finished) return
     finished = true
     transformer = null
+    overlayFrames?.release()
+    overlayFrames = null
     report(listener)
   }
 

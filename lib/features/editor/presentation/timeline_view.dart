@@ -24,6 +24,7 @@ import 'package:stitch/features/timeline/domain/keyframes.dart';
 import 'package:stitch/features/timeline/domain/layout.dart';
 import 'package:stitch/features/timeline/domain/models.dart' as m;
 import 'package:stitch/features/timeline/domain/normalize.dart';
+import 'package:stitch/features/timeline/domain/overlay_ops.dart';
 import 'package:stitch/features/timeline/domain/snapping.dart';
 import 'package:stitch/features/timeline/domain/text_ops.dart';
 import 'package:stitch/features/timeline/domain/transition_ops.dart';
@@ -42,7 +43,7 @@ const double _trailingSpace = AppSizes.minTouchTarget + AppSpacing.xxl;
 /// Visual gap between neighboring clips.
 const double _clipGap = AppSizes.strokeWidth;
 
-enum _RowKind { text, captions, video, audio }
+enum _RowKind { text, captions, overlay, video, audio }
 
 final class _Row {
   const new(this.kind, this.lane, this.height);
@@ -230,7 +231,6 @@ class _TimelineViewState extends ConsumerState<TimelineView>
           scale: _scale,
           width: contentWidth,
           actions: _actions,
-          onAddMedia: widget.onAddMedia,
           onTransition: widget.onTransition,
         );
 
@@ -294,6 +294,15 @@ class _TimelineViewState extends ConsumerState<TimelineView>
                     bottom: 0,
                     child: const Playhead(),
                   ),
+                  // Add, pinned at the end of the video track wherever it
+                  // is scrolled; the clips go in at the cut nearest the
+                  // playhead.
+                  Positioned(
+                    right: 0,
+                    top: _videoTop(rows),
+                    height: AppSizes.videoTrackHeight,
+                    child: _AddClipButton(onPressed: widget.onAddMedia),
+                  ),
                 ],
               ),
             ),
@@ -303,8 +312,20 @@ class _TimelineViewState extends ConsumerState<TimelineView>
     );
   }
 
-  /// Rows top to bottom: text lanes (highest first), captions, video,
-  /// audio lanes. Empty lanes other than video are not shown.
+  /// Where the video track starts, below the ruler and the lanes above.
+  static double _videoTop(List<_Row> rows) {
+    var top = AppSizes.rulerHeight;
+    for (final row in rows) {
+      top += AppSpacing.xs;
+      if (row.kind == _RowKind.video) break;
+      top += row.height;
+    }
+    return top;
+  }
+
+  /// Rows top to bottom: text lanes (highest first), captions, overlay
+  /// lanes (highest first, as they stack), video, audio lanes. Empty lanes
+  /// other than video are not shown.
   static List<_Row> _rowsFor(m.Timeline t) {
     final textLanes = t.textItems.isEmpty
         ? 0
@@ -314,6 +335,8 @@ class _TimelineViewState extends ConsumerState<TimelineView>
         _Row(_RowKind.text, lane, AppSizes.laneHeight),
       if (t.captionTrack.segments.isNotEmpty)
         const _Row(_RowKind.captions, 0, AppSizes.laneHeight),
+      for (var lane = t.overlayLaneCount - 1; lane >= 0; lane--)
+        _Row(_RowKind.overlay, lane, AppSizes.overlayLaneHeight),
       const _Row(_RowKind.video, 0, AppSizes.videoTrackHeight),
       for (var lane = 0; lane < t.audioLanes.length; lane++)
         _Row(_RowKind.audio, lane, AppSizes.laneHeight),
@@ -530,6 +553,11 @@ class _LaneHeaders extends StatelessWidget {
                   label: l10n.laneCaptions,
                   height: row.height,
                 ),
+                _RowKind.overlay => LaneHeader(
+                  icon: AppIcons.overlay,
+                  label: l10n.laneOverlay,
+                  height: row.height,
+                ),
                 _RowKind.audio => LaneHeader(
                   icon: AppIcons.audio,
                   label: l10n.laneAudio,
@@ -543,6 +571,51 @@ class _LaneHeaders extends StatelessWidget {
   }
 }
 
+/// The add-clip button over the end of the video track, with the track
+/// fading out behind it. Only the button takes taps.
+class _AddClipButton extends StatelessWidget {
+  const new({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final background = context.colors.background;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IgnorePointer(
+          child: SizedBox(
+            width: AppSpacing.xl,
+            height: double.infinity,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [background.withValues(alpha: 0), background],
+                ),
+              ),
+            ),
+          ),
+        ),
+        ColoredBox(
+          color: background,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
+            child: Center(
+              child: AppIconButton(
+                icon: AppIcons.add,
+                semanticLabel: AppLocalizations.of(context).addClip,
+                style: IconButtonStyle.filled,
+                onPressed: onPressed,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// All timeline items, laid out at time zero = x zero.
 class _Content extends ConsumerStatefulWidget {
   const new({
@@ -551,7 +624,6 @@ class _Content extends ConsumerStatefulWidget {
     required this.scale,
     required this.width,
     required this.actions,
-    required this.onAddMedia,
     required this.onTransition,
   });
 
@@ -560,7 +632,6 @@ class _Content extends ConsumerStatefulWidget {
   final TimelineScale scale;
   final double width;
   final _TimelineActions actions;
-  final VoidCallback onAddMedia;
   final ValueChanged<String> onTransition;
 
   @override
@@ -636,6 +707,7 @@ class _ContentState extends ConsumerState<_Content> {
         _RowKind.video => _videoRow(l10n, top, ratio),
         _RowKind.text => _textRow(row.lane, top),
         _RowKind.captions => _captionRow(top),
+        _RowKind.overlay => _overlayRow(l10n, row.lane, top, ratio),
         _RowKind.audio => _audioRow(row.lane, top),
       });
       top += row.height;
@@ -834,19 +906,6 @@ class _ContentState extends ConsumerState<_Content> {
       );
     }
 
-    // Add button after the last clip.
-    widgets.add(
-      Positioned(
-        left: _px(layout.durationUs) + AppSpacing.sm,
-        top: top + (AppSizes.videoTrackHeight - AppSizes.minTouchTarget) / 2,
-        child: AppIconButton(
-          icon: AppIcons.add,
-          semanticLabel: AppLocalizations.of(context).addClip,
-          style: IconButtonStyle.filled,
-          onPressed: widget.onAddMedia,
-        ),
-      ),
-    );
     return widgets;
   }
 
@@ -945,6 +1004,79 @@ class _ContentState extends ConsumerState<_Content> {
                 onTap: () => widget.actions.select(CaptionSelected(item.id)),
               ),
         ),
+    ];
+  }
+
+  List<Widget> _overlayRow(
+    AppLocalizations l10n,
+    int lane,
+    double top,
+    double ratio,
+  ) {
+    final state = widget.state;
+    final layout = state.layout;
+    const height = AppSizes.overlayLaneHeight;
+    return [
+      for (final item in state.timeline.overlayClips)
+        if (item.laneIndex == lane)
+          _laneItem(
+            id: item.id,
+            top: top,
+            start: layout.startOf(item.anchor),
+            duration: item.durationUs,
+            selection: OverlaySelected(item.id),
+            move: (b, start) => b.moveOverlay(item.id, start),
+            trim: (b, edge, delta) => b.trimOverlay(item.id, edge, delta),
+            edgesOf: (b) {
+              final x = b.overlayById(item.id);
+              final s = x == null ? 0 : TimelineLayout.of(b).startOf(x.anchor);
+              return (s, s + (x?.durationUs ?? 0));
+            },
+            build: ({required width, required selected, trim, keyframes}) {
+              final durationLabel = l10n.valueSeconds(
+                (item.durationUs / usPerSecond).toStringAsFixed(1),
+              );
+              return VideoClipTile(
+                width: width,
+                height: height,
+                durationLabel: durationLabel,
+                semanticLabel: l10n.overlaySemantics(durationLabel),
+                speedLabel: item.speed == 1
+                    ? null
+                    : _speedLabel(l10n, item.speed),
+                isMissing: state.missingMedia.contains(item.mediaId),
+                selected: selected,
+                trim: trim,
+                keyframes: keyframes,
+                onTap: () => widget.actions.select(OverlaySelected(item.id)),
+                frameBuilder: (context, i) {
+                  final asset = state.project.media[item.mediaId];
+                  final cacheWidth = (height * ratio).round();
+                  if (asset == null || item.isPhoto) {
+                    return MediaPoster(
+                      project: state.project,
+                      mediaId: item.mediaId,
+                      cacheWidth: cacheWidth,
+                    );
+                  }
+                  // Middle of the frame's slot, in source time.
+                  final slotUs = widget.scale.pxToUs((i + 0.5) * height);
+                  return ClipFrame(
+                    project: state.project,
+                    mediaId: item.mediaId,
+                    mediaPath: ref
+                        .read(projectStoreProvider)
+                        .resolve(state.project.id, asset.path),
+                    sourceUs: math.min(
+                      item.sourceOutUs,
+                      item.sourceInUs + (slotUs * item.speed).round(),
+                    ),
+                    cacheWidth: cacheWidth,
+                  );
+                },
+              );
+            },
+          ),
     ];
   }
 

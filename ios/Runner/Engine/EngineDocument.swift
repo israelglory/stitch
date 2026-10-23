@@ -95,13 +95,42 @@ struct EngineDocument: Decodable {
     var maxVolume: Double { animation.maxVolume ?? volume }
   }
 
+  /// A video or photo drawn over the picture (an overlay clip), placed
+  /// like a clip but with no background. In drawing order: by lane, then
+  /// by start.
+  struct OverlayClip: Decodable {
+    let id: String
+    let mediaId: String
+    let kind: String
+    let startUs: Int64
+    let endUs: Int64
+    let sourceInUs: Int64
+    let sourceOutUs: Int64
+    let speed: Double
+    let volume: Double
+    let laneIndex: Int
+    let framing: Framing
+    private let opacity: Double?
+    private let keyframes: [Keyframe]?
+
+    var baseOpacity: Double { opacity ?? 1 }
+    var animation: Keyframes { Keyframes(list: keyframes ?? []) }
+
+    /// The loudest its sound gets.
+    var maxVolume: Double { animation.maxVolume ?? volume }
+  }
+
   struct Composition: Decodable {
     let durationUs: Int64
     let clips: [Clip]
     let transitions: [Transition]
     let audio: [Audio]
+    /// Absent in documents from before overlays.
+    let overlayClips: [OverlayClip]
 
-    enum CodingKeys: String, CodingKey { case durationUs, clips, transitions, audio }
+    enum CodingKeys: String, CodingKey {
+      case durationUs, clips, transitions, audio, overlayClips
+    }
 
     init(from decoder: Decoder) throws {
       let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -109,6 +138,7 @@ struct EngineDocument: Decodable {
       clips = try c.decodeIfPresent([Clip].self, forKey: .clips) ?? []
       transitions = try c.decodeIfPresent([Transition].self, forKey: .transitions) ?? []
       audio = try c.decodeIfPresent([Audio].self, forKey: .audio) ?? []
+      overlayClips = try c.decodeIfPresent([OverlayClip].self, forKey: .overlayClips) ?? []
     }
   }
 

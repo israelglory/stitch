@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:stitch/app/providers.dart';
+import 'package:stitch/core/errors/failure.dart';
 import 'package:stitch/core/logging/logger.dart';
 import 'package:stitch/core/time/clock.dart';
 import 'package:stitch/engine/editor_engine.dart';
@@ -24,6 +26,7 @@ import 'package:stitch/features/timeline/domain/caption_ops.dart';
 import 'package:stitch/features/timeline/domain/composition.dart';
 import 'package:stitch/features/timeline/domain/keyframes.dart';
 import 'package:stitch/features/timeline/domain/models.dart';
+import 'package:stitch/features/timeline/domain/overlay_ops.dart';
 import 'package:stitch/features/timeline/domain/text_ops.dart';
 import 'package:stitch/features/timeline/domain/video_ops.dart';
 
@@ -389,6 +392,125 @@ class EditorController extends _$EditorController {
     return true;
   }
 
+  /// Imports [items] and adds them as overlays from [atUs], then selects
+  /// the first. Returns false when the import was cancelled or failed.
+  Future<bool> addOverlays(List<LibraryItem> items, {required int atUs}) async {
+    final projectId = _current.project.id;
+    final assets = await ref
+        .read(importControllerProvider.notifier)
+        .importInto(projectId, items);
+    if (assets == null || !ref.mounted) return false;
+    final ids = ref.read(idGeneratorProvider);
+    final sources = <OverlaySource>[
+      for (final a in assets)
+        if (a.kind != MediaKind.audio)
+          (
+            id: ids.next(),
+            mediaId: a.id,
+            kind: a.kind,
+            mediaDurationUs: a.durationUs,
+          ),
+    ];
+    applyProject(
+      (p) => p.copyWith(
+        media: {...p.media, for (final a in assets) a.id: a},
+        timeline: p.timeline.addOverlays(sources, atUs: atUs),
+      ),
+    );
+    final first = sources.firstOrNull?.id;
+    if (first != null && _current.timeline.overlayById(first) != null) {
+      select(OverlaySelected(first));
+    }
+    return true;
+  }
+
+  /// Holds [clipId]'s frame at timeline time [atUs] as a still (see
+  /// [VideoTrackOps.freezeClip]), read from the file at full size, then
+  /// selects it and returns its id. One undo step. Null when the frame
+  /// could not be read.
+  Future<String?> freezeFrame(String clipId, int atUs) async {
+    // A second tap while the frame is read would freeze it twice.
+    if (_freezing) return null;
+    _freezing = true;
+    try {
+      return await _freezeFrame(clipId, atUs);
+    } finally {
+      _freezing = false;
+    }
+  }
+
+  bool _freezing = false;
+
+  /// A freeze is reading its frame.
+  bool get isFreezing => _freezing;
+
+  Future<String?> _freezeFrame(String clipId, int atUs) async {
+    final current = _current;
+    final timeline = current.timeline;
+    final clip = timeline.clipById(clipId);
+    final asset = clip == null ? null : current.project.media[clip.mediaId];
+    final sourceUs = timeline.keyframeTimeAt(
+      (kind: KeyframeOwnerKind.clip, id: clipId),
+      atUs,
+      current.layout,
+    );
+    if (clip == null ||
+        asset == null ||
+        sourceUs == null ||
+        !timeline.canFreezeClip(clipId, atUs)) {
+      return null;
+    }
+    final projectId = current.project.id;
+    // The last frame, at the very end of the clip.
+    final at = math.min(sourceUs, clip.sourceOutUs - _frameUs);
+    final Uint8List? frame;
+    try {
+      frame = await _engine.previewFrame(
+        _store.resolve(projectId, asset.path),
+        math.max(clip.sourceInUs, at),
+        maxSize: math.max(math.max(asset.width, asset.height), _minStillSize),
+        exact: true,
+      );
+    } on Failure catch (e, st) {
+      _log.error('Could not read the frame to freeze', e, st);
+      return null;
+    }
+    if (frame == null || !ref.mounted) return null;
+    final still = await ref
+        .read(mediaImporterProvider)
+        .importStill(
+          projectId,
+          frame,
+          width: asset.width,
+          height: asset.height,
+        );
+    if (!ref.mounted) return null;
+    final ids = ref.read(idGeneratorProvider);
+    final stillId = ids.next();
+    final splitId = ids.next();
+    applyProject(
+      (p) => p.copyWith(
+        media: {...p.media, still.id: still},
+        timeline: p.timeline.freezeClip(
+          clipId,
+          atUs,
+          stillId: stillId,
+          splitId: splitId,
+          mediaId: still.id,
+        ),
+      ),
+    );
+    if (_current.timeline.clipById(stillId) == null) return null;
+    select(ClipSelected(stillId));
+    return stillId;
+  }
+
+  /// A frame at 30 fps: the last frame starts this far before the end.
+  static const int _frameUs = 33333;
+
+  /// Smallest still read, for sources of unknown size.
+  static const int _minStillSize = 1080;
+
   /// Replaces the media of [clipId] with [item].
   Future<bool> replaceClip(String clipId, LibraryItem item) async {
     final projectId = _current.project.id;
@@ -418,6 +540,9 @@ class EditorController extends _$EditorController {
     final current = _current;
     for (final c in current.timeline.videoClips) {
       if (current.missingInUse.contains(c.mediaId)) return c.mediaId;
+    }
+    for (final o in current.timeline.overlayClips) {
+      if (current.missingInUse.contains(o.mediaId)) return o.mediaId;
     }
     return null;
   }
@@ -518,6 +643,7 @@ class EditorController extends _$EditorController {
         (x) => x.id == id,
       ),
       AudioSelected(:final id) => t.audioItems.any((x) => x.id == id),
+      OverlaySelected(:final id) => t.overlayClips.any((x) => x.id == id),
     };
     if (exists) return s;
     // A deleted text needs no handoff.

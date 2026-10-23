@@ -91,7 +91,7 @@ final class PreviewCopiesProvider
   }
 }
 
-String _$previewCopiesHash() => r'6724aa5ebcd50fa2d1a6494c3dac4e438790aaae';
+String _$previewCopiesHash() => r'2b54547bab2097bc867871271ff47854a0882201';
 
 /// Makes the missing preview copies of the open project, one at a time,
 /// in the background. The state is how many are still to make.

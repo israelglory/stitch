@@ -23,6 +23,9 @@ enum PickerMode {
 
   /// Pick one item to replace a clip. Pops with a `LibraryItem`.
   replace,
+
+  /// Add overlays over the main video. Pops with `List<LibraryItem>`.
+  overlay,
 }
 
 /// Screens narrower than this get three columns instead of four.
@@ -106,9 +109,11 @@ class _MediaPickerScreenState extends ConsumerState<MediaPickerScreen> {
         children: [
           AppHeader(
             centerTitle: true,
-            title: widget.mode == PickerMode.replace
-                ? l10n.replaceMediaTitle
-                : l10n.addMediaTitle,
+            title: switch (widget.mode) {
+              PickerMode.replace => l10n.replaceMediaTitle,
+              PickerMode.overlay => l10n.addOverlayTitle,
+              PickerMode.create || PickerMode.add => l10n.addMediaTitle,
+            },
             leading: AppIconButton(
               icon: AppIcons.close,
               semanticLabel: l10n.close,

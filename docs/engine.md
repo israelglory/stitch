@@ -55,6 +55,7 @@ Error codes are stable. Dart maps them to failure types: `missing_file`, `unsupp
 
 - The composition is the timeline resolved to absolute microseconds (see `docs/timeline.md`), so the engine does no layout math.
 - `version` numbers documents. The engines report the version on screen in their playback state, so the editor knows when a change is visible.
+- `composition.overlayClips` lists the overlay clips in drawing order: each has its media, timeline and source ranges, speed, final volume, `laneIndex`, `framing`, `opacity`, and `keyframes` (like a clip's). Documents without it have none.
 - Clips, audio items, and overlays can carry `keyframes` (see Keyframes below). Clips and overlays also carry `opacity`. Documents without these fields still load: no keyframes, full opacity.
 
 ## Keyframes
@@ -173,14 +174,16 @@ Projects store the transition's id. An unknown id, from a newer version, is kept
 1. the background: a solid color, or a blurred copy of the clip
 2. the clip, turned upright from its rotation flag, fitted or filled, then framed (scale, offset, rotation)
 
-During a transition, `Transitions` mixes the two canvases.
+During a transition, `Transitions` mixes the two canvases. Overlay clips are drawn over the result, placed like clips but with no background, then text.
+- Overlay clips are packed onto their own video tracks (as few as possible), their sound onto audio tracks with their volume in the audio mix. Instructions are also cut where an overlay starts or ends, and require its track.
+- Each video frame is copied into a Metal texture of the compositor's own before it is drawn: composited straight from the decoder's buffer over anything (a colored background, a photo), everything outside the frame came out black. That had also made the letterbox bars of a video on a colored background black.
 - It renders both into textures and runs the shader as a Metal compute kernel.
 - The shader is compiled at runtime by the system's Metal compiler. A Core Image kernel would be compiled at build time instead, which needs Xcode's optional Metal toolchain for every build.
 - Without Metal it falls back to a dissolve.
 - Geometry is computed in canvas pixels, then scaled to the render size, so every resolution frames the same.
 - The compositor does not declare HDR support, so AVFoundation tone maps HDR to SDR before frames arrive. Output is Rec. 709.
 
-**Preview (`PreviewPlayer`):** an `AVPlayer` whose frames go to a Flutter texture on every display refresh.
+**Preview (`PreviewPlayer`):** an `AVPlayer` whose frames go to a Flutter texture on every display refresh. While a new document's item goes in, it reports the position it is going to, not the new item's 0.
 - Seeks are coalesced: while one is running, only the latest target is kept.
 - Audio interruptions such as calls pause playback.
 - A new document rebuilds the player item and keeps the current position and play state.
@@ -213,7 +216,10 @@ Built on Media3 1.11 (`Transformer`, `CompositionPlayer`, and effects). Much of 
 - the background: the canvas color, or a blur of the clip (filled into a texture 96 px on the long side, then blurred in two gaussian passes, with sigma 4 percent of the width as on iOS)
 - the clip, fitted or filled, then framed, with the same geometry as iOS
 
-During the transition into its clip, the effect also draws the outgoing clip and mixes the two with the transition shader.
+During the transition into its clip, the effect also draws the outgoing clip and mixes the two with the transition shader. Then it draws the overlay clips showing, then text.
+- **Overlay clips** come from `OverlayClipFrames`, one per composition and shared by every clip's effect: an overlay often runs across cuts, and a decoder of its own per effect would start over (and miss frames) at each one. A decoder opens 0.5 s before its overlay shows and closes after it ends. Videos are decoded as for the outgoing clip (`OutgoingFrames`), photos uploaded once.
+- The preview and the exporter release a composition's overlay decoders when it is replaced or the export ends (`OverlayClipFrames.release`, from any thread). Their textures are deleted on the GL thread the next time it draws (`GlGarbage`).
+- Each overlay clip's sound is an audio sequence of its own, with its gain and keyframes.
 - Media3 hands an effect one clip at a time, so `OutgoingFrames` decodes the outgoing clip's last moments itself. Photos are uploaded once.
 - Video is decoded to memory with `MediaCodec` and uploaded as Y, U, and V textures, then converted in the shader (BT.601, BT.709, or BT.2020, full or limited range, from the stream).
 - Decoding into a `SurfaceTexture` instead stalled the decoder while the GL thread waited for a frame.
@@ -255,7 +261,7 @@ During the transition into its clip, the effect also draws the outgoing clip and
 
 ## Tests
 
-- **Both platforms:** every transition is checked against `test_media/transition_cases.json`, and the keyframe evaluator against `test_media/keyframe_cases.json`. Exports check a clip moved, held, and faded by keyframes, an overlay moved by them, and a volume eased to silence.
+- **Both platforms:** every transition is checked against `test_media/transition_cases.json`, and the keyframe evaluator against `test_media/keyframe_cases.json`. Exports check a clip moved, held, and faded by keyframes, an overlay moved by them, and a volume eased to silence. They also check overlay clips: a photo fading out and a video a lane up, over the picture (on Android, across a cut), and letterbox bars in the background color (iOS).
 - **Swift:** `ios/RunnerTests/EngineTests.swift` covers probe, composition, export, transitions, thumbnails, and proxies. The inputs are the corpus in `test_media/`, which `tool/make_test_media.sh` regenerates:
   - variable frame rate
   - HEVC HDR

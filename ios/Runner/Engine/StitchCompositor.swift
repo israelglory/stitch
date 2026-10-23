@@ -5,7 +5,7 @@ import Metal
 /// Draws every output frame: each active clip turned upright, fitted or
 /// filled into the canvas, and framed, over its background. During a
 /// transition the two clips' canvases are mixed by the shader in
-/// Transitions.swift.
+/// Transitions.swift. Overlay clips are drawn over that, then text.
 ///
 /// Geometry is computed in canvas pixels (Core Image space, origin bottom
 /// left) and scaled to the render size at the end, so preview and every
@@ -31,6 +31,10 @@ final class StitchCompositor: NSObject, AVVideoCompositing {
   /// Room for a few typewriter overlays' frames at once.
   private var overlayCache = PhotoCache(limit: 64)
   private lazy var transitions = Transitions(device: Self.device, context: context)
+  private lazy var commandQueue = Self.device?.makeCommandQueue()
+  /// Copies of the current frame's video frames, reused from frame to frame.
+  private var frameCopies: [MTLTexture] = []
+  private var frameCopiesUsed = 0
 
   let sourcePixelBufferAttributes: [String: any Sendable]? = [
     kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
@@ -57,18 +61,28 @@ final class StitchCompositor: NSObject, AVVideoCompositing {
       }
       let timeUs = request.compositionTime.microseconds
       let canvas = CGRect(origin: .zero, size: instruction.canvasSize)
-      let image = drawOverlays(
-        instruction.overlays, at: timeUs, over: compose(instruction, at: timeUs, request: request),
-        canvas: canvas)
+      frameCopiesUsed = 0
+      let picture = drawOverlayClips(
+        instruction, at: timeUs, over: compose(instruction, at: timeUs, request: request),
+        request: request)
+      let image = drawOverlays(instruction.overlays, at: timeUs, over: picture, canvas: canvas)
       let renderSize = request.renderContext.size
       let scale = CGAffineTransform(
         scaleX: renderSize.width / instruction.canvasSize.width,
         y: renderSize.height / instruction.canvasSize.height)
-      context.render(
-        image.transformed(by: scale),
-        to: output,
-        bounds: CGRect(origin: .zero, size: renderSize),
-        colorSpace: outputColorSpace)
+      // Waits for the GPU: the frame copies are reused by the next frame.
+      let destination = CIRenderDestination(pixelBuffer: output)
+      destination.colorSpace = outputColorSpace
+      do {
+        try context.startTask(
+          toRender: image.transformed(by: scale),
+          from: CGRect(origin: .zero, size: renderSize),
+          to: destination, at: .zero
+        ).waitUntilCompleted()
+      } catch {
+        request.finish(with: error)
+        return
+      }
       request.finish(withComposedVideoFrame: output)
     }
   }
@@ -111,6 +125,27 @@ final class StitchCompositor: NSObject, AVVideoCompositing {
         "CIDissolveTransition", parameters: [kCIInputTargetImageKey: images[1], "inputTime": progress])
     }
     return last
+  }
+
+  /// Draws the overlay clips showing at [timeUs] over [image], in order:
+  /// each placed like a clip, at its opacity, with no background.
+  private func drawOverlayClips(
+    _ instruction: StitchInstruction, at timeUs: Int64, over image: CIImage,
+    request: AVAsynchronousVideoCompositionRequest
+  ) -> CIImage {
+    let canvas = CGRect(origin: .zero, size: instruction.canvasSize)
+    var result = image
+    for layer in instruction.overlayLayers
+    where timeUs >= layer.clipStartUs && timeUs < layer.clipEndUs {
+      guard let frame = source(for: layer, request: request) else { continue }
+      let values = layer.keyframes.values(at: timeUs)
+      let alpha = values?.opacity ?? layer.opacity
+      guard alpha > 0.001 else { continue }
+      let framing = values.map(layer.framing.animated(by:)) ?? layer.framing
+      result = Self.faded(place(frame, framing: framing, in: canvas), alpha: alpha)
+        .composited(over: result)
+    }
+    return result.cropped(to: canvas)
   }
 
   /// Draws the overlays showing at [timeUs] over [image], in order.
@@ -170,10 +205,47 @@ final class StitchCompositor: NSObject, AVVideoCompositing {
     guard let id = layer.trackID, let buffer = request.sourceFrame(byTrackID: id) else {
       return nil
     }
-    let image = CIImage(cvPixelBuffer: buffer)
+    let image = copied(CIImage(cvPixelBuffer: buffer))
     let upright = image.oriented(Self.orientation(forClockwiseDegrees: layer.sourceRotationDeg))
     return upright.transformed(
       by: CGAffineTransform(translationX: -upright.extent.minX, y: -upright.extent.minY))
+  }
+
+  /// [image] (a decoded video frame) copied into a texture of our own.
+  /// Drawn straight from the decoder's buffer over anything else (a
+  /// colored background, a photo), everything outside the frame came out
+  /// black.
+  private func copied(_ image: CIImage) -> CIImage {
+    guard let device = Self.device, let queue = commandQueue,
+      let commands = queue.makeCommandBuffer()
+    else { return image }
+    let width = Int(image.extent.width)
+    let height = Int(image.extent.height)
+    let texture: MTLTexture
+    if frameCopiesUsed < frameCopies.count, frameCopies[frameCopiesUsed].width == width,
+      frameCopies[frameCopiesUsed].height == height
+    {
+      texture = frameCopies[frameCopiesUsed]
+    } else {
+      let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+        pixelFormat: .bgra8Unorm, width: width, height: height, mipmapped: false)
+      descriptor.usage = [.shaderRead, .shaderWrite, .renderTarget]
+      descriptor.storageMode = .private
+      guard let made = device.makeTexture(descriptor: descriptor) else { return image }
+      texture = made
+      if frameCopiesUsed < frameCopies.count {
+        frameCopies[frameCopiesUsed] = made
+      } else {
+        frameCopies.append(made)
+      }
+    }
+    frameCopiesUsed += 1
+    context.render(
+      image, to: texture, commandBuffer: commands, bounds: image.extent,
+      colorSpace: outputColorSpace)
+    commands.commit()
+    commands.waitUntilCompleted()
+    return CIImage(mtlTexture: texture, options: [.colorSpace: outputColorSpace]) ?? image
   }
 
   /// Fits (or fills) [image] into [canvas], then applies the clip's scale,

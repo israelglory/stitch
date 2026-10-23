@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1007912295077",
+    "project_id": "stitch-d18f3",
+    "storage_bucket": "stitch-d18f3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1007912295077:android:7c643d22ba5362ee2ecb4c",
+        "android_client_info": {
+          "package_name": "xyz.olaifaglory.stitch"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJxZBKNZ3RftVuQwIwQkpuwsFhkxlNfFs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

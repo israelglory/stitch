@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:stitch/app/providers.dart';
 import 'package:stitch/core/async/cancellation.dart';
 import 'package:stitch/core/errors/failure.dart';
+import 'package:stitch/features/analytics/analytics.dart';
 import 'package:stitch/features/media/domain/library_item.dart';
 import 'package:stitch/features/projects/application/projects_controller.dart';
 import 'package:stitch/features/projects/data/media_importer.dart';
@@ -105,6 +106,10 @@ class ImportController extends _$ImportController {
     }
     ref.invalidate(projectsControllerProvider);
     state = const ImportIdle();
+    ref.read(analyticsProvider).log(AppEvents.projectCreated, {
+      'clips': assets.length,
+      'format': preset.name,
+    });
     return project.id;
   }
 

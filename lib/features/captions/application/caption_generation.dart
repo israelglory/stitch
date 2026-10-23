@@ -7,6 +7,7 @@ import 'package:stitch/app/providers.dart';
 import 'package:stitch/core/errors/failure.dart';
 import 'package:stitch/engine/editor_engine.dart';
 import 'package:stitch/engine/engine_provider.dart';
+import 'package:stitch/features/analytics/analytics.dart';
 import 'package:stitch/features/captions/application/caption_providers.dart';
 import 'package:stitch/features/captions/data/caption_models.dart';
 import 'package:stitch/features/captions/domain/transcript.dart';
@@ -170,6 +171,11 @@ class CaptionGeneration extends _$CaptionGeneration {
         language: transcript.language.isEmpty ? null : transcript.language,
       );
       state = const CaptionJobIdle();
+      ref.read(analyticsProvider).log(AppEvents.captionsGenerated, {
+        'segments': segments.length,
+        'language': language ?? 'auto',
+        'model': model.name,
+      });
     } on CancelledFailure {
       if (ref.mounted) state = const CaptionJobIdle();
     } on Object catch (e) {

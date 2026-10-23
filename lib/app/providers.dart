@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -8,6 +9,8 @@ import 'package:stitch/core/time/clock.dart';
 import 'package:stitch/engine/engine_provider.dart';
 import 'package:stitch/features/ads/admob_ads.dart';
 import 'package:stitch/features/ads/ads.dart';
+import 'package:stitch/features/analytics/analytics.dart';
+import 'package:stitch/features/analytics/firebase_analytics.dart';
 import 'package:stitch/features/media/data/media_library.dart';
 import 'package:stitch/features/media/data/photo_manager_library.dart';
 import 'package:stitch/features/projects/data/media_importer.dart';
@@ -30,9 +33,18 @@ Directory storageRoot(Ref ref) =>
 @Riverpod(keepAlive: true)
 IdGenerator idGenerator(Ref ref) => RandomIdGenerator();
 
-/// Ads (Google AdMob). Tests replace it with [NoAds].
+/// Ads (Google AdMob). Tests replace it with [NoAds]. Where Google's
+/// consent form is not needed, analytics may collect too.
 @Riverpod(keepAlive: true)
-Ads ads(Ref ref) => AdMobAds();
+Ads ads(Ref ref) => AdMobAds(
+  onConsentNotRequired: () =>
+      unawaited(ref.read(analyticsProvider).consentNotRequired()),
+);
+
+/// Usage analytics (Google Analytics for Firebase). Tests replace it with
+/// [NoAnalytics].
+@Riverpod(keepAlive: true)
+Analytics analytics(Ref ref) => FirebaseAppAnalytics();
 
 /// Free space, the photo library, sharing, and links. Tests override it.
 @Riverpod(keepAlive: true)

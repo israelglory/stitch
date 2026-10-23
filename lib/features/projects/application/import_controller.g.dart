@@ -47,7 +47,7 @@ final class ImportControllerProvider
   }
 }
 
-String _$importControllerHash() => r'4d44576f0429fbdb2c5a02aefaf0cef9c22203ef';
+String _$importControllerHash() => r'14bece2d76af9ec7fea6612297eab27abee08f2a';
 
 /// Imports picked media, either into a new project or an existing one.
 /// Only one import runs at a time.

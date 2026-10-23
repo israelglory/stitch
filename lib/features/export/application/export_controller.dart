@@ -8,6 +8,7 @@ import 'package:stitch/core/errors/failure.dart';
 import 'package:stitch/core/platform/system_services.dart';
 import 'package:stitch/engine/editor_engine.dart';
 import 'package:stitch/engine/engine_provider.dart';
+import 'package:stitch/features/analytics/analytics.dart';
 import 'package:stitch/features/captions/domain/srt.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/export/domain/export_options.dart';
@@ -136,6 +137,12 @@ class ExportController extends _$ExportController {
         await File(captionsPath).writeAsString(srtOf(composition.captions));
       }
       state = const ExportRunning(1, saving: true);
+      ref.read(analyticsProvider).log(AppEvents.exportCompleted, {
+        'resolution': options.resolution.shortSide,
+        'fps': options.frameRate,
+        'seconds': composition.durationUs ~/ 1000000,
+        'hevc': options.hevc ? 1 : 0,
+      });
       final saved = await _system.saveVideo(path);
       if (ref.mounted) {
         state = ExportDone(

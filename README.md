@@ -1,6 +1,6 @@
 # Stitch
 
-A free, open source video editor for iOS and Android. Your projects stay on your device: no accounts and no backend. The app shows ads from Google AdMob (a banner on the projects screen, and a full-screen ad before generating captions and before an export); where the law requires it, Google's consent form asks first, and Settings offers "Ad privacy choices". Besides ads, the app goes online only to download what you ask for: speech recognition models for captions, and music and sound effects from the online sound library (which can be turned off in Settings).
+A free, open source video editor for iOS and Android. Your projects stay on your device: no accounts and no backend. The app shows ads from Google AdMob (a banner on the projects screen, and a full-screen ad before generating captions and before an export); where the law requires it, Google's consent form asks first, and Settings offers "Ad privacy choices". It also sends usage analytics to Google Analytics for Firebase (screens opened and features used, under the same consent). Besides these, the app goes online only to download what you ask for: speech recognition models for captions, and music and sound effects from the online sound library (which can be turned off in Settings).
 
 Status: early development. See [docs/architecture.md](docs/architecture.md) for how the code is organized, [docs/design-system.md](docs/design-system.md) for the design system, [docs/timeline.md](docs/timeline.md) for the editing model, and [docs/engine.md](docs/engine.md) for the native media engine.
 
@@ -107,9 +107,19 @@ Ads come from Google AdMob (`google_mobile_ads`), behind one interface, `Ads` (`
 - `NoAds` replaces it in tests, and in a build without ads.
 - On Google Play, declare that the app contains ads and uses the advertising ID (the SDK adds `AD_ID`). On the App Store, the privacy details must list the data the SDK collects.
 
+## Analytics
+
+Google Analytics for Firebase (`firebase_analytics`), behind `Analytics` (`lib/features/analytics/`). Firebase is set up by `flutterfire configure` (`lib/firebase_options.dart`, `android/app/google-services.json`, `ios/Runner/GoogleService-Info.plist`) and started in `bootstrap`.
+- Daily, weekly, and monthly active users come from Firebase itself (Analytics, then Dashboard; Realtime for the last 30 minutes).
+- Screens: the route pattern of each screen (`/editor/:projectId`), never a project's id.
+- Events (`AppEvents`): `project_created`, `text_added`, `overlay_added`, `freeze_frame`, `captions_generated`, and `export_completed`, with counts and settings only.
+- Consent: analytics and ad storage start denied (`Info.plist`, `AndroidManifest.xml`). Where Google's consent form is not needed, they are granted at launch; where it is, Firebase reads the choices made in it. This needs the consent message set up in AdMob (Privacy & messaging); until then the consent check fails and analytics stays in its denied, cookieless mode.
+- Debugging: run the iOS app with `-FIRDebugEnabled`, or on Android `adb shell setprop debug.firebase.analytics.app xyz.olaifaglory.stitch`, and watch Firebase's DebugView.
+- `NoAnalytics` replaces it in tests, and in a build without analytics.
+
 ## F-Droid
 
-The AdMob SDK is proprietary, so builds with ads cannot go on F-Droid. A build for F-Droid would remove `google_mobile_ads` and provide `NoAds` instead of `AdMobAds` (`adsProvider` in `lib/app/providers.dart`). Everything else is built to meet F-Droid's inclusion policy: no other proprietary libraries, no Google Play Services, no analytics, and every bundled asset is open (see below). Notes for reviewers:
+The AdMob and Firebase SDKs are proprietary, so builds with ads cannot go on F-Droid. A build for F-Droid would remove `google_mobile_ads` and the Firebase packages, and provide `NoAds` and `NoAnalytics` (`adsProvider` and `analyticsProvider` in `lib/app/providers.dart`). Everything else is built to meet F-Droid's inclusion policy: no other proprietary libraries, no Google Play Services, no analytics, and every bundled asset is open (see below). Notes for reviewers:
 
 - **Native code.** whisper.cpp is built from source in `third_party/whisper.cpp` by the Dart build hook (`hook/build.dart`), using the NDK's clang. There is no CMake or prebuilt binary. The NDK version is Flutter's default (`flutter.ndkVersion`, currently 28.2.13676358). Build paths are mapped out of the binary (`-ffile-prefix-map`), so builds are reproducible across machines.
 - **Network.** Besides ads (above), the app makes two kinds of request, and sends nothing about the user in either:

@@ -153,16 +153,19 @@ final class IdGeneratorProvider
 
 String _$idGeneratorHash() => r'33d878f6e343af1c672e0184b3b113cc4ea75cb3';
 
-/// Ads (Google AdMob). Tests replace it with [NoAds].
+/// Ads (Google AdMob). Tests replace it with [NoAds]. Where Google's
+/// consent form is not needed, analytics may collect too.
 
 @ProviderFor(ads)
 final adsProvider = AdsProvider._();
 
-/// Ads (Google AdMob). Tests replace it with [NoAds].
+/// Ads (Google AdMob). Tests replace it with [NoAds]. Where Google's
+/// consent form is not needed, analytics may collect too.
 
 final class AdsProvider extends $FunctionalProvider<Ads, Ads, Ads>
     with $Provider<Ads> {
-  /// Ads (Google AdMob). Tests replace it with [NoAds].
+  /// Ads (Google AdMob). Tests replace it with [NoAds]. Where Google's
+  /// consent form is not needed, analytics may collect too.
   AdsProvider._()
     : super(
         from: null,
@@ -196,7 +199,56 @@ final class AdsProvider extends $FunctionalProvider<Ads, Ads, Ads>
   }
 }
 
-String _$adsHash() => r'54b89575bd0acd7a749ff163a231be2972fc59de';
+String _$adsHash() => r'dbc85cf5616cec41ea0a44e37c3fb03c0e185779';
+
+/// Usage analytics (Google Analytics for Firebase). Tests replace it with
+/// [NoAnalytics].
+
+@ProviderFor(analytics)
+final analyticsProvider = AnalyticsProvider._();
+
+/// Usage analytics (Google Analytics for Firebase). Tests replace it with
+/// [NoAnalytics].
+
+final class AnalyticsProvider
+    extends $FunctionalProvider<Analytics, Analytics, Analytics>
+    with $Provider<Analytics> {
+  /// Usage analytics (Google Analytics for Firebase). Tests replace it with
+  /// [NoAnalytics].
+  AnalyticsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'analyticsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$analyticsHash();
+
+  @$internal
+  @override
+  $ProviderElement<Analytics> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  Analytics create(Ref ref) {
+    return analytics(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(Analytics value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<Analytics>(value),
+    );
+  }
+}
+
+String _$analyticsHash() => r'2ea8eddb748c57d84dc04006178ae52a2e61e3c2';
 
 /// Free space, the photo library, sharing, and links. Tests override it.
 

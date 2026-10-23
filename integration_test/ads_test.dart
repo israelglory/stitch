@@ -14,6 +14,7 @@ import 'package:stitch/app/app.dart';
 import 'package:stitch/app/bootstrap.dart';
 import 'package:stitch/app/providers.dart';
 import 'package:stitch/features/ads/admob_ads.dart';
+import 'package:stitch/features/analytics/analytics.dart';
 import 'package:stitch/features/projects/presentation/projects_screen.dart';
 
 Future<void> waitUntil(
@@ -36,7 +37,10 @@ void main() {
   const shot = String.fromEnvironment('STITCH_ADS_SHOT');
 
   testWidgets('the banner loads and a full-screen ad shows', (tester) async {
-    await bootstrap(installErrorHandlers: false);
+    await bootstrap(
+      installErrorHandlers: false,
+      overrides: [analyticsProvider.overrideWithValue(const NoAnalytics())],
+    );
     await waitUntil(
       tester,
       () => find.byType(StitchApp).evaluate().isNotEmpty,

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:stitch/app/app.dart';
 import 'package:stitch/app/router.dart';
 import 'package:stitch/features/ads/ads.dart';
+import 'package:stitch/features/analytics/analytics.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
 import 'package:stitch/features/projects/application/import_controller.dart';
@@ -17,8 +18,9 @@ Future<TestEnv> createEnv(
   WidgetTester tester, {
   bool onboarded = true,
   Ads ads = const NoAds(),
+  Analytics analytics = const NoAnalytics(),
 }) async => (await tester.runAsync(
-  () => TestEnv.create(onboarded: onboarded, ads: ads),
+  () => TestEnv.create(onboarded: onboarded, ads: ads, analytics: analytics),
 ))!;
 
 /// Pumps the whole app at [location].

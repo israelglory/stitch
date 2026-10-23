@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'dart:io';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,6 +19,7 @@ import 'package:stitch/design/tokens.dart';
 import 'package:stitch/features/audio/application/waveforms.dart';
 import 'package:stitch/features/editor/application/filmstrip.dart';
 import 'package:stitch/features/text/application/text_rendering.dart';
+import 'package:stitch/firebase_options.dart';
 
 const _log = Logger('app');
 
@@ -61,6 +63,15 @@ Future<void> bootstrap({
   );
 
   LicenseRegistry.addLicense(_bundledAssetLicenses);
+
+  // Analytics (Google Analytics for Firebase). The app runs without it.
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } on Object catch (e, st) {
+    _log.error('Firebase did not start', e, st);
+  }
 
   final prefs = await SharedPreferencesWithCache.create(
     cacheOptions: const SharedPreferencesWithCacheOptions(),

@@ -64,7 +64,7 @@ final class CaptionGenerationProvider
   }
 }
 
-String _$captionGenerationHash() => r'd5ddafc96266658f864a76b96c3c75af3ce69cf0';
+String _$captionGenerationHash() => r'c333caebc35ca78e98ff640940728106af7c2f78';
 
 /// Makes captions for a project in the background while editing goes on.
 /// Lives while the editor shows it; closing the editor cancels it.

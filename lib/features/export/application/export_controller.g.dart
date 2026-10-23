@@ -67,7 +67,7 @@ final class ExportControllerProvider
   }
 }
 
-String _$exportControllerHash() => r'877fe9f581b0621623980680104bcda45ee0b60c';
+String _$exportControllerHash() => r'b5ed961da5c6319d1ad471e4b1ef9039f9fbc14c';
 
 /// Exports a project: checks space, keeps the screen on, renders, writes
 /// the captions file if asked, then saves to the photo library. Lives

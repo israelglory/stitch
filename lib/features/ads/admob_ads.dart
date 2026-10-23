@@ -34,6 +34,11 @@ abstract final class AdUnits {
 /// Ads from Google AdMob. Consent comes first (Google's consent form,
 /// shown only where the law requires it); no ad is asked for without it.
 final class AdMobAds implements Ads {
+  new({this.onConsentNotRequired});
+
+  /// Told when the consent form is not needed where the user is.
+  final void Function()? onConsentNotRequired;
+
   Future<void>? _started;
   bool _canRequest = false;
   InterstitialAd? _interstitial;
@@ -65,6 +70,11 @@ final class AdMobAds implements Ads {
       await ConsentForm.loadAndShowConsentFormIfRequired((error) {
         if (error != null) _log.warning('Consent form: ${error.message}');
       });
+      final status = await ConsentInformation.instance.getConsentStatus();
+      _log.info('Consent: ${status.name}');
+      if (status == ConsentStatus.notRequired) {
+        onConsentNotRequired?.call();
+      }
       _canRequest = await ConsentInformation.instance.canRequestAds();
       if (!_canRequest) return;
       await MobileAds.instance.initialize();

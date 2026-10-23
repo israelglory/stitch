@@ -10,6 +10,7 @@ import 'package:stitch/core/logging/logger.dart';
 import 'package:stitch/core/time/clock.dart';
 import 'package:stitch/engine/editor_engine.dart';
 import 'package:stitch/engine/engine_provider.dart';
+import 'package:stitch/features/analytics/analytics.dart';
 import 'package:stitch/features/captions/application/caption_rendering.dart';
 import 'package:stitch/features/editor/application/editor_state.dart';
 import 'package:stitch/features/editor/application/engine_document.dart';
@@ -291,6 +292,7 @@ class EditorController extends _$EditorController {
     final id = ref.read(idGeneratorProvider).next();
     apply((t) => t.addText(id: id, text: text, atUs: atUs));
     select(TextSelected(id));
+    ref.read(analyticsProvider).log(AppEvents.textAdded);
     return id;
   }
 
@@ -420,6 +422,9 @@ class EditorController extends _$EditorController {
     final first = sources.firstOrNull?.id;
     if (first != null && _current.timeline.overlayById(first) != null) {
       select(OverlaySelected(first));
+      ref.read(analyticsProvider).log(AppEvents.overlayAdded, {
+        'count': sources.length,
+      });
     }
     return true;
   }
@@ -502,6 +507,7 @@ class EditorController extends _$EditorController {
     );
     if (_current.timeline.clipById(stillId) == null) return null;
     select(ClipSelected(stillId));
+    ref.read(analyticsProvider).log(AppEvents.freezeFrame);
     return stillId;
   }
 

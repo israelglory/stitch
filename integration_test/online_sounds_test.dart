@@ -19,6 +19,7 @@ import 'package:stitch/design/design.dart';
 import 'package:stitch/engine/engine_provider.dart';
 import 'package:stitch/engine/native_editor_engine.dart';
 import 'package:stitch/features/ads/ads.dart';
+import 'package:stitch/features/analytics/analytics.dart';
 import 'package:stitch/features/audio/application/audio_providers.dart';
 import 'package:stitch/features/audio/application/sound_library.dart';
 import 'package:stitch/features/editor/application/editor_controller.dart';
@@ -67,6 +68,7 @@ void main() {
       installErrorHandlers: false,
       overrides: [
         adsProvider.overrideWithValue(const NoAds()),
+        analyticsProvider.overrideWithValue(const NoAnalytics()),
         editorEngineProvider.overrideWithValue(engine),
         mediaLibraryProvider.overrideWithValue(library),
       ],

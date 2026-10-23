@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:stitch/app/not_found_screen.dart';
+import 'package:stitch/app/providers.dart';
 import 'package:stitch/design/gallery/design_gallery_screen.dart';
 import 'package:stitch/design/tokens.dart';
 import 'package:stitch/features/audio/presentation/audio_library_screen.dart';
@@ -200,6 +201,16 @@ GoRouter router(Ref ref) {
       ),
     ],
   );
-  ref.onDispose(router.dispose);
+  // Screen views for analytics: the route pattern (`/editor/:projectId`),
+  // never a project's id.
+  void screen() {
+    final path = router.routerDelegate.currentConfiguration.fullPath;
+    if (path.isNotEmpty) ref.read(analyticsProvider).screen(path);
+  }
+
+  router.routerDelegate.addListener(screen);
+  ref
+    ..onDispose(() => router.routerDelegate.removeListener(screen))
+    ..onDispose(router.dispose);
   return router;
 }

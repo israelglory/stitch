@@ -90,6 +90,10 @@ class Exporter(
       // phone) fall back to a software decoder: slow, but the export ends.
       .setAssetLoaderFactory(Decoders.assetLoaderFactory(context))
       .setAudioMixerFactory(LimitingAudioMixer.Factory())
+      // Media3 aborts when no sample is written for 10 s on a phone. Starting
+      // the encoders, overlay decoders and a software fallback together can
+      // take longer than that on a slow device, so give a stall a minute.
+      .setMaxDelayBetweenMuxerSamplesMs(MAX_STALL_MS)
       .setVideoMimeType(if (request.hevc) MimeTypes.VIDEO_H265 else MimeTypes.VIDEO_H264)
       .setAudioMimeType(MimeTypes.AUDIO_AAC)
       .setEncoderFactory(
@@ -195,6 +199,7 @@ class Exporter(
     private const val AUDIO_BITRATE = 192_000
     private const val AUDIO_SAMPLE_RATE = 48_000
     private const val PROGRESS_INTERVAL_MS = 100L
+    private const val MAX_STALL_MS = 60_000L
 
     /** HEVC and 4K support from the device's hardware encoders. */
     fun capabilities(): CapabilitiesMessage {

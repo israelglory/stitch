@@ -15,6 +15,8 @@ import 'package:stitch/features/audio/data/audio_device.dart';
 import 'package:stitch/features/captions/application/caption_providers.dart';
 import 'package:stitch/features/onboarding/data/onboarding_repository.dart';
 import 'package:stitch/features/text/application/text_providers.dart';
+import 'package:stitch/features/updates/application/update_providers.dart';
+import 'package:stitch/features/updates/data/app_updates.dart';
 
 import 'fake_captions.dart';
 import 'fake_media_library.dart';
@@ -58,6 +60,7 @@ final class TestEnv {
     bool onboarded = true,
     Ads ads = const NoAds(),
     Analytics analytics = const NoAnalytics(),
+    AppUpdates updates = const NoAppUpdates(),
   }) async {
     final root = Directory.systemTemp.createTempSync('stitch_test');
     final libraryDir = Directory('${root.path}/library')..createSync();
@@ -79,6 +82,7 @@ final class TestEnv {
         sharedPreferencesProvider.overrideWithValue(prefs),
         adsProvider.overrideWithValue(ads),
         analyticsProvider.overrideWithValue(analytics),
+        appUpdatesProvider.overrideWithValue(updates),
         storageRootProvider.overrideWithValue(root),
         cacheRootProvider.overrideWithValue(Directory('${root.path}/cache')),
         mediaLibraryProvider.overrideWithValue(library),

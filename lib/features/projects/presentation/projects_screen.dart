@@ -12,6 +12,7 @@ import 'package:stitch/design/design.dart';
 import 'package:stitch/features/projects/application/projects_controller.dart';
 import 'package:stitch/features/projects/domain/project.dart';
 import 'package:stitch/features/projects/presentation/edited_label.dart';
+import 'package:stitch/features/updates/presentation/update_prompt.dart';
 import 'package:stitch/l10n/generated/app_localizations.dart';
 
 /// Cards are at most this wide: two columns on phones, more on tablets.
@@ -30,66 +31,69 @@ class ProjectsScreen extends ConsumerWidget {
     final projects = ref.watch(projectsControllerProvider);
     final isEmpty = projects.hasValue && projects.requireValue.isEmpty;
 
-    return Scaffold(
-      // The banner stays at the bottom while the projects scroll.
-      bottomNavigationBar: ref.watch(adsProvider).banner(),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AppHeader(
-            title: l10n.projectsTitle,
-            trailing: [
-              AppIconButton(
-                icon: AppIcons.settings,
-                semanticLabel: l10n.settingsTitle,
-                onPressed: () => context.go(AppRoutes.settings),
-              ),
-            ],
-          ),
-          if (!isEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.screen,
-                AppSpacing.sm,
-                AppSpacing.screen,
-                AppSpacing.lg,
-              ),
-              child: PrimaryButton(
-                label: l10n.newProject,
-                icon: AppIcons.add,
-                expand: true,
-                onPressed: () => context.go(AppRoutes.newProject),
-              ),
+    return UpdatePrompt(
+      child: Scaffold(
+        // The banner stays at the bottom while the projects scroll.
+        bottomNavigationBar: ref.watch(adsProvider).banner(),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppHeader(
+              title: l10n.projectsTitle,
+              trailing: [
+                AppIconButton(
+                  icon: AppIcons.settings,
+                  semanticLabel: l10n.settingsTitle,
+                  onPressed: () => context.go(AppRoutes.settings),
+                ),
+              ],
             ),
-          Expanded(
-            child: switch (projects) {
-              AsyncData(value: final list) when list.isEmpty => Center(
-                child: EmptyState(
-                  title: l10n.projectsEmptyTitle,
-                  message: l10n.projectsEmptyMessage,
-                  actionLabel: l10n.newProject,
-                  primaryAction: true,
-                  onAction: () => context.go(AppRoutes.newProject),
+            if (!isEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screen,
+                  AppSpacing.sm,
+                  AppSpacing.screen,
+                  AppSpacing.lg,
+                ),
+                child: PrimaryButton(
+                  label: l10n.newProject,
+                  icon: AppIcons.add,
+                  expand: true,
+                  onPressed: () => context.go(AppRoutes.newProject),
                 ),
               ),
-              AsyncData(value: final list) => _ProjectGrid(projects: list),
-              AsyncError() => Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screen,
-                ),
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: ErrorBanner(
-                    message: l10n.projectsLoadError,
-                    onRetry: () =>
-                        ref.read(projectsControllerProvider.notifier).refresh(),
+            Expanded(
+              child: switch (projects) {
+                AsyncData(value: final list) when list.isEmpty => Center(
+                  child: EmptyState(
+                    title: l10n.projectsEmptyTitle,
+                    message: l10n.projectsEmptyMessage,
+                    actionLabel: l10n.newProject,
+                    primaryAction: true,
+                    onAction: () => context.go(AppRoutes.newProject),
                   ),
                 ),
-              ),
-              _ => const _LoadingGrid(),
-            },
-          ),
-        ],
+                AsyncData(value: final list) => _ProjectGrid(projects: list),
+                AsyncError() => Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screen,
+                  ),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ErrorBanner(
+                      message: l10n.projectsLoadError,
+                      onRetry: () => ref
+                          .read(projectsControllerProvider.notifier)
+                          .refresh(),
+                    ),
+                  ),
+                ),
+                _ => const _LoadingGrid(),
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

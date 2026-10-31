@@ -1501,4 +1501,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSounds => 'Sounds';
+
+  @override
+  String get updateAvailableTitle => 'Update available';
+
+  @override
+  String get updateAvailableMessage =>
+      'A new version of Stitch is ready, with fixes and improvements.';
+
+  @override
+  String updateAvailableVersionMessage(String version) {
+    return 'Stitch $version is ready, with fixes and improvements.';
+  }
+
+  @override
+  String get updateNow => 'Update';
+
+  @override
+  String get updateLater => 'Later';
 }

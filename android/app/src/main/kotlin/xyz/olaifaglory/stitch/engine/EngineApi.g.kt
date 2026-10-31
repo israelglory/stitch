@@ -1102,6 +1102,12 @@ interface DeviceHostApi {
    * later; elsewhere always true). True when allowed.
    */
   suspend fun requestNotifications(): Boolean
+  /**
+   * The version code of a newer release on Google Play, or null when
+   * there is none or Play cannot tell (not installed from Play, offline).
+   * Android only: iOS answers null, and Dart asks the App Store instead.
+   */
+  suspend fun playUpdateVersionCode(): Long?
 
   companion object {
     /** The codec used by DeviceHostApi. */
@@ -1377,6 +1383,23 @@ interface DeviceHostApi {
             CoroutineScope(Dispatchers.Main).launch {
               val wrapped: List<Any?> = try {
                 listOf(api.requestNotifications())
+              } catch (exception: Throwable) {
+                EngineApiPigeonUtils.wrapError(exception)
+              }
+              reply.reply(wrapped)
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.stitch.DeviceHostApi.playUpdateVersionCode$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            CoroutineScope(Dispatchers.Main).launch {
+              val wrapped: List<Any?> = try {
+                listOf(api.playUpdateVersionCode())
               } catch (exception: Throwable) {
                 EngineApiPigeonUtils.wrapError(exception)
               }

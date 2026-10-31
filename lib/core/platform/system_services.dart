@@ -31,6 +31,10 @@ abstract interface class SystemServices {
   Future<bool> requestNotifications();
 
   Future<void> openAppSettings();
+
+  /// The version code of a newer release on Google Play, or null when
+  /// there is none or Play cannot tell. Always null on iOS.
+  Future<int?> playUpdateVersionCode();
 }
 
 /// Throws [InsufficientStorageFailure] unless [neededBytes] fit where
@@ -87,6 +91,9 @@ class NativeSystemServices implements SystemServices {
   @override
   Future<void> openAppSettings() => _guard(_host.openAppSettings);
 
+  @override
+  Future<int?> playUpdateVersionCode() => _guard(_host.playUpdateVersionCode);
+
   static Future<T> _guard<T>(Future<T> Function() call) async {
     try {
       return await call();
@@ -108,6 +115,9 @@ class FakeSystemServices implements SystemServices {
   bool screenKeptOn = false;
   bool notificationsAllowed = true;
   int settingsOpened = 0;
+
+  /// Reported by [playUpdateVersionCode].
+  int? playUpdate;
 
   @override
   Future<int> freeSpace(String path) async => free;
@@ -136,6 +146,9 @@ class FakeSystemServices implements SystemServices {
 
   @override
   Future<void> openAppSettings() async => settingsOpened++;
+
+  @override
+  Future<int?> playUpdateVersionCode() async => playUpdate;
 }
 
 /// Native on iOS and Android; the fake elsewhere.

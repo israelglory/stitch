@@ -28,6 +28,8 @@ import androidx.core.content.FileProvider
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.install.model.UpdateAvailability
 import io.flutter.plugin.common.BinaryMessenger
 import java.io.File
 import java.util.UUID
@@ -327,6 +329,20 @@ class DeviceHost(
   override suspend fun requestNotifications(): Boolean =
     Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
       request(Manifest.permission.POST_NOTIFICATIONS)
+
+  // Play's in-app update API: works only for installs from Google Play.
+  // Anything else (sideloaded, offline, no Play Store) reads as no update.
+  override suspend fun playUpdateVersionCode(): Long? = suspendCancellableCoroutine { cont ->
+    AppUpdateManagerFactory.create(activity).appUpdateInfo
+      .addOnSuccessListener { info ->
+        val available = info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+        cont.resume(if (available) info.availableVersionCode().toLong() else null)
+      }
+      .addOnFailureListener { e ->
+        Log.i(TAG, "Play update check failed", e)
+        cont.resume(null)
+      }
+  }
 
   override fun openAppSettings() {
     activity.startActivity(

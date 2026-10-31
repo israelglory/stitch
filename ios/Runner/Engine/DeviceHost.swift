@@ -247,6 +247,9 @@ final class DeviceHost: NSObject, DeviceHostApi, UIDocumentPickerDelegate,
 
   func requestNotifications() async throws -> Bool { true }
 
+  /// Android only. On iOS, Dart asks the App Store for the latest version.
+  func playUpdateVersionCode() async throws -> Int64? { nil }
+
   // MARK: Recording
 
   private var recorder: AVAudioRecorder?

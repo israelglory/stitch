@@ -2043,5 +2043,31 @@
   "settingsSounds": "Sounds",
   "@settingsSounds": {
     "description": "Settings section heading: the online sound library."
+  },
+  "updateAvailableTitle": "Update available",
+  "@updateAvailableTitle": {
+    "description": "Title of the prompt shown when the App Store or Google Play has a newer version of the app."
+  },
+  "updateAvailableMessage": "A new version of Stitch is ready, with fixes and improvements.",
+  "@updateAvailableMessage": {
+    "description": "Body of the update prompt when the store does not say the version number (Google Play)."
+  },
+  "updateAvailableVersionMessage": "Stitch {version} is ready, with fixes and improvements.",
+  "@updateAvailableVersionMessage": {
+    "description": "Body of the update prompt with the new version number (App Store).",
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "1.2.0"
+      }
+    }
+  },
+  "updateNow": "Update",
+  "@updateNow": {
+    "description": "Update prompt button: opens the app's page in the App Store or Google Play."
+  },
+  "updateLater": "Later",
+  "@updateLater": {
+    "description": "Update prompt button: closes it; it asks again in a few days."
   }
 }

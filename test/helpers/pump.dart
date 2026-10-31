@@ -9,6 +9,7 @@ import 'package:stitch/features/editor/application/editor_controller.dart';
 import 'package:stitch/features/editor/application/playback_controller.dart';
 import 'package:stitch/features/projects/application/import_controller.dart';
 import 'package:stitch/features/projects/domain/project.dart';
+import 'package:stitch/features/updates/data/app_updates.dart';
 
 import 'app_harness.dart';
 import 'app_scope.dart';
@@ -19,8 +20,14 @@ Future<TestEnv> createEnv(
   bool onboarded = true,
   Ads ads = const NoAds(),
   Analytics analytics = const NoAnalytics(),
+  AppUpdates updates = const NoAppUpdates(),
 }) async => (await tester.runAsync(
-  () => TestEnv.create(onboarded: onboarded, ads: ads, analytics: analytics),
+  () => TestEnv.create(
+    onboarded: onboarded,
+    ads: ads,
+    analytics: analytics,
+    updates: updates,
+  ),
 ))!;
 
 /// Pumps the whole app at [location].

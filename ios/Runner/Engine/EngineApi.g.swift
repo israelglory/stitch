@@ -1027,6 +1027,10 @@ protocol DeviceHostApi {
   /// Asks to show notifications, for export progress (Android 13 and
   /// later; elsewhere always true). True when allowed.
   func requestNotifications() async throws -> Bool
+  /// The version code of a newer release on Google Play, or null when
+  /// there is none or Play cannot tell (not installed from Play, offline).
+  /// Android only: iOS answers null, and Dart asks the App Store instead.
+  func playUpdateVersionCode() async throws -> Int64?
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -1288,6 +1292,24 @@ class DeviceHostApiSetup {
       }
     } else {
       requestNotificationsChannel.setMessageHandler(nil)
+    }
+    /// The version code of a newer release on Google Play, or null when
+    /// there is none or Play cannot tell (not installed from Play, offline).
+    /// Android only: iOS answers null, and Dart asks the App Store instead.
+    let playUpdateVersionCodeChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.stitch.DeviceHostApi.playUpdateVersionCode\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      playUpdateVersionCodeChannel.setMessageHandler { _, reply in
+        Task { @MainActor in
+          do {
+            let result = try await api.playUpdateVersionCode()
+            reply(wrapResult(result))
+          } catch {
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      playUpdateVersionCodeChannel.setMessageHandler(nil)
     }
   }
 }

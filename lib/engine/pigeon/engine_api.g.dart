@@ -1357,6 +1357,28 @@ class DeviceHostApi {
     );
     return pigeonVar_replyValue! as bool;
   }
+
+  /// The version code of a newer release on Google Play, or null when
+  /// there is none or Play cannot tell (not installed from Play, offline).
+  /// Android only: iOS answers null, and Dart asks the App Store instead.
+  Future<int?> playUpdateVersionCode() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.stitch.DeviceHostApi.playUpdateVersionCode$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+    return pigeonVar_replyValue as int?;
+  }
 }
 
 abstract class DeviceFlutterApi {

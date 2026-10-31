@@ -257,6 +257,12 @@ abstract class DeviceHostApi {
   /// later; elsewhere always true). True when allowed.
   @async
   bool requestNotifications();
+
+  /// The version code of a newer release on Google Play, or null when
+  /// there is none or Play cannot tell (not installed from Play, offline).
+  /// Android only: iOS answers null, and Dart asks the App Store instead.
+  @async
+  int? playUpdateVersionCode();
 }
 
 @FlutterApi()

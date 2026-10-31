@@ -2781,6 +2781,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sounds'**
   String get settingsSounds;
+
+  /// Title of the prompt shown when the App Store or Google Play has a newer version of the app.
+  ///
+  /// In en, this message translates to:
+  /// **'Update available'**
+  String get updateAvailableTitle;
+
+  /// Body of the update prompt when the store does not say the version number (Google Play).
+  ///
+  /// In en, this message translates to:
+  /// **'A new version of Stitch is ready, with fixes and improvements.'**
+  String get updateAvailableMessage;
+
+  /// Body of the update prompt with the new version number (App Store).
+  ///
+  /// In en, this message translates to:
+  /// **'Stitch {version} is ready, with fixes and improvements.'**
+  String updateAvailableVersionMessage(String version);
+
+  /// Update prompt button: opens the app's page in the App Store or Google Play.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get updateNow;
+
+  /// Update prompt button: closes it; it asks again in a few days.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get updateLater;
 }
 
 class _AppLocalizationsDelegate
